@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28010.2003
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YDrawing2D", "YDrawing2D\YDrawing2D.csproj", "{C4F3E4BE-A797-4C92-B47A-7AE46C32642C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YDrawing2DTest", "YDrawing2DTest\YDrawing2DTest.csproj", "{43D20E30-2B9B-4FED-9684-461DA32A505C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{C4F3E4BE-A797-4C92-B47A-7AE46C32642C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C4F3E4BE-A797-4C92-B47A-7AE46C32642C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C4F3E4BE-A797-4C92-B47A-7AE46C32642C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43D20E30-2B9B-4FED-9684-461DA32A505C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43D20E30-2B9B-4FED-9684-461DA32A505C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43D20E30-2B9B-4FED-9684-461DA32A505C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43D20E30-2B9B-4FED-9684-461DA32A505C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
