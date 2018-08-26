@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using YDrawing2D.Extensions;
 using YDrawing2D.Model;
 using YDrawing2D.Util;
 using YDrawing2D.View;
@@ -13,14 +14,14 @@ using YDrawing2D.View;
 namespace YDrawing2D
 {
     /// <summary>
-    /// The panel with the origin in the upper left corner
+    /// The world coordinates are lower left
     /// </summary>
     public class PresentationPanel : UIElement, IDisposable
     {
-        public PresentationPanel(int pixelWidth, int pixelHeight, double dpiX, double dpiY, Color backColor)
+        public PresentationPanel(double width, double height, double dpiX, double dpiY, Color backColor)
         {
             DPIRatio = dpiX / GeometryHelper.SysDPI;
-            _image = new WriteableBitmap(pixelWidth, pixelHeight, dpiX, dpiY, PixelFormats.Bgra32, null);
+            _image = new WriteableBitmap((int)(width * DPIRatio), (int)(height * DPIRatio), dpiX, dpiY, PixelFormats.Bgra32, null);
             _bounds = new Int32Rect(0, 0, _image.PixelWidth, _image.PixelHeight);
             RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.NearestNeighbor);
             RenderOptions.SetEdgeMode(this, EdgeMode.Aliased);
@@ -33,6 +34,10 @@ namespace YDrawing2D
 
         public Int32Rect Bounds { get { return _bounds; } }
         private Int32Rect _bounds;
+
+        internal IntPtr Offset { get { return _image.BackBuffer; } }
+
+        internal int Stride { get { return _image.BackBufferStride; } }
 
         public Color BackColor
         {
@@ -54,28 +59,40 @@ namespace YDrawing2D
         public IEnumerable<PresentationVisual> Visuals { get { return _visuals; } }
         private List<PresentationVisual> _visuals;
 
+        /// <summary>
+        /// You must call <see cref="UpdateAll"/> or <see cref="Update(PresentationVisual)"/> after calling this method,
+        /// Make sure the panel is updated!
+        /// </summary>
         public void AddVisual(PresentationVisual visual)
         {
             if (!_visuals.Contains(visual))
             {
                 _visuals.Add(visual);
                 visual.Panel = this;
-                Update(visual);
+                //Update(visual);
             }
         }
 
+        /// <summary>
+        /// You must call <see cref="UpdateAll"/> or <see cref="Update(PresentationVisual)"/> after calling this method,
+        /// Make sure the panel is updated!
+        /// </summary>
         public void RemoveVisual(PresentationVisual visual)
         {
             if (_visuals.Contains(visual))
             {
                 _visuals.Remove(visual);
                 visual.Panel = null;
-                UpdateAll();
+                //UpdateAll();
             }
         }
 
         #region Render
-        internal void Update(PresentationVisual visual)
+        /// <summary>
+        /// Update visual object
+        /// </summary>
+        /// <param name="visual">need to update</param>
+        public void Update(PresentationVisual visual)
         {
             EnterRender();
             _Update(visual);
@@ -83,7 +100,10 @@ namespace YDrawing2D
             InvalidateVisual();
         }
 
-        internal void UpdateAll()
+        /// <summary>
+        /// Update the entire panel
+        /// </summary>
+        public void UpdateAll()
         {
             var color = Helper.CalcColor(_backColor);
             ClearBuffer(color);
@@ -108,9 +128,13 @@ namespace YDrawing2D
                     case PrimitiveType.Line:
                         var line = (Line)primitive;
                         DrawLine(line.Start, line.End, line.Property.Color, line.Property.Thickness);
-                        _image.AddDirtyRect(GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds));
+                        break;
+                    case PrimitiveType.Cicle:
+                        var cicle = (Cicle)primitive;
+                        DrawCicle(cicle.Center, cicle.Radius, cicle.Property.Color, cicle.Property.Thickness);
                         break;
                 }
+                UpdateBounds(GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds));
             }
         }
 
@@ -118,15 +142,15 @@ namespace YDrawing2D
         {
             EnterRender();
             var start = _image.BackBuffer;
-            for (int i = 0; i < _image.PixelHeight; i++)
+            for (int i = 0; i < _bounds.Height; i++)
             {
-                for (int j = 0; j < _image.PixelWidth; j++)
+                for (int j = 0; j < _bounds.Width; j++)
                 {
                     DrawPixel(start, color);
                     start += GeometryHelper.PixelByteLength;
                 }
             }
-            _image.AddDirtyRect(new Int32Rect(0, 0, _image.PixelWidth, _image.PixelHeight));
+            UpdateBounds(_bounds);
             ExitRender();
         }
 
@@ -146,6 +170,11 @@ namespace YDrawing2D
             _image.Unlock();
         }
 
+        internal void UpdateBounds(Int32Rect bounds)
+        {
+            _image.AddDirtyRect(bounds);
+        }
+
         internal void DrawLine(Int32Point start, Int32Point end, int color, int thickness = 1)
         {
             var line = GeometryHelper.CalcLinePoints(start, end);
@@ -154,11 +183,17 @@ namespace YDrawing2D
                 DrawPoint(point, color, thickness);
         }
 
+        internal void DrawCicle(Int32Point center, Int32 radius, int color, int thickness = 1)
+        {
+            var cicle = GeometryHelper.CalcCiclePoints(center, radius);
+
+            foreach (var point in cicle)
+                DrawPoint(point, color, thickness);
+        }
+
         internal void DrawPoint(Int32Point pos, int color, int thickness = 1)
         {
-            if (pos.X >= _image.PixelWidth
-                || pos.Y >= _image.PixelHeight
-                || pos.X < 0 || pos.Y < 0)
+            if (!_bounds.Contains(pos))
                 return;
 
             var points = GeometryHelper.CalcPoint(pos.X, pos.Y, _image.BackBuffer, _image.BackBufferStride, thickness, _bounds);
@@ -178,6 +213,13 @@ namespace YDrawing2D
             base.OnRender(drawingContext);
             if (_image == null) return;
             drawingContext.DrawImage(_image, new Rect(new Point(), new Size(_image.Width, _image.Height)));
+            //var sg = new StreamGeometry();
+            //using (var ctx = sg.Open())
+            //{
+            //    ctx.BeginFigure(new Point(200, 600), false, true);
+            //    ctx.ArcTo(new Point(200, 599), new Size(200, 200), 360, true, SweepDirection.Counterclockwise, true, true);
+            //}
+            //drawingContext.DrawGeometry(null, new Pen(Brushes.Blue, 1), sg);
         }
 
         public void Dispose()

@@ -9,12 +9,13 @@ namespace YDrawing2D.Model
     public interface IPrimitive
     {
         PrimitiveProperty Property { get; }
-
         PrimitiveType Type { get; }
     }
 
     public enum PrimitiveType
     {
-        Line
+        Line,
+        Cicle,
+        Arc
     }
 }

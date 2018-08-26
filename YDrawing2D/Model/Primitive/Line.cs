@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using YDrawing2D.Extensions;
 using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
@@ -14,8 +15,8 @@ namespace YDrawing2D.Model
         {
             _start = start;
             _end = end;
-            var bounds = GeometryHelper.CalcBounds(start, end);
-            _property = new PrimitiveProperty(bounds, thickness, color);
+            var _bounds = GeometryHelper.CalcBounds(start, end);
+            _property = new PrimitiveProperty(_bounds, thickness, color);
         }
 
         public PrimitiveType Type { get { return PrimitiveType.Line; } }

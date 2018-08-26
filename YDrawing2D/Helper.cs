@@ -41,17 +41,17 @@ namespace YDrawing2D
 
         public static Int32Point ConvertToInt32Point(Point p, double dpiRatio)
         {
-            return new Int32Point((int)(p.X * dpiRatio), (int)(p.Y * dpiRatio));
+            return new Int32Point((int)(p.X * dpiRatio - 0.5), (int)(p.Y * dpiRatio - 0.5));
         }
 
         public static Int32Rect RestrictBounds(Int32Rect restriction, Int32Rect bounds)
         {
-            int left = Math.Max(restriction.X, bounds.X);
-            int top = Math.Max(restriction.Y, bounds.Y);
             int right = restriction.X + restriction.Width;
             int bottom = restriction.Y + restriction.Height;
-            int avaWitdh = Math.Max(0, right - left);
-            int avaHeight = Math.Max(0, bottom - top);
+            int left = Math.Min(Math.Max(restriction.X, bounds.X), right);
+            int top = Math.Min(Math.Max(restriction.Y, bounds.Y), bottom);
+            int avaWitdh = right - left;
+            int avaHeight = bottom - top;
             return new Int32Rect(left, top, Math.Min(avaWitdh, bounds.Width + bounds.X - left), Math.Min(avaHeight, bounds.Height + bounds.Y - top));
         }
 
@@ -64,6 +64,11 @@ namespace YDrawing2D
             int width = isStartXLargger ? p1.X - p2.X : p2.X - p1.X;
             int height = isStartYLargger ? p1.Y - p2.Y : p2.Y - p1.Y;
             return new Int32Rect(left, top, width, height);
+        }
+
+        public static Int32Rect CalcBounds(Int32Point center, Int32 radius)
+        {
+            return new Int32Rect(center.X - radius, center.Y - radius, radius, radius);
         }
 
         public static IEnumerable<IntPtr> CalcPoint(int x, int y, IntPtr offset, int stride, int thickness, Int32Rect bounds)
@@ -165,6 +170,62 @@ namespace YDrawing2D
                     }
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Bresenham algorithm
+        /// </summary>
+        public static IEnumerable<Int32Point> CalcCiclePoints(Int32Point center, Int32 radius)
+        {
+            Int32 x = 0;
+            Int32 y = radius;
+            Int32 d = 2 * (1 + x - y);
+            while (x <= y)
+            {
+                byte condition = 0;
+                foreach (var p in GenCiclePoints(new Int32Point(x, y)))
+                    yield return new Int32Point(p.X + center.X, p.Y + center.Y);
+                if (d > 0)
+                {
+                    if (2 * (d - x) - 1 > 0)
+                        condition = 2;
+                }
+                else if (d < 0)
+                {
+                    if (2 * (d + y) - 1 <= 0)
+                        condition = 1;
+                }
+
+                switch (condition)
+                {
+                    case 0:
+                        x++;
+                        y--;
+                        d += 2 * (1 + x - y);
+                        break;
+                    case 1:
+                        x++;
+                        d += 2 * x + 1;
+                        break;
+                    case 2:
+                        y--;
+                        d += 1 - 2 * y;
+                        break;
+                }
+            }
+        }
+
+        private static IEnumerable<Int32Point> GenCiclePoints(Int32Point origin)
+        {
+            yield return origin;
+            yield return new Int32Point(origin.Y, origin.X);
+            yield return new Int32Point(origin.X, -origin.Y);
+            yield return new Int32Point(origin.Y, -origin.X);
+            yield return new Int32Point(-origin.X, origin.Y);
+            yield return new Int32Point(-origin.Y, origin.X);
+            yield return new Int32Point(-origin.X, -origin.Y);
+            yield return new Int32Point(-origin.Y, -origin.X);
         }
 
         private static bool IsSameSymbol(int a, int b)

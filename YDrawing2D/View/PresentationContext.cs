@@ -14,6 +14,7 @@ namespace YDrawing2D.View
         void BeginFigure(Point begin);
         void DrawLine(Point start, Point end, double thickness, Color color);
         void LineTo(Point point, double thickness, Color color);
+        void DrawCicle(Point center, double radius, double thickness, Color color);
     }
 
     public class PresentationContext : IContext
@@ -39,6 +40,16 @@ namespace YDrawing2D.View
             var _thickness = (int)(thickness * _visual.Panel.DPIRatio);
 
             _primitives.Add(new Line(_thickness, Helper.CalcColor(color), _start, _end));
+        }
+
+        public void DrawCicle(Point center, double radius, double thickness, Color color)
+        {
+            center = GeometryHelper.ConvertToWPFSystem(center, _visual.Panel.Image.Height);
+
+            var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
+            var _radius = (int)(radius * _visual.Panel.DPIRatio);
+            var _thickness = (int)(thickness * _visual.Panel.DPIRatio);
+            _primitives.Add(new Cicle(_thickness, Helper.CalcColor(color), _center, _radius));
         }
 
         public void LineTo(Point point, double thickness, Color color)

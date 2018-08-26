@@ -33,11 +33,13 @@ namespace YDrawing2DTest
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            var len = (int)Math.Max(ActualWidth, ActualHeight);
+            var len = Math.Max(ActualWidth, ActualHeight);
             _panel = new PresentationPanel(len, len, 96, 96, Colors.Black);
             Content = _panel;
             _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
             _panel.AddVisual(new Line(new Point(0, 800), new Point(800, 0)));
+            _panel.AddVisual(new Cicle(new Point(400, 400), 200));
+            _panel.UpdateAll();
         }
     }
 
@@ -54,7 +56,24 @@ namespace YDrawing2DTest
 
         protected override void Draw(IContext context)
         {
-            context.DrawLine(_start, _end, 1, Colors.White);
+            context.DrawLine(_start, _end, 1, Colors.Red);
+        }
+    }
+
+    public class Cicle : PresentationVisual
+    {
+        public Cicle(Point center, double radius)
+        {
+            _center = center;
+            _radius = radius;
+        }
+
+        private Point _center;
+        private double _radius;
+
+        protected override void Draw(IContext context)
+        {
+            context.DrawCicle(_center, _radius, 1, Colors.Blue);
         }
     }
 }

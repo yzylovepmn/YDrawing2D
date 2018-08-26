@@ -46,8 +46,10 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\Extensions.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="Model\PrimitiveProperty.cs" />
+    <Compile Include="Model\Primitive\Cicle.cs" />
     <Compile Include="Model\Primitive\Primitive.cs" />
     <Compile Include="Model\Primitive\Line.cs" />
     <Compile Include="PresentationPanel.cs" />

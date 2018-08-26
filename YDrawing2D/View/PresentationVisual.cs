@@ -28,7 +28,7 @@ namespace YDrawing2D.View
             return _context;
         }
 
-        public void Update()
+        internal void Update()
         {
             var context = RenderOpen();
             Draw(context);
