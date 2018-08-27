@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using YDrawing2D.Extensions;
 using YDrawing2D.Model;
+using YDrawing2D.Util;
 
 namespace YDrawing2D.View
 {
@@ -39,6 +41,16 @@ namespace YDrawing2D.View
         /// </summary>
         /// <param name="context"></param>
         protected abstract void Draw(IContext context);
+
+        internal bool Contains(Int32Point p, Int32 color)
+        {
+            foreach (var primitive in _context.Primitives)
+                if (primitive.Property.Color == color
+                    && primitive.Property.Bounds.Contains(p)
+                    && primitive.HitTest(p))
+                    return true;
+            return false;
+        }
 
         public void Dispose()
         {

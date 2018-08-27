@@ -5,7 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using YDrawing2D.Model;
 using YDrawing2D.Util;
+using YDrawing2D.View;
 
 namespace YDrawing2D
 {
@@ -19,6 +21,31 @@ namespace YDrawing2D
             color_data |= color.B << 0;       // B
 
             return color_data;
+        }
+    }
+
+    public class VisualHelper
+    {
+        public const int HitTestThickness = 5;
+
+        public static PresentationVisual HitTest(PresentationPanel panel, Point p)
+        {
+            p = GeometryHelper.ConvertToWPFSystem(p, panel.Image.Height);
+            var _p = GeometryHelper.ConvertToInt32Point(p, panel.DPIRatio);
+
+            var points = GeometryHelper.CalcPoints(_p.X, _p.Y, panel.Offset, panel.Stride, HitTestThickness, panel.Bounds);
+
+            int color = default(int);
+            foreach (var point in points)
+            {
+                color = panel.GetColor(point.X, point.Y);
+                if (color != panel.BackColorValue)
+                    foreach (var visual in panel.Visuals)
+                        if (visual.Contains(point, color))
+                            return visual;
+            }
+
+            return null;
         }
     }
 
@@ -59,19 +86,19 @@ namespace YDrawing2D
         {
             bool isStartXLargger = p1.X > p2.X;
             bool isStartYLargger = p1.Y > p2.Y;
-            int left = isStartXLargger ? p2.X : p1.X;
-            int top = isStartYLargger ? p2.Y : p1.Y;
+            int left = (isStartXLargger ? p2.X : p1.X) - VisualHelper.HitTestThickness;
+            int top = (isStartYLargger ? p2.Y : p1.Y) - VisualHelper.HitTestThickness;
             int width = isStartXLargger ? p1.X - p2.X : p2.X - p1.X;
             int height = isStartYLargger ? p1.Y - p2.Y : p2.Y - p1.Y;
-            return new Int32Rect(left, top, width, height);
+            return new Int32Rect(left, top, (width + VisualHelper.HitTestThickness << 1), height + (VisualHelper.HitTestThickness << 1));
         }
 
         public static Int32Rect CalcBounds(Int32Point center, Int32 radius)
         {
-            return new Int32Rect(center.X - radius, center.Y - radius, radius, radius);
+            return new Int32Rect(center.X - radius - VisualHelper.HitTestThickness, center.Y - radius - VisualHelper.HitTestThickness, (radius + VisualHelper.HitTestThickness) << 1, (radius + VisualHelper.HitTestThickness) << 1);
         }
 
-        public static IEnumerable<IntPtr> CalcPoint(int x, int y, IntPtr offset, int stride, int thickness, Int32Rect bounds)
+        public static IEnumerable<IntPtr> CalcPositions(int x, int y, IntPtr offset, int stride, int thickness, Int32Rect bounds)
         {
             IntPtr start = offset;
             if (thickness == 1)
@@ -86,8 +113,8 @@ namespace YDrawing2D
                 var len = thickness / 2;
                 x = Math.Max(0, x - (thickness % 2 == 0 ? len - 1 : len));
                 y = Math.Max(0, y - (thickness % 2 == 0 ? len - 1 : len));
-                int width = Math.Min(x + len, bounds.Width - 1) - x;
-                int height = Math.Min(y + len, bounds.Height - 1) - y;
+                int width = Math.Min(x + thickness, bounds.Width - 1) - x;
+                int height = Math.Min(y + thickness, bounds.Height - 1) - y;
                 start += y * stride;
                 start += x * PixelByteLength;
                 for (int i = 0; i <= height; i++)
@@ -95,6 +122,29 @@ namespace YDrawing2D
                     for (int j = 0; j <= width; j++)
                         yield return start + j * PixelByteLength;
                     start += stride;
+                }
+            }
+        }
+
+        public static IEnumerable<Int32Point> CalcPoints(int x, int y, IntPtr offset, int stride, int thickness, Int32Rect bounds)
+        {
+            if (thickness == 1)
+            {
+                yield return new Int32Point(x, y);
+                yield break;
+            }
+            else
+            {
+                var len = thickness / 2;
+                x = Math.Max(0, x - (thickness % 2 == 0 ? len - 1 : len));
+                y = Math.Max(0, y - (thickness % 2 == 0 ? len - 1 : len));
+                int width = Math.Min(x + thickness, bounds.Width - 1) - x;
+                int height = Math.Min(y + thickness, bounds.Height - 1) - y;
+                for (int i = 0; i <= height; i++)
+                {
+                    for (int j = 0; j <= width; j++)
+                        yield return new Int32Point(x + j, y);
+                    y++;
                 }
             }
         }
@@ -108,8 +158,8 @@ namespace YDrawing2D
             var deltaY = end.Y - start.Y;
             var deltaX_abs = Math.Abs(deltaX);
             var deltaY_abs = Math.Abs(deltaY);
-            var _deltaX = deltaX_abs * 2;
-            var _deltaY = deltaY_abs * 2;
+            var _deltaX = deltaX_abs << 1;
+            var _deltaY = deltaY_abs << 1;
             var isSameSymbol = IsSameSymbol(deltaX, deltaY);
             int x, y, stride = isSameSymbol ? 1 : -1;
             var isXdir = deltaX_abs >= deltaY_abs;
@@ -180,7 +230,7 @@ namespace YDrawing2D
         {
             Int32 x = 0;
             Int32 y = radius;
-            Int32 d = 2 * (1 + x - y);
+            Int32 d = (1 + x - y) << 1;
             while (x <= y)
             {
                 byte condition = 0;
@@ -188,12 +238,12 @@ namespace YDrawing2D
                     yield return new Int32Point(p.X + center.X, p.Y + center.Y);
                 if (d > 0)
                 {
-                    if (2 * (d - x) - 1 > 0)
+                    if (((d - x) << 1) - 1 > 0)
                         condition = 2;
                 }
                 else if (d < 0)
                 {
-                    if (2 * (d + y) - 1 <= 0)
+                    if (((d + y) << 1) - 1 <= 0)
                         condition = 1;
                 }
 
@@ -202,15 +252,15 @@ namespace YDrawing2D
                     case 0:
                         x++;
                         y--;
-                        d += 2 * (1 + x - y);
+                        d += ((1 + x - y) << 1);
                         break;
                     case 1:
                         x++;
-                        d += 2 * x + 1;
+                        d += (x << 1) + 1;
                         break;
                     case 2:
                         y--;
-                        d += 1 - 2 * y;
+                        d += 1 - (y << 1);
                         break;
                 }
             }

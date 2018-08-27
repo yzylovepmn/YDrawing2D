@@ -29,5 +29,12 @@ namespace YDrawing2D.Model
 
         public Int32Point End { get { return _end; } }
         private Int32Point _end;
+
+        public bool HitTest(Int32Point p)
+        {
+            var v1 = _start - _end;
+            var v2 = p - _start;
+            return Math.Abs(Int32Vector.CrossProduct(v1, v2)) < 100;
+        }
     }
 }

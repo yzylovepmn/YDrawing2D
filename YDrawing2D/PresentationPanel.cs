@@ -39,6 +39,9 @@ namespace YDrawing2D
 
         internal int Stride { get { return _image.BackBufferStride; } }
 
+        /// <summary>
+        /// The background color used by the panel
+        /// </summary>
         public Color BackColor
         {
             get { return _backColor; }
@@ -47,12 +50,19 @@ namespace YDrawing2D
                 if (_backColor != value)
                 {
                     _backColor = value;
+                    _backColorValue = Helper.CalcColor(_backColor);
                     UpdateAll();
                 }
             }
         }
         private Color _backColor;
 
+        public int BackColorValue { get { return _backColorValue; } }
+        private int _backColorValue;
+
+        /// <summary>
+        /// Internally used bitmap
+        /// </summary>
         internal WriteableBitmap Image { get { return _image; } }
         private WriteableBitmap _image;
 
@@ -89,9 +99,10 @@ namespace YDrawing2D
 
         #region Render
         /// <summary>
-        /// Update visual object
+        /// Update visual object;
+        /// This method can only be called when adding this <param name="visual"/>, otherwise call <see cref="UpdateAll"/>
         /// </summary>
-        /// <param name="visual">need to update</param>
+        /// <param name="visual">the visual need to update</param>
         public void Update(PresentationVisual visual)
         {
             EnterRender();
@@ -105,8 +116,7 @@ namespace YDrawing2D
         /// </summary>
         public void UpdateAll()
         {
-            var color = Helper.CalcColor(_backColor);
-            ClearBuffer(color);
+            ClearBuffer(_backColorValue);
             if (_visuals.Count > 0)
             {
                 EnterRender();
@@ -127,11 +137,11 @@ namespace YDrawing2D
                 {
                     case PrimitiveType.Line:
                         var line = (Line)primitive;
-                        DrawLine(line.Start, line.End, line.Property.Color, line.Property.Thickness);
+                        DrawLine(line.Start, line.End, line.Property);
                         break;
                     case PrimitiveType.Cicle:
                         var cicle = (Cicle)primitive;
-                        DrawCicle(cicle.Center, cicle.Radius, cicle.Property.Color, cicle.Property.Thickness);
+                        DrawCicle(cicle.Center, cicle.Radius, cicle.Property);
                         break;
                 }
                 UpdateBounds(GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds));
@@ -175,20 +185,20 @@ namespace YDrawing2D
             _image.AddDirtyRect(bounds);
         }
 
-        internal void DrawLine(Int32Point start, Int32Point end, int color, int thickness = 1)
+        internal void DrawLine(Int32Point start, Int32Point end, PrimitiveProperty property)
         {
             var line = GeometryHelper.CalcLinePoints(start, end);
 
             foreach (var point in line)
-                DrawPoint(point, color, thickness);
+                DrawPoint(point, property.Color, property.Thickness);
         }
 
-        internal void DrawCicle(Int32Point center, Int32 radius, int color, int thickness = 1)
+        internal void DrawCicle(Int32Point center, Int32 radius, PrimitiveProperty property)
         {
             var cicle = GeometryHelper.CalcCiclePoints(center, radius);
 
             foreach (var point in cicle)
-                DrawPoint(point, color, thickness);
+                DrawPoint(point, property.Color, property.Thickness);
         }
 
         internal void DrawPoint(Int32Point pos, int color, int thickness = 1)
@@ -196,7 +206,7 @@ namespace YDrawing2D
             if (!_bounds.Contains(pos))
                 return;
 
-            var points = GeometryHelper.CalcPoint(pos.X, pos.Y, _image.BackBuffer, _image.BackBufferStride, thickness, _bounds);
+            var points = GeometryHelper.CalcPositions(pos.X, pos.Y, Offset, Stride, thickness, _bounds);
 
             foreach (var point in points)
                 DrawPixel(point, color);
@@ -206,6 +216,19 @@ namespace YDrawing2D
         {
             *((int*)ptr) = color;
         }
+
+        unsafe internal int GetColor(Int32 x, Int32 y)
+        {
+            var start = _image.BackBuffer;
+            start += y * Stride;
+            start += x * GeometryHelper.PixelByteLength;
+            return GetColor(start);
+        }
+
+        unsafe internal int GetColor(IntPtr ptr)
+        {
+            return *((int*)ptr);
+        }
         #endregion
 
         protected override void OnRender(DrawingContext drawingContext)
@@ -213,13 +236,6 @@ namespace YDrawing2D
             base.OnRender(drawingContext);
             if (_image == null) return;
             drawingContext.DrawImage(_image, new Rect(new Point(), new Size(_image.Width, _image.Height)));
-            //var sg = new StreamGeometry();
-            //using (var ctx = sg.Open())
-            //{
-            //    ctx.BeginFigure(new Point(200, 600), false, true);
-            //    ctx.ArcTo(new Point(200, 599), new Size(200, 200), 360, true, SweepDirection.Counterclockwise, true, true);
-            //}
-            //drawingContext.DrawGeometry(null, new Pen(Brushes.Blue, 1), sg);
         }
 
         public void Dispose()

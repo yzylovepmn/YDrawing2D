@@ -40,6 +40,12 @@ namespace YDrawing2DTest
             _panel.AddVisual(new Line(new Point(0, 800), new Point(800, 0)));
             _panel.AddVisual(new Cicle(new Point(400, 400), 200));
             _panel.UpdateAll();
+            _panel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
+        }
+
+        private void _panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var item = VisualHelper.HitTest(_panel, e.GetPosition(_panel));
         }
     }
 

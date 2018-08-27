@@ -13,6 +13,7 @@ namespace YDrawing2D.Model
         {
             _center = center;
             _radius = radius;
+            _radiusSquared = _radius * _radius;
             var _bounds = GeometryHelper.CalcBounds(center, radius);
             _property = new PrimitiveProperty(_bounds, thickness, color);
         }
@@ -27,5 +28,11 @@ namespace YDrawing2D.Model
 
         public Int32 Radius { get { return _radius; } }
         private Int32 _radius;
+        private Int64 _radiusSquared;
+
+        public bool HitTest(Int32Point p)
+        {
+            return Math.Abs(((p - _center).LengthSquared - _radiusSquared)) < 100;
+        }
     }
 }

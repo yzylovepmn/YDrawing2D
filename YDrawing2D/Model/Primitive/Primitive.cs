@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
 {
@@ -10,6 +11,7 @@ namespace YDrawing2D.Model
     {
         PrimitiveProperty Property { get; }
         PrimitiveType Type { get; }
+        bool HitTest(Int32Point p);
     }
 
     public enum PrimitiveType

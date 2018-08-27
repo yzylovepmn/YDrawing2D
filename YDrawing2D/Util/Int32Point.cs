@@ -27,6 +27,21 @@ namespace YDrawing2D.Util
         public Int32 Y { get { return _y; } }
         private Int32 _y;
 
+        public static Int32Vector operator -(Int32Point p1, Int32Point p2)
+        {
+            return new Int32Vector(p1.X - p2.X, p1.Y - p2.Y);
+        }
+
+        public static Int32Point operator +(Int32Point p, Int32Vector v)
+        {
+            return new Int32Point(p.X + v.X, p.Y + v.Y);
+        }
+
+        public static implicit operator Int32Vector(Int32Point p)
+        {
+            return new Int32Vector(p.X, p.Y);
+        }
+
         public override string ToString()
         {
             return string.Format("({0}, {1})", _x, _y);
