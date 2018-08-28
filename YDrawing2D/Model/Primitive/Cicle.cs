@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using YDrawing2D.Extensions;
 using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
@@ -13,8 +14,7 @@ namespace YDrawing2D.Model
         {
             _center = center;
             _radius = radius;
-            _radiusSquared = _radius * _radius;
-            var _bounds = GeometryHelper.CalcBounds(center, radius);
+            var _bounds = GeometryHelper.CalcBounds(center, radius, thickness);
             _property = new PrimitiveProperty(_bounds, thickness, color);
         }
 
@@ -28,11 +28,25 @@ namespace YDrawing2D.Model
 
         public Int32 Radius { get { return _radius; } }
         private Int32 _radius;
-        private Int64 _radiusSquared;
 
         public bool HitTest(Int32Point p)
         {
-            return Math.Abs(((p - _center).LengthSquared - _radiusSquared)) < 100;
+            return (p - _center).Length == _radius;
+        }
+
+        public bool IsIntersect(IPrimitive other)
+        {
+            if (!other.IsIntersectWith(this)) return false;
+            switch (other.Type)
+            {
+                case PrimitiveType.Line:
+                    return GeometryHelper.IsIntersect((Line)other, this);
+                case PrimitiveType.Cicle:
+                    return GeometryHelper.IsIntersect(this, (Cicle)other);
+                case PrimitiveType.Arc:
+                    break;
+            }
+            return true;
         }
     }
 }

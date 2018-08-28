@@ -12,6 +12,7 @@ namespace YDrawing2D.Model
         PrimitiveProperty Property { get; }
         PrimitiveType Type { get; }
         bool HitTest(Int32Point p);
+        bool IsIntersect(IPrimitive other);
     }
 
     public enum PrimitiveType

@@ -29,23 +29,87 @@ namespace YDrawing2DTest
             Loaded += OnLoaded;
         }
 
-        private PresentationPanel _panel;
+        private static PresentationPanel _panel;
+        public static PresentationVisual ActiveVisual
+        {
+            get { return _visual; }
+            set
+            {
+                if (_visual != value)
+                {
+                    var old = _visual;
+                    _visual = value;
+                    if (old != null)
+                        _panel.Update(old);
+                    if (_visual != null)
+                        _panel.MoveToTop(_visual, true);
+                    //_panel.UpdateAll();
+                }
+            }
+        }
+        private static PresentationVisual _visual;
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             var len = Math.Max(ActualWidth, ActualHeight);
             _panel = new PresentationPanel(len, len, 96, 96, Colors.Black);
             Content = _panel;
-            _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
-            _panel.AddVisual(new Line(new Point(0, 800), new Point(800, 0)));
-            _panel.AddVisual(new Cicle(new Point(400, 400), 200));
+            for (int i = 0; i < 400; i++)
+            {
+                _panel.AddVisual(new Line(new Point(200, i), new Point(600, i)));
+                _panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
+                //_panel.AddVisual(new Line(new Point(0, i), new Point(800, 800 - i)));
+                //_panel.AddVisual(new Line(new Point(0, 800 - i), new Point(800, i)));
+                _panel.AddVisual(new Cicle(new Point(400, 400), 20 + i));
+            }
+            //_panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
+            //_panel.AddVisual(new Cicle(new Point(400, 400), 200));
             _panel.UpdateAll();
+            _panel.MouseMove += _panel_MouseMove;
+            _panel.MouseWheel += _panel_MouseWheel;
             _panel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
         }
 
         private void _panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            var item = VisualHelper.HitTest(_panel, e.GetPosition(_panel));
+            p = e.GetPosition(_panel);
+        }
+
+        private void _panel_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void _panel_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            var p = e.GetPosition(_panel);
+            if (e.Delta > 0)
+                _panel.ScaleAt(1.1, 1.1, p.X, p.Y);
+            else _panel.ScaleAt(1 / 1.1, 1 / 1.1, p.X, p.Y);
+            _panel.UpdateAll();
+        }
+
+        Point p;
+        bool isfirst = true;
+        private void _panel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.None)
+                ActiveVisual = VisualHelper.HitTest(_panel, e.GetPosition(_panel));
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.LeftButton == MouseButtonState.Pressed)
+            {
+                if (isfirst)
+                {
+                    isfirst = false;
+                    p = e.GetPosition(_panel);
+                }
+                else
+                {
+                    var _p = e.GetPosition(_panel);
+                    _panel.Translate(_p.X - p.X, _p.Y - p.Y);
+                    p = _p;
+                    _panel.UpdateAll();
+                }
+            }
         }
     }
 
@@ -62,7 +126,9 @@ namespace YDrawing2DTest
 
         protected override void Draw(IContext context)
         {
-            context.DrawLine(_start, _end, 1, Colors.Red);
+            if (this == MainWindow.ActiveVisual)
+                context.DrawLine(_start, _end, 2, Colors.Red);
+            else context.DrawLine(_start, _end, 1, Colors.White);
         }
     }
 
@@ -79,7 +145,9 @@ namespace YDrawing2DTest
 
         protected override void Draw(IContext context)
         {
-            context.DrawCicle(_center, _radius, 1, Colors.Blue);
+            if (this == MainWindow.ActiveVisual)
+                context.DrawCicle(_center, _radius, 2, Colors.Blue);
+            else context.DrawCicle(_center, _radius, 1, Colors.White);
         }
     }
 }

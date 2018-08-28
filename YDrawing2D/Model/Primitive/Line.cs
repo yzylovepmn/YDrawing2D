@@ -15,7 +15,9 @@ namespace YDrawing2D.Model
         {
             _start = start;
             _end = end;
-            var _bounds = GeometryHelper.CalcBounds(start, end);
+            GeometryHelper.CalcLineABC(_start, _end, out _a, out _b, out _c);
+            _len = (int)Math.Sqrt(_a * _a + _b * _b);
+            var _bounds = GeometryHelper.CalcBounds(thickness, start, end);
             _property = new PrimitiveProperty(_bounds, thickness, color);
         }
 
@@ -30,11 +32,32 @@ namespace YDrawing2D.Model
         public Int32Point End { get { return _end; } }
         private Int32Point _end;
 
+        public Int32 A { get { return _a; } }
+        public Int32 B { get { return _b; } }
+        public Int32 C { get { return _c; } }
+        public Int32 Len { get { return _len; } }
+        private Int32 _a, _b, _c, _len;
+
         public bool HitTest(Int32Point p)
         {
-            var v1 = _start - _end;
-            var v2 = p - _start;
-            return Math.Abs(Int32Vector.CrossProduct(v1, v2)) < 100;
+            if (_start.X == _end.X && _start.Y == _end.Y)
+                return false;
+            return Math.Abs(_a * p.X + _b * p.Y + _c) < _len;
+        }
+
+        public bool IsIntersect(IPrimitive other)
+        {
+            if (!other.IsIntersectWith(this)) return false;
+            switch (other.Type)
+            {
+                case PrimitiveType.Line:
+                    return GeometryHelper.IsIntersect(this, (Line)other);
+                case PrimitiveType.Cicle:
+                    return GeometryHelper.IsIntersect(this, (Cicle)other);
+                case PrimitiveType.Arc:
+                    break;
+            }
+            return true;
         }
     }
 }

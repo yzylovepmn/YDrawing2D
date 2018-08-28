@@ -22,6 +22,8 @@ namespace YDrawing2D.Util
 
         public Int64 LengthSquared { get { return _x * _x + _y * _y; } }
 
+        public Int32 Length { get { return (Int32)Math.Sqrt(_x * _x + _y * _y); } }
+
         public static Int32Vector operator -(Int32Vector v1, Int32Vector v2)
         {
             return new Int32Vector(v1.X - v2.X, v1.Y - v2.Y);

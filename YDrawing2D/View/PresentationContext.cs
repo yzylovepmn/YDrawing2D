@@ -33,23 +33,25 @@ namespace YDrawing2D.View
 
         public void DrawLine(Point start, Point end, double thickness, Color color)
         {
-            start = GeometryHelper.ConvertToWPFSystem(start, _visual.Panel.Image.Height);
-            end = GeometryHelper.ConvertToWPFSystem(end, _visual.Panel.Image.Height);
+            start = GeometryHelper.ConvertWithTransform(start, _visual.Panel.ImageHeight, _visual.Panel.Transform);
+            end = GeometryHelper.ConvertWithTransform(end, _visual.Panel.ImageHeight, _visual.Panel.Transform);
+
             var _start = GeometryHelper.ConvertToInt32Point(start, _visual.Panel.DPIRatio);
             var _end = GeometryHelper.ConvertToInt32Point(end, _visual.Panel.DPIRatio);
             var _thickness = (int)(thickness * _visual.Panel.DPIRatio);
 
-            _primitives.Add(new Line(_thickness, Helper.CalcColor(color), _start, _end));
+            _primitives.Add(new Line(Math.Max(_thickness, 1), Helper.CalcColor(color), _start, _end));
         }
 
         public void DrawCicle(Point center, double radius, double thickness, Color color)
         {
-            center = GeometryHelper.ConvertToWPFSystem(center, _visual.Panel.Image.Height);
+            center = GeometryHelper.ConvertWithTransform(center, _visual.Panel.ImageHeight, _visual.Panel.Transform);
+            radius *= _visual.Panel.ScaleX;
 
             var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
             var _radius = (int)(radius * _visual.Panel.DPIRatio);
             var _thickness = (int)(thickness * _visual.Panel.DPIRatio);
-            _primitives.Add(new Cicle(_thickness, Helper.CalcColor(color), _center, _radius));
+            _primitives.Add(new Cicle(Math.Max(_thickness, 1), Helper.CalcColor(color), _center, _radius));
         }
 
         public void LineTo(Point point, double thickness, Color color)
