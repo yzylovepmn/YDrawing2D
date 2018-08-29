@@ -56,14 +56,15 @@ namespace YDrawing2DTest
             Content = _panel;
             for (int i = 0; i < 400; i++)
             {
-                _panel.AddVisual(new Line(new Point(200, i), new Point(600, i)));
-                _panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
+                //_panel.AddVisual(new Line(new Point(200, i), new Point(600, i)));
+                //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
                 //_panel.AddVisual(new Line(new Point(0, i), new Point(800, 800 - i)));
                 //_panel.AddVisual(new Line(new Point(0, 800 - i), new Point(800, i)));
-                _panel.AddVisual(new Cicle(new Point(400, 400), 20 + i));
+                //_panel.AddVisual(new Cicle(new Point(400, 400), 20 + i));
             }
             //_panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
             //_panel.AddVisual(new Cicle(new Point(400, 400), 200));
+            _panel.AddVisual(new Arc(new Point(400, 400), 90, 185, 200));
             _panel.UpdateAll();
             _panel.MouseMove += _panel_MouseMove;
             _panel.MouseWheel += _panel_MouseWheel;
@@ -75,18 +76,12 @@ namespace YDrawing2DTest
             p = e.GetPosition(_panel);
         }
 
-        private void _panel_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
         private void _panel_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             var p = e.GetPosition(_panel);
             if (e.Delta > 0)
                 _panel.ScaleAt(1.1, 1.1, p.X, p.Y);
             else _panel.ScaleAt(1 / 1.1, 1 / 1.1, p.X, p.Y);
-            _panel.UpdateAll();
         }
 
         Point p;
@@ -107,7 +102,6 @@ namespace YDrawing2DTest
                     var _p = e.GetPosition(_panel);
                     _panel.Translate(_p.X - p.X, _p.Y - p.Y);
                     p = _p;
-                    _panel.UpdateAll();
                 }
             }
         }
@@ -148,6 +142,31 @@ namespace YDrawing2DTest
             if (this == MainWindow.ActiveVisual)
                 context.DrawCicle(_center, _radius, 2, Colors.Blue);
             else context.DrawCicle(_center, _radius, 1, Colors.White);
+        }
+    }
+
+    public class Arc : PresentationVisual
+    {
+        public Arc(Point center, double startAngle, double endAngle, double radius, bool isClockwise = true)
+        {
+            _center = center;
+            _radius = radius;
+            _startAngle = startAngle;
+            _endAngle = endAngle;
+            _isClockwise = isClockwise;
+        }
+
+        private Point _center;
+        private double _radius;
+        private double _startAngle;
+        private double _endAngle;
+        private bool _isClockwise;
+
+        protected override void Draw(IContext context)
+        {
+            if (this == MainWindow.ActiveVisual)
+                context.DrawArc(_center, _radius, _startAngle, _endAngle, _isClockwise, 2, Colors.Blue);
+            else context.DrawArc(_center, _radius, _startAngle, _endAngle, _isClockwise, 1, Colors.White);
         }
     }
 }

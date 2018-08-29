@@ -9,7 +9,7 @@ using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
 {
-    public struct Line : IPrimitive
+    internal struct Line : IPrimitive
     {
         public Line(int thickness, int color, Int32Point start, Int32Point end)
         {

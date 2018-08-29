@@ -40,6 +40,13 @@ namespace YDrawing2D
                 return CalcMCD(a, b % a);
             }
         }
+
+        public static void Switch(ref double a, ref double b)
+        {
+            var c = a;
+            a = b;
+            b = c;
+        }
     }
 
     public class VisualHelper
@@ -88,6 +95,11 @@ namespace YDrawing2D
             return new Int32Point((int)(p.X * dpiRatio), (int)(p.Y * dpiRatio));
         }
 
+        public static double GetRadian(double angle)
+        {
+            return angle * Math.PI / 180;
+        }
+
         public static Int32Rect RestrictBounds(Int32Rect restriction, Int32Rect bounds)
         {
             int right = restriction.X + restriction.Width;
@@ -122,6 +134,157 @@ namespace YDrawing2D
         {
             int h = Math.Max(thickness >> 1, 1);
             return new Int32Rect(center.X - radius - h, center.Y - radius - h, (radius + h) << 1, (radius + h) << 1);
+        }
+
+        public static Int32Rect CalcBounds(Int32Point center, Int32Point start, Int32Point end, Int32 radius, Int32 thickness)
+        {
+            int h = Math.Max(thickness >> 1, 1);
+            int left = center.X - radius;
+            int top = center.Y - radius;
+            int right = center.X + radius;
+            int bottom = center.Y + radius;
+            if (start.X >= center.X)
+            {
+                if (start.Y <= center.Y)
+                {
+                    if (end.X >= center.X)
+                    {
+                        if (end.Y <= center.Y)
+                        {
+                            // start 1 end 1
+                            if (start.X < end.X)
+                            {
+                                left = start.X;
+                                top = start.Y;
+                                right = end.X;
+                                bottom = end.Y;
+                            }
+                        }
+                        else
+                        {
+                            // start 1 end 4
+                            left = Math.Min(start.X, end.X);
+                            top = start.Y;
+                            bottom = end.Y;
+                        }
+                    }
+                    else
+                    {
+                        // start 1 end 2
+                        if (end.Y >= center.Y)
+                            top = Math.Min(start.Y, end.Y);
+                        else
+                        {
+                            // start 1 end 3
+                            left = end.X;
+                            top = start.Y;
+                        }
+                    }
+                }
+                else
+                {
+                    if (end.X >= center.X)
+                    {
+                        // start 4 end 1
+                        if (end.Y <= center.Y)
+                            right = Math.Max(start.X, end.X);
+                        else
+                        {
+                            // start 4 end 4
+                            if (end.X < start.X)
+                            {
+                                left = end.X;
+                                top = start.Y;
+                                right = start.X;
+                                bottom = end.Y;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        right = start.X;
+                        // start 4 end 2
+                        if (end.Y <= center.Y)
+                            top = end.Y;
+                        else
+                        {
+                            // start 4 end 3
+                            left = end.X;
+                            top = Math.Min(start.Y, end.Y);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (start.Y <= center.Y)
+                {
+                    if (end.X >= center.X)
+                    {
+                        left = start.X;
+                        // start 2 end 1
+                        if (end.Y <= center.Y)
+                        {
+                            right = end.X;
+                            bottom = Math.Max(start.Y, end.Y);
+                        }
+                        // start 2 end 4
+                        else bottom = end.Y;
+                    }
+                    else
+                    {
+                        // start 2 end 2
+                        if (end.Y <= center.Y)
+                        {
+                            if (start.X < end.X)
+                            {
+                                left = start.X;
+                                top = end.Y;
+                                right = end.X;
+                                bottom = start.Y;
+                            }
+                        }
+                        // start 2 end 3
+                        else left = Math.Min(start.X, end.X);
+                    }
+                }
+                else
+                {
+                    if (end.X >= center.X)
+                    {
+                        // start 3 end 1
+                        if (end.Y <= center.Y)
+                        {
+                            right = end.X;
+                            bottom = start.Y;
+                        }
+                        // start 3 end 4
+                        else bottom = Math.Max(start.Y, end.Y);
+                    }
+                    else
+                    {
+                        // start 3 end 2
+                        if (end.Y <= center.Y)
+                        {
+                            top = end.Y;
+                            right = Math.Max(start.X, end.X);
+                            bottom = start.Y;
+                        }
+                        else
+                        {
+                            // start 3 end 3
+                            if (end.X < start.X)
+                            {
+                                left = end.X;
+                                top = end.Y;
+                                right = start.X;
+                                bottom = start.Y;
+                            }
+                        }
+                    }
+                }
+            }
+            return new Int32Rect(left - h, top - h, right - left + thickness, bottom - top + thickness);
         }
 
         public static void CalcLineABC(Int32Point p1, Int32Point p2, out Int32 a, out Int32 b, out Int32 c)
@@ -163,7 +326,7 @@ namespace YDrawing2D
             }
             else
             {
-                var len = thickness / 2;
+                var len = thickness >> 1;
                 x = Math.Max(bounds.X, x - len);
                 y = Math.Max(bounds.Y, y - len);
                 int width = Math.Min(x + thickness, bounds.Width + bounds.X) - x;
@@ -188,7 +351,7 @@ namespace YDrawing2D
             }
             else
             {
-                var len = thickness / 2;
+                var len = thickness >> 1;
                 int left = Math.Max(bounds.X, x - len);
                 int top = Math.Max(bounds.Y, y - len);
                 int right = Math.Min(left + thickness - 1, bounds.Width + bounds.X - 1);
@@ -384,6 +547,11 @@ namespace YDrawing2D
             }
         }
 
+        public static IEnumerable<Int32Point> CalcArcPoints(Int32Point center, Int32Point start, Int32Point end, Int32 radius)
+        {
+            return ArcContains(center, start, end, CalcCiclePoints(center, radius));
+        }
+
         private static IEnumerable<Int32Point> GenCiclePoints(Int32Point origin)
         {
             yield return origin;
@@ -394,6 +562,236 @@ namespace YDrawing2D
             yield return new Int32Point(-origin.Y, origin.X);
             yield return new Int32Point(-origin.X, -origin.Y);
             yield return new Int32Point(-origin.Y, -origin.X);
+        }
+
+        internal static IEnumerable<Int32Point> ArcContains(Int32Point center, Int32Point start, Int32Point end, IEnumerable<Int32Point> points)
+        {
+            if (start.X >= center.X)
+            {
+                if (start.Y <= center.Y)
+                {
+                    if (end.X >= center.X)
+                    {
+                        // start 1 end 1
+                        if (end.Y <= center.Y)
+                        {
+                            if (start.X < end.X)
+                                return points.Where(p => p.X >= start.X && p.Y <= end.Y);
+                            else return points.Where(p => p.X <= end.X || p.Y >= start.Y);
+                        }
+                        else
+                        {
+                            // start 1 end 4
+                            return points.Where(p => p.X >= center.X && p.Y <= end.Y && p.Y >= start.Y);
+                        }
+                    }
+                    else
+                    {
+                        // start 1 end 2
+                        if (end.Y <= center.Y)
+                            return points.Where(p => p.X <= end.X || p.X >= start.X || p.Y >= center.X);
+                        else
+                        {
+                            // start 1 end 3
+                            return points.Where(p => !(p.X <= center.X && p.Y <= center.Y) && p.X >= end.X && p.Y >= start.Y);
+                        }
+                    }
+                }
+                else
+                {
+                    if (end.X >= center.X)
+                    {
+                        // start 4 end 1
+                        if (end.Y <= center.Y)
+                            return points.Where(p => p.Y <= end.Y || p.Y >= start.Y || p.X <= center.X);
+                        else
+                        {
+                            // start 4 end 4
+                            if (end.X < start.X)
+                                return points.Where(p => p.X >= end.X && p.Y >= start.Y);
+                            else return points.Where(p => p.X <= start.X || p.Y <= end.Y);
+                        }
+                    }
+                    else
+                    {
+                        // start 4 end 2
+                        if (end.Y <= center.Y)
+                            return points.Where(p => !(p.X >= center.X && p.Y <= center.Y) && p.X <= start.X && p.Y >= end.Y);
+                        else
+                        {
+                            // start 4 end 3
+                            return points.Where(p => p.Y >= center.Y && p.X <= start.X && p.X >= end.X);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (start.Y <= center.Y)
+                {
+                    if (end.X >= center.X)
+                    {
+                        // start 2 end 1
+                        if (end.Y <= center.Y)
+                            return points.Where(p => p.Y <= center.Y && p.X >= start.X && p.X <= end.X);
+                        // start 2 end 4
+                        else return points.Where(p => !(p.X <= center.X && p.Y >= center.Y) && p.X >= start.X && p.Y <= end.Y);
+                    }
+                    else
+                    {
+                        // start 2 end 2
+                        if (end.Y <= center.Y)
+                        {
+                            if (start.X < end.X)
+                                return points.Where(p => p.X <= end.X && p.Y <= start.Y);
+                            else return points.Where(p => p.X >= start.X || p.Y >= end.Y);
+                        }
+                        // start 2 end 3
+                        else return points.Where(p => p.Y <= start.Y || p.Y >= end.Y || p.X >= center.X);
+                    }
+                }
+                else
+                {
+                    if (end.X >= center.X)
+                    {
+                        // start 3 end 1
+                        if (end.Y <= center.Y)
+                        {
+                            return points.Where(p => !(p.X >= center.X && p.Y >= center.Y) && p.X <= start.X && p.Y <= end.Y);
+                        }
+                        // start 3 end 4
+                        else return points.Where(p => p.X <= start.X || p.X >= end.X || p.Y <= center.Y);
+                    }
+                    else
+                    {
+                        // start 3 end 2
+                        if (end.Y <= center.Y)
+                            return points.Where(p => p.X <= center.X && p.Y >= end.Y && p.Y <= start.Y);
+                        else
+                        {
+                            // start 3 end 3
+                            if (end.X < start.X)
+                                return points.Where(p => p.X <= start.X && p.Y >= end.Y);
+                            else return points.Where(p => p.X >= end.X || p.Y <= start.Y);
+                        }
+                    }
+                }
+            }
+        }
+
+        internal static bool IsPossibleArcContains(Int32Point center, Int32Point start, Int32Point end, Int32Point p)
+        {
+            if (start.X >= center.X)
+            {
+                if (start.Y <= center.Y)
+                {
+                    if (end.X >= center.X)
+                    {
+                        // start 1 end 1
+                        if (end.Y <= center.Y)
+                        {
+                            if (start.X < end.X)
+                                return true;
+                            else return p.X <= end.X || p.Y >= start.Y;
+                        }
+                        else
+                        {
+                            // start 1 end 4
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        // start 1 end 2
+                        if (end.Y <= center.Y)
+                            return p.X <= end.X || p.X >= start.X || p.Y >= center.X;
+                        else
+                        {
+                            // start 1 end 3
+                            return !(p.X <= center.X && p.Y <= center.Y) && p.X >= end.X && p.Y >= start.Y;
+                        }
+                    }
+                }
+                else
+                {
+                    if (end.X >= center.X)
+                    {
+                        // start 4 end 1
+                        if (end.Y <= center.Y)
+                            return p.Y <= end.Y || p.Y >= start.Y || p.X <= center.X;
+                        else
+                        {
+                            // start 4 end 4
+                            if (end.X < start.X)
+                                return true;
+                            else return p.X <= start.X || p.Y <= end.Y;
+                        }
+                    }
+                    else
+                    {
+                        // start 4 end 2
+                        if (end.Y <= center.Y)
+                            return !(p.X >= center.X && p.Y <= center.Y) && p.X <= start.X && p.Y >= end.Y;
+                        else
+                        {
+                            // start 4 end 3
+                            return true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (start.Y <= center.Y)
+                {
+                    if (end.X >= center.X)
+                    {
+                        // start 2 end 1
+                        if (end.Y <= center.Y)
+                            return true;
+                        // start 2 end 4
+                        else return !(p.X <= center.X && p.Y >= center.Y) && p.X >= start.X && p.Y <= end.Y;
+                    }
+                    else
+                    {
+                        // start 2 end 2
+                        if (end.Y <= center.Y)
+                        {
+                            if (start.X < end.X)
+                                return true;
+                            else return p.X >= start.X || p.Y >= end.Y;
+                        }
+                        // start 2 end 3
+                        else return p.Y <= start.Y || p.Y >= end.Y || p.X >= center.X;
+                    }
+                }
+                else
+                {
+                    if (end.X >= center.X)
+                    {
+                        // start 3 end 1
+                        if (end.Y <= center.Y)
+                        {
+                            return !(p.X >= center.X && p.Y >= center.Y) && p.X <= start.X && p.Y <= end.Y;
+                        }
+                        // start 3 end 4
+                        else return p.X <= start.X || p.X >= end.X || p.Y <= center.Y;
+                    }
+                    else
+                    {
+                        // start 3 end 2
+                        if (end.Y <= center.Y)
+                            return true;
+                        else
+                        {
+                            // start 3 end 3
+                            if (end.X < start.X)
+                                return true;
+                            else return p.X >= end.X || p.Y <= start.Y;
+                        }
+                    }
+                }
+            }
         }
 
         private static bool IsSameSymbol(int a, int b)
@@ -414,7 +812,7 @@ namespace YDrawing2D
         }
 
         #region Intersect
-        public static bool IsIntersect(Line line1, Line line2)
+        internal static bool IsIntersect(Line line1, Line line2)
         {
             bool isSameSymbol;
             var s1 = line2.A * line1.Start.X + line2.B * line1.Start.Y + line2.C;
@@ -444,7 +842,7 @@ namespace YDrawing2D
             return true;
         }
 
-        public static bool IsIntersect(Cicle cicle1, Cicle cicle2)
+        internal static bool IsIntersect(Cicle cicle1, Cicle cicle2)
         {
             var vec = cicle2.Center - cicle1.Center;
             var len = vec.Length;
@@ -455,7 +853,7 @@ namespace YDrawing2D
             return true;
         }
 
-        public static bool IsIntersect(Line line, Cicle cicle)
+        internal static bool IsIntersect(Line line, Cicle cicle)
         {
             var len = line.A * cicle.Center.X + line.B * cicle.Center.Y + line.C;
             if (len > cicle.Radius * line.Len)

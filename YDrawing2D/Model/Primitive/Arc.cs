@@ -8,30 +8,43 @@ using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
 {
-    internal struct Cicle : IPrimitive
+    /// <summary>
+    /// Default clockwise
+    /// </summary>
+    internal struct Arc : IPrimitive
     {
-        public Cicle(int thickness, int color, Int32Point center, Int32 radius)
+        public Arc(int thickness, int color, Int32Point start, Int32Point end, Int32Point center)
         {
+            _start = start;
+            _end = end;
             _center = center;
-            _radius = radius;
-            var _bounds = GeometryHelper.CalcBounds(center, radius, thickness);
+            _radius = (_start - _center).Length;
+            var _bounds = GeometryHelper.CalcBounds(center, start, end, _radius, thickness);
             _property = new PrimitiveProperty(_bounds, thickness, color);
         }
 
         public PrimitiveProperty Property { get { return _property; } }
         private PrimitiveProperty _property;
 
-        public PrimitiveType Type { get { return PrimitiveType.Cicle; } }
+        public PrimitiveType Type { get { return PrimitiveType.Arc; } }
 
         public Int32Point Center { get { return _center; } }
         private Int32Point _center;
+
+        public Int32Point Start { get { return _start; } }
+        private Int32Point _start;
+
+        public Int32Point End { get { return _end; } }
+        private Int32Point _end;
 
         public Int32 Radius { get { return _radius; } }
         private Int32 _radius;
 
         public bool HitTest(Int32Point p)
         {
-            return (p - _center).Length == _radius;
+            if (GeometryHelper.IsPossibleArcContains(_center, _start, _end, p))
+                return (p - _center).Length == _radius;
+            return false;
         }
 
         public bool IsIntersect(IPrimitive other)
@@ -40,9 +53,9 @@ namespace YDrawing2D.Model
             switch (other.Type)
             {
                 case PrimitiveType.Line:
-                    return GeometryHelper.IsIntersect((Line)other, this);
+                    //return GeometryHelper.IsIntersect(this, (Line)other);
                 case PrimitiveType.Cicle:
-                    return GeometryHelper.IsIntersect(this, (Cicle)other);
+                    //return GeometryHelper.IsIntersect(this, (Cicle)other);
                 case PrimitiveType.Arc:
                     break;
             }

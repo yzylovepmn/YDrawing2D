@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -84,29 +85,35 @@ namespace YDrawing2D
         public double ScaleY { get { return _scaleY; } }
         private double _scaleY = 1;
 
-        public void Translate(double offsetX, double offsetY)
+        public void Translate(double offsetX, double offsetY, bool toUpdate = true)
         {
             var m = _transform.Matrix;
             m.Translate(offsetX, offsetY);
             _transform.Matrix = m;
+            if (toUpdate)
+                UpdateAll();
         }
 
-        public void ScaleAt(double scaleX, double scaleY, double centerX, double centerY)
+        public void ScaleAt(double scaleX, double scaleY, double centerX, double centerY, bool toUpdate = true)
         {
             _scaleX *= scaleX;
             _scaleY *= scaleY;
             var m = _transform.Matrix;
             m.ScaleAt(scaleX, scaleY, centerX, centerY);
             _transform.Matrix = m;
+            if (toUpdate)
+                UpdateAll();
         }
 
-        public void Scale(double scaleX, double scaleY)
+        public void Scale(double scaleX, double scaleY, bool toUpdate = true)
         {
             _scaleX *= scaleX;
             _scaleY *= scaleY;
             var m = _transform.Matrix;
             m.Scale(scaleX, scaleY);
             _transform.Matrix = m;
+            if (toUpdate)
+                UpdateAll();
         }
 
         /// <summary>
@@ -152,7 +159,6 @@ namespace YDrawing2D
         #region Render
         /// <summary>
         /// Update visual object;
-        /// This method can only be called when adding this <param name="visual"/>, otherwise call <see cref="UpdateAll"/>
         /// </summary>
         /// <param name="visual">the visual need to update</param>
         public void Update(PresentationVisual visual, bool isSingle = false)
@@ -162,13 +168,11 @@ namespace YDrawing2D
             _ClearVisual(visual);
 
             if (!isSingle)
-                foreach (var _visual in _visuals.Where(other => other.IsIntersectWith(visual)))
-                    if (_visual != visual)
-                        _Update(_visual);
+                foreach (var _visual in _visuals.Where(other => other != visual && other.IsIntersectWith(visual)))
+                    _Update(_visual);
 
             _Update(visual);
             ExitRender();
-            InvalidateVisual();
         }
 
         /// <summary>
@@ -176,15 +180,11 @@ namespace YDrawing2D
         /// </summary>
         public void UpdateAll()
         {
-            ClearBuffer(_backColorValue);
-            if (_visuals.Count > 0)
-            {
-                EnterRender();
-                foreach (var visual in _visuals)
-                    _Update(visual);
-                ExitRender();
-                InvalidateVisual();
-            }
+            EnterRender();
+            _ClearBuffer(_backColorValue);
+            foreach (var visual in _visuals)
+                _Update(visual);
+            ExitRender();
         }
 
         internal void _Update(PresentationVisual visual)
@@ -203,6 +203,10 @@ namespace YDrawing2D
                     case PrimitiveType.Cicle:
                         var cicle = (Cicle)primitive;
                         DrawCicle(cicle.Center, cicle.Radius, cicle.Property);
+                        break;
+                    case PrimitiveType.Arc:
+                        var arc = (Arc)primitive;
+                        DrawArc(arc.Center, arc.Start, arc.End, arc.Radius, arc.Property);
                         break;
                 }
                 UpdateBounds(GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds));
@@ -224,14 +228,32 @@ namespace YDrawing2D
                         var cicle = (Cicle)primitive;
                         DrawCicle(cicle.Center, cicle.Radius, cicle.Property, true);
                         break;
+                    case PrimitiveType.Arc:
+                        var arc = (Arc)primitive;
+                        DrawArc(arc.Center, arc.Start, arc.End, arc.Radius, arc.Property);
+                        break;
                 }
                 UpdateBounds(GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds));
             }
         }
 
-        internal void ClearBuffer(int color)
+        /// <summary>
+        /// Clear panel buffer with the specified color
+        /// </summary>
+        /// <param name="color">The color to clear</param>
+        public void ClearBuffer(int color)
         {
             EnterRender();
+            _ClearBuffer(color);
+            ExitRender();
+        }
+
+        /// <summary>
+        /// Clear panel buffer with the specified color(Internal call)
+        /// </summary>
+        /// <param name="color">The color to clear</param>
+        internal void _ClearBuffer(int color)
+        {
             var start = _image.BackBuffer;
             for (int i = 0; i < _bounds.Height; i++)
             {
@@ -242,7 +264,6 @@ namespace YDrawing2D
                 }
             }
             UpdateBounds(_bounds);
-            ExitRender();
         }
 
         /// <summary>
@@ -279,6 +300,14 @@ namespace YDrawing2D
             var cicle = GeometryHelper.CalcCiclePoints(center, radius);
 
             foreach (var point in cicle)
+                DrawPoint(point, useBackColor ? _backColorValue : property.Color, property.Thickness);
+        }
+
+        internal void DrawArc(Int32Point center, Int32Point start, Int32Point end, Int32 radius, PrimitiveProperty property, bool useBackColor = false)
+        {
+            var arc = GeometryHelper.CalcArcPoints(center, start, end, radius);
+
+            foreach (var point in arc)
                 DrawPoint(point, useBackColor ? _backColorValue : property.Color, property.Thickness);
         }
 
