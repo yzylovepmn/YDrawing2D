@@ -19,6 +19,7 @@ namespace YDrawing2D.Model
     {
         Line,
         Cicle,
-        Arc
+        Arc,
+        Spline
     }
 }

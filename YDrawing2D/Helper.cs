@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
+using YDrawing2D.Extensions;
 using YDrawing2D.Model;
 using YDrawing2D.Util;
 using YDrawing2D.View;
@@ -97,13 +98,19 @@ namespace YDrawing2D
 
     public class VisualHelper
     {
-        public static int HitTestThickness = 5;
+        public static int HitTestThickness;
+        internal static List<Int32Point> HitTestPoints;
+
+        static VisualHelper()
+        {
+            HitTestThickness = 5;
+        }
 
         public static PresentationVisual HitTest(PresentationPanel panel, Point p)
         {
             var _p = GeometryHelper.ConvertToInt32Point(p, panel.DPIRatio);
 
-            var points = GeometryHelper.CalcHitTestPoints(_p.X, _p.Y, HitTestThickness, panel.Bounds);
+            var points = GeometryHelper.CalcHitTestPoints(_p.X, _p.Y, panel.Bounds);
 
             int color = default(int);
             foreach (var point in points)
@@ -389,32 +396,40 @@ namespace YDrawing2D
             }
         }
 
-        public static IEnumerable<Int32Point> CalcHitTestPoints(int x, int y, int thickness, Int32Rect bounds)
+        public static IEnumerable<Int32Point> CalcHitTestPoints(int x, int y, Int32Rect bounds)
         {
-            if (thickness == 1)
+            if (VisualHelper.HitTestPoints == null)
+                VisualHelper.HitTestPoints = _CalcHitTestPoints().ToList();
+            return VisualHelper.HitTestPoints.Select(p => new Int32Point(p.X + x, p.Y + y)).Where(p => bounds.Contains(p));
+        }
+
+        private static IEnumerable<Int32Point> _CalcHitTestPoints()
+        {
+            int x = 0, y = 0;
+            if (VisualHelper.HitTestThickness == 1)
             {
                 yield return new Int32Point(x, y);
                 yield break;
             }
             else
             {
-                var len = thickness >> 1;
-                int left = Math.Max(bounds.X, x - len);
-                int top = Math.Max(bounds.Y, y - len);
-                int right = Math.Min(left + thickness - 1, bounds.Width + bounds.X - 1);
-                int bottom = Math.Min(top + thickness - 1, bounds.Height + bounds.Y - 1);
+                var len = VisualHelper.HitTestThickness >> 1;
+                //int left = Math.Max(bounds.X, x - len);
+                //int top = Math.Max(bounds.Y, y - len);
+                //int right = Math.Min(left + VisualHelper.HitTestThickness - 1, bounds.Width + bounds.X - 1);
+                //int bottom = Math.Min(top + VisualHelper.HitTestThickness - 1, bounds.Height + bounds.Y - 1);
                 int curx, cury;
                 for (int i = 0; i <= len; i++)
                 {
                     curx = x - i;
                     cury = y;
-                    if (curx >= left)
+                    //if (curx >= left)
                         yield return new Int32Point(curx, cury);
                     if (i != 0)
                     {
                         curx = x + i;
                         cury = y;
-                        if (curx <= right)
+                        //if (curx <= right)
                             yield return new Int32Point(curx, cury);
                     }
 
@@ -424,11 +439,11 @@ namespace YDrawing2D
                         curx = x - i;
 
                         cury = y - j;
-                        if (curx >= left && cury >= top)
+                        //if (curx >= left && cury >= top)
                             yield return new Int32Point(curx, cury);
 
                         cury = y + j;
-                        if (curx >= left && cury <= bottom)
+                        //if (curx >= left && cury <= bottom)
                             yield return new Int32Point(curx, cury);
 
                         if (i != 0)
@@ -436,11 +451,11 @@ namespace YDrawing2D
                             curx = x + i;
 
                             cury = y - j;
-                            if (curx >= left && cury >= top)
+                            //if (curx >= left && cury >= top)
                                 yield return new Int32Point(curx, cury);
 
                             cury = y + j;
-                            if (curx >= left && cury <= bottom)
+                            //if (curx >= left && cury <= bottom)
                                 yield return new Int32Point(curx, cury);
                         }
                     }
@@ -452,11 +467,11 @@ namespace YDrawing2D
                             curx = x - j;
 
                             cury = y - i;
-                            if (curx >= left && cury >= top)
+                            //if (curx >= left && cury >= top)
                                 yield return new Int32Point(curx, cury);
 
                             cury = y + i;
-                            if (curx >= left && cury <= bottom)
+                            //if (curx >= left && cury <= bottom)
                                 yield return new Int32Point(curx, cury);
 
                             if (j != 0)
@@ -464,11 +479,11 @@ namespace YDrawing2D
                                 curx = x + j;
 
                                 cury = y - i;
-                                if (curx <= right && cury >= top)
+                                //if (curx <= right && cury >= top)
                                     yield return new Int32Point(curx, cury);
 
                                 cury = y + i;
-                                if (curx <= right && cury <= bottom)
+                                //if (curx <= right && cury <= bottom)
                                     yield return new Int32Point(curx, cury);
                             }
                         }
@@ -990,6 +1005,74 @@ namespace YDrawing2D
                 var len2 = (line.End - arc.Center).LengthSquared - radiusSquared;
                 return !IsAllNegative(len1, len2);
             }
+        }
+        #endregion
+
+        #region Spline
+        public static Point ComputePoint(Spline spline, double u)
+        {
+            if (u > spline.Domain) throw new ArgumentOutOfRangeException();
+            int i = spline.Degree;
+            while (spline.Knots[i + 1] < u) i++;
+            int start = i - spline.Degree;
+            var p = new Point();
+            double down = 0;
+            if (spline.Weights.Count > 0)
+            {
+                for (int j = start; j <= i; j++)
+                {
+                    double value = _GetBaseFuncValue(spline, u, j, spline.Degree);
+                    double downSpan = spline.Weights[j] * value;
+                    down += downSpan;
+                    p.X += downSpan * spline.ControlPoints[j].X;
+                    p.Y += downSpan * spline.ControlPoints[j].Y;
+                }
+                p.X /= down;
+                p.Y /= down;
+            }
+            else
+            {
+                for (int j = start; j <= i; j++)
+                {
+                    double value = _GetBaseFuncValue(spline, u, j, spline.Degree);
+                    down += value;
+                    p.X += value * spline.ControlPoints[j].X;
+                    p.Y += value * spline.ControlPoints[j].Y;
+                }
+                p.X /= down;
+                p.Y /= down;
+            }
+            return p;
+        }
+
+        private static double _GetBaseFuncValue(Spline spline, double u, int pbase, int rank)
+        {
+            if (rank > 0)
+            {
+                return _GetRatioLeft(spline, u, pbase, rank) * _GetBaseFuncValue(spline, u, pbase, rank - 1)
+                    + _GetRatioRight(spline, u, pbase, rank) * _GetBaseFuncValue(spline, u, pbase + 1, rank - 1);
+            }
+            else
+            {
+                if (u >= spline.Knots[pbase] && u <= spline.Knots[pbase + 1]) return 1;
+                return 0;
+            }
+        }
+
+        private static double _GetRatioLeft(Spline spline, double u, int pbase, int rank)
+        {
+            double up = u - spline.Knots[pbase];
+            double down = spline.Knots[pbase + rank] - spline.Knots[pbase];
+            if (down < 0.001) return 0;
+            return up / down;
+        }
+
+        private static double _GetRatioRight(Spline spline, double u, int pbase, int rank)
+        {
+            double up = spline.Knots[pbase + rank + 1] - u;
+            double down = spline.Knots[pbase + rank + 1] - spline.Knots[pbase + 1];
+            if (down < 0.001) return 0;
+            return up / down;
         }
         #endregion
     }

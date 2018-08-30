@@ -28,8 +28,8 @@ namespace YDrawing2DTest
             InitializeComponent();
             Loaded += OnLoaded;
         }
-        public static DrawingPen WhitePen = new DrawingPen(1, Colors.White, new double[] { 1, 3 });
-        public static DrawingPen ActivePen = new DrawingPen(1, Colors.Blue, new double[] { 1, 3 });
+        public static DrawingPen WhitePen = new DrawingPen(1, Colors.White, new double[] { 1, 2 });
+        public static DrawingPen ActivePen = new DrawingPen(1, Colors.Blue, new double[] { 1, 2 });
         private static PresentationPanel _panel;
         public static PresentationVisual ActiveVisual
         {
