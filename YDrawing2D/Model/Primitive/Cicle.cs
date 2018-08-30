@@ -8,14 +8,14 @@ using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
 {
-    internal struct Cicle : IPrimitive
+    public struct Cicle : IPrimitive
     {
-        public Cicle(int thickness, int color, Int32Point center, Int32 radius)
+        internal Cicle(Int32Point center, Int32 radius, _DrawingPen pen)
         {
             _center = center;
             _radius = radius;
-            var _bounds = GeometryHelper.CalcBounds(center, radius, thickness);
-            _property = new PrimitiveProperty(_bounds, thickness, color);
+            var _bounds = GeometryHelper.CalcBounds(center, radius, pen.Thickness);
+            _property = new PrimitiveProperty(pen, _bounds);
         }
 
         public PrimitiveProperty Property { get { return _property; } }
@@ -31,7 +31,7 @@ namespace YDrawing2D.Model
 
         public bool HitTest(Int32Point p)
         {
-            return (p - _center).Length == _radius;
+            return Math.Abs((p - _center).Length - _radius) <= _property.Pen.Thickness;
         }
 
         public bool IsIntersect(IPrimitive other)
@@ -44,7 +44,7 @@ namespace YDrawing2D.Model
                 case PrimitiveType.Cicle:
                     return GeometryHelper.IsIntersect(this, (Cicle)other);
                 case PrimitiveType.Arc:
-                    break;
+                    return GeometryHelper.IsIntersect(this, (Arc)other);
             }
             return true;
         }

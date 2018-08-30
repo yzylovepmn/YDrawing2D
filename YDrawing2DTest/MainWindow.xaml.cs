@@ -28,7 +28,8 @@ namespace YDrawing2DTest
             InitializeComponent();
             Loaded += OnLoaded;
         }
-
+        public static DrawingPen WhitePen = new DrawingPen(1, Colors.White, new double[] { 1, 3 });
+        public static DrawingPen ActivePen = new DrawingPen(1, Colors.Blue, new double[] { 1, 3 });
         private static PresentationPanel _panel;
         public static PresentationVisual ActiveVisual
         {
@@ -58,13 +59,12 @@ namespace YDrawing2DTest
             {
                 //_panel.AddVisual(new Line(new Point(200, i), new Point(600, i)));
                 //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
-                //_panel.AddVisual(new Line(new Point(0, i), new Point(800, 800 - i)));
-                //_panel.AddVisual(new Line(new Point(0, 800 - i), new Point(800, i)));
                 //_panel.AddVisual(new Cicle(new Point(400, 400), 20 + i));
+                //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
             }
-            //_panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
-            //_panel.AddVisual(new Cicle(new Point(400, 400), 200));
-            _panel.AddVisual(new Arc(new Point(400, 400), 90, 185, 200));
+            _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
+            _panel.AddVisual(new Cicle(new Point(200, 300), 200));
+            _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200));
             _panel.UpdateAll();
             _panel.MouseMove += _panel_MouseMove;
             _panel.MouseWheel += _panel_MouseWheel;
@@ -121,8 +121,8 @@ namespace YDrawing2DTest
         protected override void Draw(IContext context)
         {
             if (this == MainWindow.ActiveVisual)
-                context.DrawLine(_start, _end, 2, Colors.Red);
-            else context.DrawLine(_start, _end, 1, Colors.White);
+                context.DrawLine(_start, _end, MainWindow.ActivePen);
+            else context.DrawLine(_start, _end, MainWindow.WhitePen);
         }
     }
 
@@ -140,8 +140,8 @@ namespace YDrawing2DTest
         protected override void Draw(IContext context)
         {
             if (this == MainWindow.ActiveVisual)
-                context.DrawCicle(_center, _radius, 2, Colors.Blue);
-            else context.DrawCicle(_center, _radius, 1, Colors.White);
+                context.DrawCicle(_center, _radius, MainWindow.ActivePen);
+            else context.DrawCicle(_center, _radius, MainWindow.WhitePen);
         }
     }
 
@@ -156,17 +156,39 @@ namespace YDrawing2DTest
             _isClockwise = isClockwise;
         }
 
+        public Arc(Point start, Point end, double radius, bool isClockwise, bool isLargeAngle)
+        {
+            _start = start;
+            _end = end;
+            _radius = radius;
+            _isClockwise = isClockwise;
+            _isLargeAngle = isLargeAngle;
+        }
+
+        private Point? _start;
+        private Point? _end;
         private Point _center;
         private double _radius;
         private double _startAngle;
         private double _endAngle;
         private bool _isClockwise;
+        private bool _isLargeAngle;
 
         protected override void Draw(IContext context)
         {
-            if (this == MainWindow.ActiveVisual)
-                context.DrawArc(_center, _radius, _startAngle, _endAngle, _isClockwise, 2, Colors.Blue);
-            else context.DrawArc(_center, _radius, _startAngle, _endAngle, _isClockwise, 1, Colors.White);
+            if (!_start.HasValue)
+            {
+                if (this == MainWindow.ActiveVisual)
+                    context.DrawArc(_center, _radius, _startAngle, _endAngle, _isClockwise, MainWindow.ActivePen);
+                else context.DrawArc(_center, _radius, _startAngle, _endAngle, _isClockwise, MainWindow.WhitePen);
+            }
+            else
+            {
+                context.BeginFigure(_start.Value);
+                if (this == MainWindow.ActiveVisual)
+                    context.ArcTo(_end.Value, _radius, _isLargeAngle, _isClockwise, MainWindow.ActivePen);
+                else context.ArcTo(_end.Value, _radius, _isLargeAngle, _isClockwise, MainWindow.WhitePen);
+            }
         }
     }
 }

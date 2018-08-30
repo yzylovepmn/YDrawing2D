@@ -45,7 +45,7 @@ namespace YDrawing2D.View
         internal bool Contains(Int32Point p, Int32 color)
         {
             foreach (var primitive in _context.Primitives)
-                if (primitive.Property.Color == color
+                if (primitive.Property.Pen.Color == color
                     && primitive.Property.Bounds.Contains(p)
                     && primitive.HitTest(p))
                     return true;

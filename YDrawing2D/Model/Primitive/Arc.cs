@@ -11,16 +11,16 @@ namespace YDrawing2D.Model
     /// <summary>
     /// Default clockwise
     /// </summary>
-    internal struct Arc : IPrimitive
+    public struct Arc : IPrimitive
     {
-        public Arc(int thickness, int color, Int32Point start, Int32Point end, Int32Point center)
+        internal Arc(Int32Point start, Int32Point end, Int32Point center, _DrawingPen pen)
         {
             _start = start;
             _end = end;
             _center = center;
             _radius = (_start - _center).Length;
-            var _bounds = GeometryHelper.CalcBounds(center, start, end, _radius, thickness);
-            _property = new PrimitiveProperty(_bounds, thickness, color);
+            var _bounds = GeometryHelper.CalcBounds(center, start, end, _radius, pen.Thickness);
+            _property = new PrimitiveProperty(pen, _bounds);
         }
 
         public PrimitiveProperty Property { get { return _property; } }
@@ -43,7 +43,7 @@ namespace YDrawing2D.Model
         public bool HitTest(Int32Point p)
         {
             if (GeometryHelper.IsPossibleArcContains(_center, _start, _end, p))
-                return (p - _center).Length == _radius;
+                return Math.Abs((p - _center).Length - _radius) <= _property.Pen.Thickness;
             return false;
         }
 
@@ -53,11 +53,11 @@ namespace YDrawing2D.Model
             switch (other.Type)
             {
                 case PrimitiveType.Line:
-                    //return GeometryHelper.IsIntersect(this, (Line)other);
+                    return GeometryHelper.IsIntersect((Line)other, this);
                 case PrimitiveType.Cicle:
-                    //return GeometryHelper.IsIntersect(this, (Cicle)other);
+                    return GeometryHelper.IsIntersect((Cicle)other, this);
                 case PrimitiveType.Arc:
-                    break;
+                    return GeometryHelper.IsIntersect(this, (Arc)other);
             }
             return true;
         }

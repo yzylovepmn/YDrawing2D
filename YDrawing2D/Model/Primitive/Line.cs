@@ -9,16 +9,16 @@ using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
 {
-    internal struct Line : IPrimitive
+    public struct Line : IPrimitive
     {
-        public Line(int thickness, int color, Int32Point start, Int32Point end)
+        internal Line(Int32Point start, Int32Point end, _DrawingPen pen)
         {
             _start = start;
             _end = end;
             GeometryHelper.CalcLineABC(_start, _end, out _a, out _b, out _c);
             _len = (int)Math.Sqrt(_a * _a + _b * _b);
-            var _bounds = GeometryHelper.CalcBounds(thickness, start, end);
-            _property = new PrimitiveProperty(_bounds, thickness, color);
+            var _bounds = GeometryHelper.CalcBounds(pen.Thickness, start, end);
+            _property = new PrimitiveProperty(pen, _bounds);
         }
 
         public PrimitiveType Type { get { return PrimitiveType.Line; } }
@@ -55,7 +55,7 @@ namespace YDrawing2D.Model
                 case PrimitiveType.Cicle:
                     return GeometryHelper.IsIntersect(this, (Cicle)other);
                 case PrimitiveType.Arc:
-                    break;
+                    return GeometryHelper.IsIntersect(this, (Arc)other);
             }
             return true;
         }

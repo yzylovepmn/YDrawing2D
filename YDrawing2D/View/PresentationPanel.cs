@@ -190,26 +190,12 @@ namespace YDrawing2D
         internal void _Update(PresentationVisual visual)
         {
             visual.Update();
-            // TODO
             foreach (var primitive in visual.Context.Primitives)
             {
                 if (!_bounds.IsIntersectWith(primitive.Property.Bounds)) continue;
-                switch (primitive.Type)
-                {
-                    case PrimitiveType.Line:
-                        var line = (Line)primitive;
-                        DrawLine(line.Start, line.End, line.Property);
-                        break;
-                    case PrimitiveType.Cicle:
-                        var cicle = (Cicle)primitive;
-                        DrawCicle(cicle.Center, cicle.Radius, cicle.Property);
-                        break;
-                    case PrimitiveType.Arc:
-                        var arc = (Arc)primitive;
-                        DrawArc(arc.Center, arc.Start, arc.End, arc.Radius, arc.Property);
-                        break;
-                }
-                UpdateBounds(GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds));
+                var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
+                _DrawPrimitive(primitive, bounds);
+                _UpdateBounds(bounds);
             }
         }
 
@@ -218,22 +204,9 @@ namespace YDrawing2D
             foreach (var primitive in visual.Context.Primitives)
             {
                 if (!_bounds.IsIntersectWith(primitive.Property.Bounds)) continue;
-                switch (primitive.Type)
-                {
-                    case PrimitiveType.Line:
-                        var line = (Line)primitive;
-                        DrawLine(line.Start, line.End, line.Property, true);
-                        break;
-                    case PrimitiveType.Cicle:
-                        var cicle = (Cicle)primitive;
-                        DrawCicle(cicle.Center, cicle.Radius, cicle.Property, true);
-                        break;
-                    case PrimitiveType.Arc:
-                        var arc = (Arc)primitive;
-                        DrawArc(arc.Center, arc.Start, arc.End, arc.Radius, arc.Property);
-                        break;
-                }
-                UpdateBounds(GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds));
+                var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
+                _DrawPrimitive(primitive, bounds, true);
+                _UpdateBounds(bounds);
             }
         }
 
@@ -259,11 +232,11 @@ namespace YDrawing2D
             {
                 for (int j = 0; j < _bounds.Width; j++)
                 {
-                    DrawPixel(start, color);
+                    _DrawPixel(start, color);
                     start += GeometryHelper.PixelByteLength;
                 }
             }
-            UpdateBounds(_bounds);
+            _UpdateBounds(_bounds);
         }
 
         /// <summary>
@@ -282,60 +255,47 @@ namespace YDrawing2D
             _image.Unlock();
         }
 
-        internal void UpdateBounds(Int32Rect bounds)
+        private void _UpdateBounds(Int32Rect bounds)
         {
             _image.AddDirtyRect(bounds);
         }
 
-        internal void DrawLine(Int32Point start, Int32Point end, PrimitiveProperty property, bool useBackColor = false)
+        private void _DrawPrimitive(IPrimitive primitive, Int32Rect bounds, bool isClear = false)
         {
-            var line = GeometryHelper.CalcLinePoints(start, end);
+            IEnumerable<Int32Point> points;
+            if (primitive.Property.Pen.Dashes == null)
+                points = GeometryHelper.CalcPrimitivePoints(primitive).Where(p => bounds.Contains(p));
+            else points = Helper.FilterWithDashes(GeometryHelper.CalcPrimitivePoints(primitive), primitive.Property.Pen.Dashes).Where(p => bounds.Contains(p));
 
-            foreach (var point in line)
-                DrawPoint(point, useBackColor ? _backColorValue : property.Color, property.Thickness);
+            if (isClear)
+                foreach (var point in points)
+                    _DrawPoint(point, _backColorValue, primitive.Property.Pen.Thickness);
+            else foreach (var point in points)
+                    _DrawPoint(point, primitive.Property.Pen.Color, primitive.Property.Pen.Thickness);
         }
 
-        internal void DrawCicle(Int32Point center, Int32 radius, PrimitiveProperty property, bool useBackColor = false)
+        private void _DrawPoint(Int32Point pos, int color, int thickness = 1)
         {
-            var cicle = GeometryHelper.CalcCiclePoints(center, radius);
-
-            foreach (var point in cicle)
-                DrawPoint(point, useBackColor ? _backColorValue : property.Color, property.Thickness);
-        }
-
-        internal void DrawArc(Int32Point center, Int32Point start, Int32Point end, Int32 radius, PrimitiveProperty property, bool useBackColor = false)
-        {
-            var arc = GeometryHelper.CalcArcPoints(center, start, end, radius);
-
-            foreach (var point in arc)
-                DrawPoint(point, useBackColor ? _backColorValue : property.Color, property.Thickness);
-        }
-
-        internal void DrawPoint(Int32Point pos, int color, int thickness = 1)
-        {
-            if (!_bounds.Contains(pos))
-                return;
-
             var points = GeometryHelper.CalcPositions(pos.X, pos.Y, Offset, Stride, thickness, _bounds);
 
             foreach (var point in points)
-                DrawPixel(point, color);
+                _DrawPixel(point, color);
         }
 
-        unsafe private void DrawPixel(IntPtr ptr, int color)
+        unsafe private void _DrawPixel(IntPtr ptr, int color)
         {
             *((int*)ptr) = color;
         }
 
-        unsafe internal int GetColor(Int32 x, Int32 y)
+        internal int GetColor(Int32 x, Int32 y)
         {
             var start = _image.BackBuffer;
             start += y * Stride;
             start += x * GeometryHelper.PixelByteLength;
-            return GetColor(start);
+            return _GetPixel(start);
         }
 
-        unsafe internal int GetColor(IntPtr ptr)
+        unsafe private int _GetPixel(IntPtr ptr)
         {
             return *((int*)ptr);
         }

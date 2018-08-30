@@ -5,16 +5,16 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
 {
     public struct PrimitiveProperty
     {
-        public PrimitiveProperty(Int32Rect bounds, int thickness, int color)
+        internal PrimitiveProperty(_DrawingPen pen, Int32Rect bounds)
         {
+            _pen = pen;
             _bounds = bounds;
-            _thickness = thickness;
-            _color = color;
         }
 
         /// <summary>
@@ -24,15 +24,9 @@ namespace YDrawing2D.Model
         private Int32Rect _bounds;
 
         /// <summary>
-        /// Brush thickness of the primitive
+        /// Pen of the primitive
         /// </summary>
-        public int Thickness { get { return _thickness; } }
-        private int _thickness;
-
-        /// <summary>
-        /// Brush color of the primitive
-        /// </summary>
-        public int Color { get { return _color; } }
-        private int _color;
+        public _DrawingPen Pen { get { return _pen; } }
+        private _DrawingPen _pen;
     }
 }

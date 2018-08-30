@@ -53,8 +53,9 @@
     <Compile Include="Model\Primitive\Cicle.cs" />
     <Compile Include="Model\Primitive\Primitive.cs" />
     <Compile Include="Model\Primitive\Line.cs" />
-    <Compile Include="PresentationPanel.cs" />
+    <Compile Include="View\PresentationPanel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Util\DrawingPen.cs" />
     <Compile Include="Util\Int32Point.cs" />
     <Compile Include="Util\Int32Vector.cs" />
     <Compile Include="View\PresentationContext.cs" />
