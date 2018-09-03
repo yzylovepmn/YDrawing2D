@@ -28,8 +28,8 @@ namespace YDrawing2DTest
             InitializeComponent();
             Loaded += OnLoaded;
         }
-        public static DrawingPen WhitePen = new DrawingPen(1, Colors.White, new double[] { 1, 2 });
-        public static DrawingPen ActivePen = new DrawingPen(1, Colors.Blue, new double[] { 1, 2 });
+        public static DrawingPen WhitePen = new DrawingPen(1, Colors.White);
+        public static DrawingPen ActivePen = new DrawingPen(1, Colors.Blue);
         private static PresentationPanel _panel;
         public static PresentationVisual ActiveVisual
         {
@@ -43,7 +43,7 @@ namespace YDrawing2DTest
                     if (old != null)
                         _panel.Update(old);
                     if (_visual != null)
-                        _panel.MoveToTop(_visual, true);
+                        _panel.Update(_visual);
                     //_panel.UpdateAll();
                 }
             }
@@ -55,17 +55,18 @@ namespace YDrawing2DTest
             var len = Math.Max(ActualWidth, ActualHeight);
             _panel = new PresentationPanel(len, len, 96, 96, Colors.Black);
             Content = _panel;
-            for (int i = 0; i < 400; i++)
+            var r = new Random(5);
+            for (int i = 0; i < 20000; i++)
             {
                 //_panel.AddVisual(new Line(new Point(200, i), new Point(600, i)));
                 //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
-                //_panel.AddVisual(new Cicle(new Point(400, 400), 20 + i));
+                _panel.AddVisual(new Cicle(new Point(400, 400), i));
                 //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
             }
-            _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
-            _panel.AddVisual(new Cicle(new Point(200, 300), 200));
-            _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200));
-            _panel.UpdateAll();
+            //_panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
+            //_panel.AddVisual(new Cicle(new Point(200, 300), 200));
+            //_panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200));
+            _panel.UpdateAllAsync();
             _panel.MouseMove += _panel_MouseMove;
             _panel.MouseWheel += _panel_MouseWheel;
             _panel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;

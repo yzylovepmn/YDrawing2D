@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using YDrawing2D.Extensions;
@@ -138,7 +139,7 @@ namespace YDrawing2D
         /// </summary>
         public const int PixelByteLength = 4;
 
-        public static Point ConvertWithTransform(Point p, double height, Transform transform)
+        public static Point ConvertWithTransform(Point p, double height, Matrix transform)
         {
             return transform.Transform(new Point(p.X, height - p.Y));
         }
@@ -507,6 +508,26 @@ namespace YDrawing2D
                     return _CalcArcPoints(arc.Center, arc.Start, arc.End, arc.Radius);
             }
             return null;
+        }
+
+        public async static Task<IEnumerable<Int32Point>> CalcPrimitivePointsAsync(IPrimitive primitive)
+        {
+            return await Task.Factory.StartNew(() => 
+            {
+                switch (primitive.Type)
+                {
+                    case PrimitiveType.Line:
+                        var line = (Line)primitive;
+                        return _CalcLinePoints(line.Start, line.End);
+                    case PrimitiveType.Cicle:
+                        var cicle = (Cicle)primitive;
+                        return _CalcCiclePoints(cicle.Center, cicle.Radius);
+                    case PrimitiveType.Arc:
+                        var arc = (Arc)primitive;
+                        return _CalcArcPoints(arc.Center, arc.Start, arc.End, arc.Radius);
+                }
+                return null;
+            });
         }
 
         /// <summary>

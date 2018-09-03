@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using YDrawing2D.Extensions;
 using YDrawing2D.Model;
 using YDrawing2D.Util;
@@ -25,12 +26,22 @@ namespace YDrawing2D
             DPIRatio = dpiX / GeometryHelper.SysDPI;
             VisualHelper.HitTestThickness = (int)(VisualHelper.HitTestThickness * DPIRatio);
             VisualHelper.HitTestThickness = Math.Max(1, VisualHelper.HitTestThickness);
+
             _image = new WriteableBitmap((int)(width * DPIRatio), (int)(height * DPIRatio), dpiX, dpiY, PixelFormats.Bgra32, null);
             _bounds = new Int32Rect(0, 0, _image.PixelWidth, _image.PixelHeight);
+            _offset = _image.BackBuffer;
+            _stride = _image.BackBufferStride;
+            _imageHeight = _image.Height;
             RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.NearestNeighbor);
             RenderOptions.SetEdgeMode(this, EdgeMode.Aliased);
-            _visuals = new ObservableCollection<PresentationVisual>();
-            _transform = new MatrixTransform();
+
+            _visuals = new List<PresentationVisual>();
+            _transform = new Matrix();
+
+            #region Async
+            _timer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(20) };
+            _timer.Tick += _UpdateSample;
+            #endregion
 
             BackColor = backColor;
         }
@@ -40,11 +51,14 @@ namespace YDrawing2D
         public Int32Rect Bounds { get { return _bounds; } }
         private Int32Rect _bounds;
 
-        internal IntPtr Offset { get { return _image.BackBuffer; } }
+        internal IntPtr Offset { get { return _offset; } }
+        private IntPtr _offset;
 
-        internal int Stride { get { return _image.BackBufferStride; } }
+        internal int Stride { get { return _stride; } }
+        private int _stride;
 
-        internal double ImageHeight { get { return _image.Height; } }
+        internal double ImageHeight { get { return _imageHeight; } }
+        private double _imageHeight;
 
         /// <summary>
         /// The background color used by the panel
@@ -58,7 +72,7 @@ namespace YDrawing2D
                 {
                     _backColor = value;
                     _backColorValue = Helper.CalcColor(_backColor);
-                    UpdateAll();
+                    UpdateAllAsync();
                 }
             }
         }
@@ -73,11 +87,11 @@ namespace YDrawing2D
         internal WriteableBitmap Image { get { return _image; } }
         private WriteableBitmap _image;
 
-        public IEnumerable<PresentationVisual> Visuals { get { return _visuals; } }
-        private ObservableCollection<PresentationVisual> _visuals;
+        public IList<PresentationVisual> Visuals { get { return _visuals;} }
+        private List<PresentationVisual> _visuals;
 
-        internal MatrixTransform Transform { get { return _transform; } }
-        private MatrixTransform _transform;
+        internal Matrix Transform { get { return _transform; } }
+        private Matrix _transform;
 
         public double ScaleX { get { return _scaleX; } }
         private double _scaleX = 1;
@@ -85,35 +99,115 @@ namespace YDrawing2D
         public double ScaleY { get { return _scaleY; } }
         private double _scaleY = 1;
 
+        #region Async
+        DispatcherTimer _timer;
+        bool _isUpdatingAll = false;
+        bool _needUpdate = false;
+        bool _completeLoop = false;
+        int _cnt = 0;
+        object _loopLock = new object();
+
+        private void _UpdateSample(object sender, EventArgs e)
+        {
+            Monitor.Enter(_loopLock);
+            UpdateBounds(_bounds);
+            if (_needUpdate)
+            {
+                //Waiting for the last round of updates to end
+                while (true)
+                {
+                    if (!_completeLoop)
+                        continue;
+                    break;
+                }
+                _cnt = 0;
+                _needUpdate = false;
+                _isUpdatingAll = false;
+                _timer.Stop();
+                Monitor.Exit(_loopLock);
+                UpdateAllAsync();
+            }
+            else
+            {
+                foreach (var visual in _visuals.Where(v => v.Mode == Mode.Completed))
+                {
+                    visual.Mode = Mode.Normal;
+                    _cnt++;
+                }
+                if (_cnt == _visuals.Count)
+                {
+                    _timer.Stop();
+                    _isUpdatingAll = false;
+                }
+                Monitor.Exit(_loopLock);
+            }
+        }
+
+        public void UpdateAllAsync()
+        {
+            Monitor.Enter(_loopLock);
+            if (_isUpdatingAll)
+            {
+                _needUpdate = true;
+                Monitor.Exit(_loopLock);
+                return;
+            }
+            _isUpdatingAll = true;
+            foreach (var visual in _visuals)
+                visual.Mode = Mode.WatingForUpdate;
+            ClearBuffer(_backColorValue);
+            _cnt = 0;
+            _timer.Start();
+            ThreadPool.QueueUserWorkItem(e =>
+            {
+                _completeLoop = false;
+                foreach (var visual in _visuals.ToList())
+                {
+                    if (_needUpdate) break;
+                    _UpdateAsync(visual);
+                }
+                _completeLoop = true;
+            });
+            Monitor.Exit(_loopLock);
+        }
+
+        internal void _UpdateAsync(PresentationVisual visual)
+        {
+            visual.Mode = Mode.Updating;
+            visual.Update();
+            foreach (var primitive in visual.Context.Primitives)
+            {
+                if (primitive == null || !_bounds.IsIntersectWith(primitive)) continue;
+                var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
+                _DrawPrimitive(primitive, bounds);
+            }
+            visual.Mode = Mode.Completed;
+        }
+        #endregion
+
         public void Translate(double offsetX, double offsetY, bool toUpdate = true)
         {
-            var m = _transform.Matrix;
-            m.Translate(offsetX, offsetY);
-            _transform.Matrix = m;
+            _transform.Translate(offsetX, offsetY);
             if (toUpdate)
-                UpdateAll();
+                UpdateAllAsync();
         }
 
         public void ScaleAt(double scaleX, double scaleY, double centerX, double centerY, bool toUpdate = true)
         {
             _scaleX *= scaleX;
             _scaleY *= scaleY;
-            var m = _transform.Matrix;
-            m.ScaleAt(scaleX, scaleY, centerX, centerY);
-            _transform.Matrix = m;
+            _transform.ScaleAt(scaleX, scaleY, centerX, centerY);
             if (toUpdate)
-                UpdateAll();
+                UpdateAllAsync();
         }
 
         public void Scale(double scaleX, double scaleY, bool toUpdate = true)
         {
             _scaleX *= scaleX;
             _scaleY *= scaleY;
-            var m = _transform.Matrix;
-            m.Scale(scaleX, scaleY);
-            _transform.Matrix = m;
+            _transform.Scale(scaleX, scaleY);
             if (toUpdate)
-                UpdateAll();
+                UpdateAllAsync();
         }
 
         /// <summary>
@@ -122,12 +216,16 @@ namespace YDrawing2D
         /// </summary>
         public void AddVisual(PresentationVisual visual)
         {
+            Monitor.Enter(_loopLock);
             if (!_visuals.Contains(visual))
             {
                 _visuals.Add(visual);
                 visual.Panel = this;
+                if (_isUpdatingAll)
+                    _cnt++;
                 //Update(visual);
             }
+            Monitor.Exit(_loopLock);
         }
 
         /// <summary>
@@ -136,27 +234,31 @@ namespace YDrawing2D
         /// </summary>
         public void RemoveVisual(PresentationVisual visual)
         {
+            Monitor.Enter(_loopLock);
             if (_visuals.Contains(visual))
             {
                 _visuals.Remove(visual);
                 visual.Panel = null;
+                if (_isUpdatingAll && visual.Mode == Mode.Normal)
+                    _cnt--;
                 //Update(visual);
             }
-        }
-
-        /// <summary>
-        /// Move the visual to the top of the Z-order
-        /// </summary>
-        /// <param name="visual">The visual to move</param>
-        /// <param name="needUpdate">Whether to refresh the Visual</param>
-        public void MoveToTop(PresentationVisual visual, bool needUpdate = false)
-        {
-            _visuals.Move(_visuals.IndexOf(visual), _visuals.Count - 1);
-            if (needUpdate)
-                Update(visual);
+            Monitor.Exit(_loopLock);
         }
 
         #region Render
+        /// <summary>
+        /// Update the entire panel
+        /// </summary>
+        public void UpdateAll()
+        {
+            EnterRender();
+            _ClearBuffer(_backColorValue);
+            foreach (var visual in _visuals)
+                _Update(visual);
+            ExitRender();
+        }
+
         /// <summary>
         /// Update visual object;
         /// </summary>
@@ -168,22 +270,9 @@ namespace YDrawing2D
             _ClearVisual(visual);
 
             if (!isSingle)
-                foreach (var _visual in _visuals.Where(other => other != visual && other.IsIntersectWith(visual)))
+                foreach (var _visual in _visuals.Where(other => other.IsIntersectWith(visual)))
                     _Update(_visual);
 
-            _Update(visual);
-            ExitRender();
-        }
-
-        /// <summary>
-        /// Update the entire panel
-        /// </summary>
-        public void UpdateAll()
-        {
-            EnterRender();
-            _ClearBuffer(_backColorValue);
-            foreach (var visual in _visuals)
-                _Update(visual);
             ExitRender();
         }
 
@@ -227,7 +316,7 @@ namespace YDrawing2D
         /// <param name="color">The color to clear</param>
         internal void _ClearBuffer(int color)
         {
-            var start = _image.BackBuffer;
+            var start = _offset;
             for (int i = 0; i < _bounds.Height; i++)
             {
                 for (int j = 0; j < _bounds.Width; j++)
@@ -253,6 +342,13 @@ namespace YDrawing2D
         internal void ExitRender()
         {
             _image.Unlock();
+        }
+
+        internal void UpdateBounds(Int32Rect bounds)
+        {
+            EnterRender();
+            _image.AddDirtyRect(bounds);
+            ExitRender();
         }
 
         private void _UpdateBounds(Int32Rect bounds)
@@ -289,7 +385,7 @@ namespace YDrawing2D
 
         internal int GetColor(Int32 x, Int32 y)
         {
-            var start = _image.BackBuffer;
+            var start = _offset;
             start += y * Stride;
             start += x * GeometryHelper.PixelByteLength;
             return _GetPixel(start);

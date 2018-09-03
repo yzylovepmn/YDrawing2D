@@ -13,10 +13,10 @@ namespace YDrawing2D.Model
     {
         internal Line(Int32Point start, Int32Point end, _DrawingPen pen)
         {
-            _start = start;
-            _end = end;
-            GeometryHelper.CalcLineABC(_start, _end, out _a, out _b, out _c);
-            _len = (int)Math.Sqrt(_a * _a + _b * _b);
+            Start = start;
+            End = end;
+            GeometryHelper.CalcLineABC(Start, End, out A, out B, out C);
+            Len = (int)Math.Sqrt(A * A + B * B);
             var _bounds = GeometryHelper.CalcBounds(pen.Thickness, start, end);
             _property = new PrimitiveProperty(pen, _bounds);
         }
@@ -26,23 +26,20 @@ namespace YDrawing2D.Model
         public PrimitiveProperty Property { get { return _property; } }
         private PrimitiveProperty _property;
 
-        public Int32Point Start { get { return _start; } }
-        private Int32Point _start;
+        internal Int32Point Start;
 
-        public Int32Point End { get { return _end; } }
-        private Int32Point _end;
+        internal Int32Point End;
 
-        public Int32 A { get { return _a; } }
-        public Int32 B { get { return _b; } }
-        public Int32 C { get { return _c; } }
-        public Int32 Len { get { return _len; } }
-        private Int32 _a, _b, _c, _len;
+        internal Int32 A;
+        internal Int32 B;
+        internal Int32 C;
+        internal Int32 Len;
 
         public bool HitTest(Int32Point p)
         {
-            if (_start.X == _end.X && _start.Y == _end.Y)
+            if (Start.X == End.X && Start.Y == End.Y)
                 return false;
-            return Math.Abs(_a * p.X + _b * p.Y + _c) < _len;
+            return Math.Abs(A * p.X + B * p.Y + C) < Len;
         }
 
         public bool IsIntersect(IPrimitive other)

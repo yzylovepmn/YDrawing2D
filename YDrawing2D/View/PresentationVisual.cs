@@ -10,6 +10,14 @@ using YDrawing2D.Util;
 
 namespace YDrawing2D.View
 {
+    internal enum Mode
+    {
+        Normal,
+        WatingForUpdate,
+        Updating,
+        Completed
+    }
+
     public abstract class PresentationVisual : IDisposable
     {
         public PresentationVisual()
@@ -17,11 +25,14 @@ namespace YDrawing2D.View
             _context = new PresentationContext(this);
         }
 
-        internal PresentationPanel Panel { get { return _panel; } set { _panel = value; } }
+        public PresentationPanel Panel { get { return _panel; } set { _panel = value; } }
         private PresentationPanel _panel;
 
         internal PresentationContext Context { get { return _context; } }
         private PresentationContext _context;
+
+        internal Mode Mode { get { return _mode; } set { _mode = value; } }
+        private Mode _mode;
 
         private IContext RenderOpen()
         {

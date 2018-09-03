@@ -19,15 +19,36 @@ namespace YDrawing2D.Extensions
 
         public static bool IsIntersectWith(this Int32Rect rect, Int32Rect other)
         {
-            var right = rect.X + rect.Width;
-            var bottom = rect.Y + rect.Height;
-            if (right < other.X || bottom < other.Y)
+            var right1 = rect.X + rect.Width;
+            var bottom1 = rect.Y + rect.Height;
+            if (right1 < other.X || bottom1 < other.Y)
                 return false;
 
-            right = other.X + other.Width;
-            bottom = other.Y + other.Height;
-            if (right < rect.X || bottom < rect.Y)
+            var right2 = other.X + other.Width;
+            var bottom2 = other.Y + other.Height;
+            if (right2 < rect.X || bottom2 < rect.Y)
                 return false;
+
+            return true;
+        }
+
+        public static bool IsIntersectWith(this Int32Rect rect, IPrimitive primitive)
+        {
+            var other = primitive.Property.Bounds;
+            var right1 = rect.X + rect.Width;
+            var bottom1 = rect.Y + rect.Height;
+            if (right1 < other.X || bottom1 < other.Y)
+                return false;
+
+            var right2 = other.X + other.Width;
+            var bottom2 = other.Y + other.Height;
+            if (right2 < rect.X || bottom2 < rect.Y)
+                return false;
+
+            //if (right2 > right1 && bottom2 > bottom1 && other.X < rect.X && other.Y < rect.Y)
+            //{
+            //    return false;
+            //}
 
             return true;
         }
@@ -39,9 +60,10 @@ namespace YDrawing2D.Extensions
 
         public static bool IsIntersectWith(this PresentationVisual self, PresentationVisual other)
         {
+            if (self == other) return true;
             foreach (var primitive1 in self.Context.Primitives)
                 foreach (var primitive2 in other.Context.Primitives)
-                    if (primitive1.IsIntersect(primitive2))
+                    if (primitive1 != null && primitive2 != null && primitive1.IsIntersect(primitive2))
                         return true;
             return false;
         }

@@ -34,7 +34,7 @@ namespace YDrawing2D.View
         private Point? _begin;
         private PresentationVisual _visual;
 
-        internal IEnumerable<IPrimitive> Primitives { get { return _primitives; } }
+        internal IEnumerable<IPrimitive> Primitives { get { return new List<IPrimitive>(_primitives); } }
         private List<IPrimitive> _primitives;
 
         public void DrawLine(Point start, Point end, DrawingPen pen)

@@ -17,15 +17,13 @@ namespace YDrawing2D.Util
 
         public Int32Point(Int32 x, Int32 y)
         {
-            _x = x;
-            _y = y;
+            X = x;
+            Y = y;
         }
 
-        public Int32 X { get { return _x; } }
-        private Int32 _x;
+        public Int32 X;
 
-        public Int32 Y { get { return _y; } }
-        private Int32 _y;
+        public Int32 Y;
 
         public static Int32Vector operator -(Int32Point p1, Int32Point p2)
         {
@@ -44,7 +42,7 @@ namespace YDrawing2D.Util
 
         public override string ToString()
         {
-            return string.Format("({0}, {1})", _x, _y);
+            return string.Format("({0}, {1})", X, Y);
         }
     }
 }

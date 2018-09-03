@@ -12,8 +12,8 @@ namespace YDrawing2D.Model
     {
         internal Cicle(Int32Point center, Int32 radius, _DrawingPen pen)
         {
-            _center = center;
-            _radius = radius;
+            Center = center;
+            Radius = radius;
             var _bounds = GeometryHelper.CalcBounds(center, radius, pen.Thickness);
             _property = new PrimitiveProperty(pen, _bounds);
         }
@@ -23,15 +23,13 @@ namespace YDrawing2D.Model
 
         public PrimitiveType Type { get { return PrimitiveType.Cicle; } }
 
-        public Int32Point Center { get { return _center; } }
-        private Int32Point _center;
+        internal Int32Point Center;
 
-        public Int32 Radius { get { return _radius; } }
-        private Int32 _radius;
+        internal Int32 Radius;
 
         public bool HitTest(Int32Point p)
         {
-            return Math.Abs((p - _center).Length - _radius) <= _property.Pen.Thickness;
+            return Math.Abs((p - Center).Length - Radius) <= _property.Pen.Thickness;
         }
 
         public bool IsIntersect(IPrimitive other)

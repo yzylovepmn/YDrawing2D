@@ -15,11 +15,11 @@ namespace YDrawing2D.Model
     {
         internal Arc(Int32Point start, Int32Point end, Int32Point center, _DrawingPen pen)
         {
-            _start = start;
-            _end = end;
-            _center = center;
-            _radius = (_start - _center).Length;
-            var _bounds = GeometryHelper.CalcBounds(center, start, end, _radius, pen.Thickness);
+            Start = start;
+            End = end;
+            Center = center;
+            Radius = (Start - Center).Length;
+            var _bounds = GeometryHelper.CalcBounds(center, start, end, Radius, pen.Thickness);
             _property = new PrimitiveProperty(pen, _bounds);
         }
 
@@ -28,22 +28,18 @@ namespace YDrawing2D.Model
 
         public PrimitiveType Type { get { return PrimitiveType.Arc; } }
 
-        public Int32Point Center { get { return _center; } }
-        private Int32Point _center;
+        internal Int32Point Center;
 
-        public Int32Point Start { get { return _start; } }
-        private Int32Point _start;
+        internal Int32Point Start;
 
-        public Int32Point End { get { return _end; } }
-        private Int32Point _end;
+        internal Int32Point End;
 
-        public Int32 Radius { get { return _radius; } }
-        private Int32 _radius;
+        internal Int32 Radius;
 
         public bool HitTest(Int32Point p)
         {
-            if (GeometryHelper.IsPossibleArcContains(_center, _start, _end, p))
-                return Math.Abs((p - _center).Length - _radius) <= _property.Pen.Thickness;
+            if (GeometryHelper.IsPossibleArcContains(Center, Start, End, p))
+                return Math.Abs((p - Center).Length - Radius) <= _property.Pen.Thickness;
             return false;
         }
 
