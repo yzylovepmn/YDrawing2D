@@ -58,7 +58,7 @@ namespace YDrawing2DTest
             var r = new Random(5);
             for (int i = 0; i < 20000; i++)
             {
-                //_panel.AddVisual(new Line(new Point(200, i), new Point(600, i)));
+                //_panel.AddVisual(new Line(new Point(0, i), new Point(800, i + 100)));
                 //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
                 _panel.AddVisual(new Cicle(new Point(400, 400), i));
                 //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));

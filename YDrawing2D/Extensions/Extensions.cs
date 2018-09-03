@@ -45,10 +45,33 @@ namespace YDrawing2D.Extensions
             if (right2 < rect.X || bottom2 < rect.Y)
                 return false;
 
-            //if (right2 > right1 && bottom2 > bottom1 && other.X < rect.X && other.Y < rect.Y)
-            //{
-            //    return false;
-            //}
+            if (right2 > right1 && bottom2 > bottom1 && other.X < rect.X && other.Y < rect.Y)
+            {
+                switch (primitive.Type)
+                {
+                    case PrimitiveType.Cicle:
+                    case PrimitiveType.Arc:
+                        Int32Point center;
+                        Int32 radius;
+                        if (primitive.Type == PrimitiveType.Cicle)
+                        {
+                            var cicle = (Cicle)primitive;
+                            radius = cicle.Radius;
+                            center = cicle.Center;
+                        }
+                        else
+                        {
+                            var arc = (Arc)primitive;
+                            radius = arc.Radius;
+                            center = arc.Center;
+                        }
+                        var p = new Int32Point(rect.X + rect.Width, rect.Y + rect.Height);
+                        var v = radius - primitive.Property.Pen.Thickness;
+                        return !(((p - center).Length < v) && ((new Int32Point(rect.X, rect.Y) - center).Length < v)
+                            && ((new Int32Point(rect.X + rect.Width, rect.Y) - center).Length < v) && ((new Int32Point(rect.X, rect.Y + rect.Height) - center).Length < v));
+                }
+                return true;
+            }
 
             return true;
         }
