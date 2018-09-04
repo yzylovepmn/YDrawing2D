@@ -14,9 +14,24 @@ namespace YDrawing2D.Model
             Center = center;
             RadiusX = radiusX;
             RadiusY = radiusY;
-            RadiusXSquared = RadiusX * RadiusX;
-            RadiusYSquared = RadiusY * RadiusY;
+            RadiusXSquared = (Int64)RadiusX * RadiusX;
+            RadiusYSquared = (Int64)RadiusY * RadiusY;
             SplitX = (Int32)(RadiusXSquared / Math.Sqrt(RadiusXSquared + RadiusYSquared));
+            A_2 = Math.Max(RadiusX, RadiusY) << 1;
+            Int32 c;
+            if (RadiusX > RadiusY)
+                c = (Int32)Math.Sqrt(RadiusXSquared - RadiusYSquared);
+            else c = (Int32)Math.Sqrt(RadiusYSquared - RadiusXSquared);
+            if (radiusX > radiusY)
+            {
+                _focusP1 = new Int32Point(center.X + c, center.Y);
+                _focusP2 = new Int32Point(center.X - c, center.Y);
+            }
+            else
+            {
+                _focusP1 = new Int32Point(center.X, center.Y + c);
+                _focusP2 = new Int32Point(center.X, center.Y - c);
+            }
             var _bounds = GeometryHelper.CalcBounds(center, radiusX, RadiusY, pen.Thickness);
             _property = new PrimitiveProperty(pen, _bounds);
         }
@@ -26,16 +41,19 @@ namespace YDrawing2D.Model
 
         public PrimitiveType Type { get { return PrimitiveType.Ellipse; } }
 
-        internal Int32Point Center;
-        internal Int32 RadiusX;
-        internal Int32 RadiusY;
-        internal Int32 RadiusXSquared;
-        internal Int32 RadiusYSquared;
-        internal Int32 SplitX;
+        internal readonly Int32Point Center;
+        internal readonly Int32 RadiusX;
+        internal readonly Int32 RadiusY;
+        internal readonly Int64 RadiusXSquared;
+        internal readonly Int64 RadiusYSquared;
+        internal readonly Int32 SplitX;
+        private readonly Int32 A_2;
+        private readonly Int32Point _focusP1;
+        private readonly Int32Point _focusP2;
 
         public bool HitTest(Int32Point p)
         {
-            return false;
+            return Math.Abs((p - _focusP1).Length + (p - _focusP2).Length - A_2) <= _property.Pen.Thickness + 1;
         }
 
         public bool IsIntersect(IPrimitive other)

@@ -47,7 +47,7 @@ namespace YDrawing2D
             _transform = new Matrix();
 
             #region Async
-            _timer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(20) };
+            _timer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(10) };
             _timer.Tick += _UpdateSample;
             #endregion
 
@@ -218,7 +218,7 @@ namespace YDrawing2D
             visual.Update();
             foreach (var primitive in visual.Context.Primitives)
             {
-                if (!_bounds.IsIntersectWith(primitive.Property.Bounds)) continue;
+                if (!_bounds.IsIntersectWith(primitive)) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds);
                 _UpdateBounds(bounds);
@@ -229,7 +229,7 @@ namespace YDrawing2D
         {
             foreach (var primitive in visual.Context.Primitives)
             {
-                if (!_bounds.IsIntersectWith(primitive.Property.Bounds)) continue;
+                if (!_bounds.IsIntersectWith(primitive)) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds, true);
                 _UpdateBounds(bounds);

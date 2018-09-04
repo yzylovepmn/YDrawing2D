@@ -104,7 +104,7 @@ namespace YDrawing2D
 
         static VisualHelper()
         {
-            HitTestThickness = 5;
+            HitTestThickness = 7;
         }
 
         public static PresentationVisual HitTest(PresentationPanel panel, Point p)
@@ -514,6 +514,8 @@ namespace YDrawing2D
                     return _CalcArcPoints(arc.Center, arc.Start, arc.End, arc.Radius);
                 case PrimitiveType.Ellipse:
                     var ellipse = (Ellipse)primitive;
+                    if (ellipse.RadiusX == ellipse.RadiusY)
+                        return _CalcCiclePoints(ellipse.Center, ellipse.RadiusX);
                     return _CalcEllipsePoints(ellipse.Center, ellipse.RadiusX, ellipse.RadiusY, ellipse.RadiusXSquared, ellipse.RadiusYSquared, ellipse.SplitX);
             }
             return null;
@@ -639,11 +641,11 @@ namespace YDrawing2D
         /// <summary>
         /// Bresenham algorithm
         /// </summary>
-        private static IEnumerable<Int32Point> _CalcEllipsePoints(Int32Point center, Int32 a, Int32 b, Int32 aSquared, Int32 bSquared, Int32 splitX)
+        private static IEnumerable<Int32Point> _CalcEllipsePoints(Int32Point center, Int32 a, Int32 b, Int64 aSquared, Int64 bSquared, Int32 splitX)
         {
             Int32 x = 0;
             Int32 y = b;
-            Int32 d = aSquared + bSquared - ((aSquared * b) << 1);
+            Int64 d = aSquared + bSquared - ((aSquared * b) << 1);
             while (x <= splitX)
             {
                 byte condition = 0;

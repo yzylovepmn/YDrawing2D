@@ -56,7 +56,7 @@ namespace YDrawing2D.View
             radius *= _visual.Panel.ScaleX;
 
             var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
-            var _radius = (int)(radius * _visual.Panel.DPIRatio);
+            var _radius = Helper.ConvertTo(radius * _visual.Panel.DPIRatio);
             var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
             _primitives.Add(new Cicle(_center, _radius, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
         }
@@ -68,8 +68,8 @@ namespace YDrawing2D.View
             radiusY *= _visual.Panel.ScaleY;
 
             var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
-            var _radiusX = (int)(radiusX * _visual.Panel.DPIRatio);
-            var _radiusY = (int)(radiusY * _visual.Panel.DPIRatio);
+            var _radiusX = Helper.ConvertTo(radiusX * _visual.Panel.DPIRatio);
+            var _radiusY = Helper.ConvertTo(radiusY * _visual.Panel.DPIRatio);
             var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
             _primitives.Add(new Ellipse(_center, _radiusX, _radiusY, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
         }
@@ -93,7 +93,7 @@ namespace YDrawing2D.View
             var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
             var _startP = GeometryHelper.ConvertToInt32Point(startP, _visual.Panel.DPIRatio);
             var _endP = GeometryHelper.ConvertToInt32Point(endP, _visual.Panel.DPIRatio);
-            var _radius = (int)(radius * _visual.Panel.DPIRatio);
+            var _radius = Helper.ConvertTo(radius * _visual.Panel.DPIRatio);
             var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
 
             _primitives.Add(new Arc(_startP, _endP, _center, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
@@ -134,7 +134,7 @@ namespace YDrawing2D.View
                 var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
                 var _startP = GeometryHelper.ConvertToInt32Point(startP, _visual.Panel.DPIRatio);
                 var _endP = GeometryHelper.ConvertToInt32Point(endP, _visual.Panel.DPIRatio);
-                var _radius = (int)(radius * _visual.Panel.DPIRatio);
+                var _radius = Helper.ConvertTo(radius * _visual.Panel.DPIRatio);
                 var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
 
                 _primitives.Add(new Arc(_startP, _endP, _center, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));

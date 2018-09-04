@@ -28,13 +28,10 @@ namespace YDrawing2D.Model
 
         public PrimitiveType Type { get { return PrimitiveType.Arc; } }
 
-        internal Int32Point Center;
-
-        internal Int32Point Start;
-
-        internal Int32Point End;
-
-        internal Int32 Radius;
+        internal readonly Int32Point Center;
+        internal readonly Int32Point Start;
+        internal readonly Int32Point End;
+        internal readonly Int32 Radius;
 
         public bool HitTest(Int32Point p)
         {

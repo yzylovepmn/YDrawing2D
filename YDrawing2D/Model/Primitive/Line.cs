@@ -26,14 +26,12 @@ namespace YDrawing2D.Model
         public PrimitiveProperty Property { get { return _property; } }
         private PrimitiveProperty _property;
 
-        internal Int32Point Start;
-
-        internal Int32Point End;
-
-        internal Int32 A;
-        internal Int32 B;
-        internal Int32 C;
-        internal Int32 Len;
+        internal readonly Int32Point Start;
+        internal readonly Int32Point End;
+        internal readonly Int32 A;
+        internal readonly Int32 B;
+        internal readonly Int32 C;
+        internal readonly Int32 Len;
 
         public bool HitTest(Int32Point p)
         {
