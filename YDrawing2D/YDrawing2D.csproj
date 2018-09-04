@@ -51,6 +51,7 @@
     <Compile Include="Model\PrimitiveProperty.cs" />
     <Compile Include="Model\Primitive\Arc.cs" />
     <Compile Include="Model\Primitive\Cicle.cs" />
+    <Compile Include="Model\Primitive\Ellipse.cs" />
     <Compile Include="Model\Primitive\Primitive.cs" />
     <Compile Include="Model\Primitive\Line.cs" />
     <Compile Include="Model\Primitive\Spline.cs" />

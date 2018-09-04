@@ -53,20 +53,21 @@ namespace YDrawing2DTest
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             var len = Math.Max(ActualWidth, ActualHeight);
-            _panel = new PresentationPanel(len, len, 96, 96, Colors.Black);
+            _panel = new PresentationPanel(len, len, 96, 96, Colors.Black, RenderMode.Async);
             Content = _panel;
             var r = new Random(5);
-            for (int i = 0; i < 20000; i++)
+            for (int i = 0; i < 40000; i++)
             {
                 //_panel.AddVisual(new Line(new Point(0, i), new Point(800, i + 100)));
                 //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
-                _panel.AddVisual(new Cicle(new Point(400, 400), i));
+                //_panel.AddVisual(new Cicle(new Point(400, 400), i));
                 //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
             }
-            //_panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
-            //_panel.AddVisual(new Cicle(new Point(200, 300), 200));
-            //_panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200));
-            _panel.UpdateAllAsync();
+            _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
+            _panel.AddVisual(new Cicle(new Point(200, 300), 200));
+            _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400));
+            _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200));
+            _panel.UpdateAll();
             _panel.MouseMove += _panel_MouseMove;
             _panel.MouseWheel += _panel_MouseWheel;
             _panel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
@@ -143,6 +144,27 @@ namespace YDrawing2DTest
             if (this == MainWindow.ActiveVisual)
                 context.DrawCicle(_center, _radius, MainWindow.ActivePen);
             else context.DrawCicle(_center, _radius, MainWindow.WhitePen);
+        }
+    }
+
+    public class Ellipse : PresentationVisual
+    {
+        public Ellipse(Point center, double radiusX, double radiusY)
+        {
+            _center = center;
+            _radiusX = radiusX;
+            _radiusY = radiusY;
+        }
+
+        private Point _center;
+        private double _radiusX;
+        private double _radiusY;
+
+        protected override void Draw(IContext context)
+        {
+            if (this == MainWindow.ActiveVisual)
+                context.DrawEllipse(_center, _radiusX, _radiusY, MainWindow.ActivePen);
+            else context.DrawEllipse(_center, _radiusX, _radiusY, MainWindow.WhitePen);
         }
     }
 

@@ -20,6 +20,7 @@ namespace YDrawing2D.Model
         Line,
         Cicle,
         Arc,
+        Ellipse,
         Spline
     }
 }

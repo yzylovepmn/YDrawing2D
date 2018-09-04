@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace YDrawing2D.Util
 {
-    public class DrawingPen
+    public struct DrawingPen
     {
         public DrawingPen(double thickness, Color color, double[] dashes = null)
         {

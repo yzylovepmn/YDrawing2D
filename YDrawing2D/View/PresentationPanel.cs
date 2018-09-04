@@ -16,13 +16,21 @@ using YDrawing2D.View;
 
 namespace YDrawing2D
 {
+    public enum RenderMode
+    {
+        Sync,
+        Async
+    }
+
     /// <summary>
     /// The world coordinates are lower left
     /// </summary>
     public class PresentationPanel : UIElement, IDisposable
     {
-        public PresentationPanel(double width, double height, double dpiX, double dpiY, Color backColor)
+        public PresentationPanel(double width, double height, double dpiX, double dpiY, Color backColor, RenderMode renderMode)
         {
+            _renderMode = renderMode;
+
             DPIRatio = dpiX / GeometryHelper.SysDPI;
             VisualHelper.HitTestThickness = (int)(VisualHelper.HitTestThickness * DPIRatio);
             VisualHelper.HitTestThickness = Math.Max(1, VisualHelper.HitTestThickness);
@@ -45,6 +53,9 @@ namespace YDrawing2D
 
             BackColor = backColor;
         }
+
+        public RenderMode RenderMode { get { return _renderMode; } }
+        private RenderMode _renderMode;
 
         internal readonly double DPIRatio;
 
@@ -72,7 +83,7 @@ namespace YDrawing2D
                 {
                     _backColor = value;
                     _backColorValue = Helper.CalcColor(_backColor);
-                    UpdateAllAsync();
+                    UpdateAll();
                 }
             }
         }
@@ -87,7 +98,7 @@ namespace YDrawing2D
         internal WriteableBitmap Image { get { return _image; } }
         private WriteableBitmap _image;
 
-        public IList<PresentationVisual> Visuals { get { return _visuals;} }
+        public IEnumerable<PresentationVisual> Visuals { get { return _visuals;} }
         private List<PresentationVisual> _visuals;
 
         internal Matrix Transform { get { return _transform; } }
@@ -107,43 +118,10 @@ namespace YDrawing2D
         int _cnt = 0;
         object _loopLock = new object();
 
-        private void _UpdateSample(object sender, EventArgs e)
-        {
-            Monitor.Enter(_loopLock);
-            UpdateBounds(_bounds);
-            if (_needUpdate)
-            {
-                //Waiting for the last round of updates to end
-                while (true)
-                {
-                    if (!_completeLoop)
-                        continue;
-                    break;
-                }
-                _cnt = 0;
-                _needUpdate = false;
-                _isUpdatingAll = false;
-                _timer.Stop();
-                Monitor.Exit(_loopLock);
-                UpdateAllAsync();
-            }
-            else
-            {
-                foreach (var visual in _visuals.Where(v => v.Mode == Mode.Completed))
-                {
-                    visual.Mode = Mode.Normal;
-                    _cnt++;
-                }
-                if (_cnt == _visuals.Count)
-                {
-                    _timer.Stop();
-                    _isUpdatingAll = false;
-                }
-                Monitor.Exit(_loopLock);
-            }
-        }
-
-        public void UpdateAllAsync()
+        /// <summary>
+        /// Update the entire panel async
+        /// </summary>
+        internal void _UpdateAllAsync()
         {
             Monitor.Enter(_loopLock);
             if (_isUpdatingAll)
@@ -171,6 +149,43 @@ namespace YDrawing2D
             Monitor.Exit(_loopLock);
         }
 
+        private void _UpdateSample(object sender, EventArgs e)
+        {
+            Monitor.Enter(_loopLock);
+            UpdateBounds(_bounds);
+            if (_needUpdate)
+            {
+                //Waiting for the last round of updates to end
+                while (true)
+                {
+                    if (!_completeLoop)
+                        continue;
+                    break;
+                }
+                _cnt = 0;
+                _needUpdate = false;
+                _isUpdatingAll = false;
+                _timer.Stop();
+                Monitor.Exit(_loopLock);
+                // Restart
+                _UpdateAllAsync();
+            }
+            else
+            {
+                foreach (var visual in _visuals.Where(v => v.Mode == Mode.Completed))
+                {
+                    visual.Mode = Mode.Normal;
+                    _cnt++;
+                }
+                if (_cnt == _visuals.Count)
+                {
+                    _timer.Stop();
+                    _isUpdatingAll = false;
+                }
+                Monitor.Exit(_loopLock);
+            }
+        }
+
         internal void _UpdateAsync(PresentationVisual visual)
         {
             visual.Mode = Mode.Updating;
@@ -185,11 +200,49 @@ namespace YDrawing2D
         }
         #endregion
 
+        #region Sync
+        /// <summary>
+        /// Update the entire panel sync
+        /// </summary>
+        internal void _UpdateAllSync()
+        {
+            EnterRender();
+            _ClearBuffer(_backColorValue);
+            foreach (var visual in _visuals)
+                _UpdateSync(visual);
+            ExitRender();
+        }
+
+        internal void _UpdateSync(PresentationVisual visual)
+        {
+            visual.Update();
+            foreach (var primitive in visual.Context.Primitives)
+            {
+                if (!_bounds.IsIntersectWith(primitive.Property.Bounds)) continue;
+                var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
+                _DrawPrimitive(primitive, bounds);
+                _UpdateBounds(bounds);
+            }
+        }
+
+        internal void _ClearVisual(PresentationVisual visual)
+        {
+            foreach (var primitive in visual.Context.Primitives)
+            {
+                if (!_bounds.IsIntersectWith(primitive.Property.Bounds)) continue;
+                var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
+                _DrawPrimitive(primitive, bounds, true);
+                _UpdateBounds(bounds);
+            }
+        }
+        #endregion
+
+        #region Transform
         public void Translate(double offsetX, double offsetY, bool toUpdate = true)
         {
             _transform.Translate(offsetX, offsetY);
             if (toUpdate)
-                UpdateAllAsync();
+                UpdateAll();
         }
 
         public void ScaleAt(double scaleX, double scaleY, double centerX, double centerY, bool toUpdate = true)
@@ -198,7 +251,7 @@ namespace YDrawing2D
             _scaleY *= scaleY;
             _transform.ScaleAt(scaleX, scaleY, centerX, centerY);
             if (toUpdate)
-                UpdateAllAsync();
+                UpdateAll();
         }
 
         public void Scale(double scaleX, double scaleY, bool toUpdate = true)
@@ -207,8 +260,9 @@ namespace YDrawing2D
             _scaleY *= scaleY;
             _transform.Scale(scaleX, scaleY);
             if (toUpdate)
-                UpdateAllAsync();
+                UpdateAll();
         }
+        #endregion
 
         /// <summary>
         /// You must call <see cref="UpdateAll"/> or <see cref="Update(PresentationVisual)"/> after calling this method,
@@ -252,11 +306,9 @@ namespace YDrawing2D
         /// </summary>
         public void UpdateAll()
         {
-            EnterRender();
-            _ClearBuffer(_backColorValue);
-            foreach (var visual in _visuals)
-                _Update(visual);
-            ExitRender();
+            if (_renderMode == RenderMode.Sync)
+                _UpdateAllSync();
+            else _UpdateAllAsync();
         }
 
         /// <summary>
@@ -271,32 +323,9 @@ namespace YDrawing2D
 
             if (!isSingle)
                 foreach (var _visual in _visuals.Where(other => other.IsIntersectWith(visual)))
-                    _Update(_visual);
+                    _UpdateSync(_visual);
 
             ExitRender();
-        }
-
-        internal void _Update(PresentationVisual visual)
-        {
-            visual.Update();
-            foreach (var primitive in visual.Context.Primitives)
-            {
-                if (!_bounds.IsIntersectWith(primitive.Property.Bounds)) continue;
-                var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
-                _DrawPrimitive(primitive, bounds);
-                _UpdateBounds(bounds);
-            }
-        }
-
-        internal void _ClearVisual(PresentationVisual visual)
-        {
-            foreach (var primitive in visual.Context.Primitives)
-            {
-                if (!_bounds.IsIntersectWith(primitive.Property.Bounds)) continue;
-                var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
-                _DrawPrimitive(primitive, bounds, true);
-                _UpdateBounds(bounds);
-            }
         }
 
         /// <summary>

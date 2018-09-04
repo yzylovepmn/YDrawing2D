@@ -190,6 +190,12 @@ namespace YDrawing2D
             return new Int32Rect(center.X - radius - h, center.Y - radius - h, (radius + h) << 1, (radius + h) << 1);
         }
 
+        public static Int32Rect CalcBounds(Int32Point center, Int32 radiusX, Int32 radiusY, int thickness)
+        {
+            int h = Math.Max(thickness >> 1, 1);
+            return new Int32Rect(center.X - radiusX - h, center.Y - radiusY - h, (radiusX + h) << 1, (radiusY + h) << 1);
+        }
+
         public static Int32Rect CalcBounds(Int32Point center, Int32Point start, Int32Point end, Int32 radius, Int32 thickness)
         {
             int h = Math.Max(thickness >> 1, 1);
@@ -506,28 +512,11 @@ namespace YDrawing2D
                 case PrimitiveType.Arc:
                     var arc = (Arc)primitive;
                     return _CalcArcPoints(arc.Center, arc.Start, arc.End, arc.Radius);
+                case PrimitiveType.Ellipse:
+                    var ellipse = (Ellipse)primitive;
+                    return _CalcEllipsePoints(ellipse.Center, ellipse.RadiusX, ellipse.RadiusY, ellipse.RadiusXSquared, ellipse.RadiusYSquared, ellipse.SplitX);
             }
             return null;
-        }
-
-        public async static Task<IEnumerable<Int32Point>> CalcPrimitivePointsAsync(IPrimitive primitive)
-        {
-            return await Task.Factory.StartNew(() => 
-            {
-                switch (primitive.Type)
-                {
-                    case PrimitiveType.Line:
-                        var line = (Line)primitive;
-                        return _CalcLinePoints(line.Start, line.End);
-                    case PrimitiveType.Cicle:
-                        var cicle = (Cicle)primitive;
-                        return _CalcCiclePoints(cicle.Center, cicle.Radius);
-                    case PrimitiveType.Arc:
-                        var arc = (Arc)primitive;
-                        return _CalcArcPoints(arc.Center, arc.Start, arc.End, arc.Radius);
-                }
-                return null;
-            });
         }
 
         /// <summary>
@@ -615,16 +604,16 @@ namespace YDrawing2D
             while (x <= y)
             {
                 byte condition = 0;
-                foreach (var p in GenCiclePoints(new Int32Point(x, y)))
+                foreach (var p in _GenCiclePoints(new Int32Point(x, y)))
                     yield return new Int32Point(p.X + center.X, p.Y + center.Y);
                 if (d > 0)
                 {
-                    if (((d - x) << 1) - 1 > 0)
+                    if (((d - x) << 1) > 1)
                         condition = 2;
                 }
                 else if (d < 0)
                 {
-                    if (((d + y) << 1) - 1 <= 0)
+                    if (((d + y) << 1) < 1)
                         condition = 1;
                 }
 
@@ -647,12 +636,95 @@ namespace YDrawing2D
             }
         }
 
+        /// <summary>
+        /// Bresenham algorithm
+        /// </summary>
+        private static IEnumerable<Int32Point> _CalcEllipsePoints(Int32Point center, Int32 a, Int32 b, Int32 aSquared, Int32 bSquared, Int32 splitX)
+        {
+            Int32 x = 0;
+            Int32 y = b;
+            Int32 d = aSquared + bSquared - ((aSquared * b) << 1);
+            while (x <= splitX)
+            {
+                byte condition = 0;
+                foreach (var p in _GenEllipsePoints(new Int32Point(x, y)))
+                    yield return new Int32Point(p.X + center.X, p.Y + center.Y);
+
+                if (d > 0)
+                {
+                    if (((d - bSquared * x) << 1) > bSquared)
+                        condition = 2;
+                }
+                else if (d < 0)
+                {
+                    if (((d + aSquared * y) << 1) < aSquared)
+                        condition = 1;
+                }
+
+                switch (condition)
+                {
+                    case 0:
+                        x++;
+                        y--;
+                        d += bSquared + aSquared + ((bSquared * x - aSquared * y) << 1);
+                        break;
+                    case 1:
+                        x++;
+                        d += bSquared + ((bSquared * x) << 1);
+                        break;
+                    case 2:
+                        y--;
+                        d += aSquared - ((aSquared * y) << 1);
+                        break;
+                }
+            }
+
+            x = a;
+            y = 0;
+            d = aSquared + bSquared - ((bSquared * a) << 1);
+            while (x > splitX)
+            {
+                byte condition = 0;
+
+                foreach (var p in _GenEllipsePoints(new Int32Point(x, y)))
+                    yield return new Int32Point(p.X + center.X, p.Y + center.Y);
+
+                if (d > 0)
+                {
+                    if (((d - aSquared * y) << 1) > aSquared)
+                        condition = 1;
+                }
+                else if (d < 0)
+                {
+                    if (((d + bSquared * x) << 1) < bSquared)
+                        condition = 2;
+                }
+
+                switch (condition)
+                {
+                    case 0:
+                        x--;
+                        y++;
+                        d += bSquared + aSquared - ((bSquared * x - aSquared * y) << 1);
+                        break;
+                    case 1:
+                        x--;
+                        d += bSquared - ((bSquared * x) << 1);
+                        break;
+                    case 2:
+                        y++;
+                        d += aSquared + ((aSquared * y) << 1);
+                        break;
+                }
+            }
+        }
+
         private static IEnumerable<Int32Point> _CalcArcPoints(Int32Point center, Int32Point start, Int32Point end, Int32 radius)
         {
             return ArcContains(center, start, end, _CalcCiclePoints(center, radius));
         }
 
-        private static IEnumerable<Int32Point> GenCiclePoints(Int32Point origin)
+        private static IEnumerable<Int32Point> _GenCiclePoints(Int32Point origin)
         {
             yield return origin;
             yield return new Int32Point(origin.Y, origin.X);
@@ -662,6 +734,14 @@ namespace YDrawing2D
             yield return new Int32Point(-origin.Y, origin.X);
             yield return new Int32Point(-origin.X, -origin.Y);
             yield return new Int32Point(-origin.Y, -origin.X);
+        }
+
+        private static IEnumerable<Int32Point> _GenEllipsePoints(Int32Point origin)
+        {
+            yield return origin;
+            yield return new Int32Point(origin.X, -origin.Y);
+            yield return new Int32Point(-origin.X, origin.Y);
+            yield return new Int32Point(-origin.X, -origin.Y);
         }
 
         internal static IEnumerable<Int32Point> ArcContains(Int32Point center, Int32Point start, Int32Point end, IEnumerable<Int32Point> points)
