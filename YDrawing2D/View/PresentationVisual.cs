@@ -25,7 +25,7 @@ namespace YDrawing2D.View
             _context = new PresentationContext(this);
         }
 
-        public PresentationPanel Panel { get { return _panel; } set { _panel = value; } }
+        public PresentationPanel Panel { get { return _panel; } internal set { _panel = value; } }
         private PresentationPanel _panel;
 
         internal PresentationContext Context { get { return _context; } }

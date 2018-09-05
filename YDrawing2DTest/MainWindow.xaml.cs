@@ -61,12 +61,12 @@ namespace YDrawing2DTest
                 //_panel.AddVisual(new Line(new Point(0, i), new Point(800, i + 100)));
                 //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
                 //_panel.AddVisual(new Cicle(new Point(400, 400), i));
-                //_panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
+                _panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
                 //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
             }
             //_panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
             //_panel.AddVisual(new Cicle(new Point(200, 300), 200));
-            _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400));
+            //_panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400));
             //_panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200));
             _panel.UpdateAll();
             _panel.MouseMove += _panel_MouseMove;

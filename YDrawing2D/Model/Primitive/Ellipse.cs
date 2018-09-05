@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using YDrawing2D.Extensions;
 using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
@@ -58,6 +59,20 @@ namespace YDrawing2D.Model
 
         public bool IsIntersect(IPrimitive other)
         {
+            if (!other.IsIntersectWith(this)) return false;
+            switch (other.Type)
+            {
+                case PrimitiveType.Line:
+                    break;
+                case PrimitiveType.Cicle:
+                    break;
+                case PrimitiveType.Arc:
+                    break;
+                case PrimitiveType.Ellipse:
+                    return GeometryHelper.IsIntersect(this, (Ellipse)other);
+                case PrimitiveType.Spline:
+                    break;
+            }
             return true;
         }
     }

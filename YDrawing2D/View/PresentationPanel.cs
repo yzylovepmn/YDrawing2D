@@ -139,7 +139,12 @@ namespace YDrawing2D
             ThreadPool.QueueUserWorkItem(e =>
             {
                 _completeLoop = false;
-                foreach (var visual in _visuals.ToList())
+
+                var visuals = default(List<PresentationVisual>);
+                lock (this)
+                    visuals = _visuals.ToList();
+
+                foreach (var visual in visuals)
                 {
                     if (_needUpdate) break;
                     _UpdateAsync(visual);
@@ -188,6 +193,7 @@ namespace YDrawing2D
 
         internal void _UpdateAsync(PresentationVisual visual)
         {
+            if (visual.Mode != Mode.WatingForUpdate) return;
             visual.Mode = Mode.Updating;
             visual.Update();
             foreach (var primitive in visual.Context.Primitives)
@@ -273,10 +279,12 @@ namespace YDrawing2D
             Monitor.Enter(_loopLock);
             if (!_visuals.Contains(visual))
             {
-                _visuals.Add(visual);
                 visual.Panel = this;
                 if (_isUpdatingAll)
                     _cnt++;
+                lock (this)
+                    _visuals.Add(visual);
+
                 //Update(visual);
             }
             Monitor.Exit(_loopLock);
@@ -291,10 +299,11 @@ namespace YDrawing2D
             Monitor.Enter(_loopLock);
             if (_visuals.Contains(visual))
             {
-                _visuals.Remove(visual);
                 visual.Panel = null;
                 if (_isUpdatingAll && visual.Mode == Mode.Normal)
                     _cnt--;
+                lock(this)
+                    _visuals.Remove(visual);
                 //Update(visual);
             }
             Monitor.Exit(_loopLock);

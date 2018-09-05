@@ -975,15 +975,15 @@ namespace YDrawing2D
         private static bool IsSameSymbol(int a, int b)
         {
             if (a == 0 || b == 0) return true;
-            if (a >= 0)
+            if (a > 0)
             {
-                if (b >= 0)
+                if (b > 0)
                     return true;
                 else return false;
             }
             else
             {
-                if (b >= 0)
+                if (b > 0)
                     return false;
                 else return true;
             }
@@ -992,15 +992,15 @@ namespace YDrawing2D
         private static bool IsSameSymbol(long a, long b)
         {
             if (a == 0 || b == 0) return true;
-            if (a >= 0)
+            if (a > 0)
             {
-                if (b >= 0)
+                if (b > 0)
                     return true;
                 else return false;
             }
             else
             {
-                if (b >= 0)
+                if (b > 0)
                     return false;
                 else return true;
             }
@@ -1066,6 +1066,14 @@ namespace YDrawing2D
             if ((len > arc1.Radius + arc2.Radius + delta)
                 || (len < Math.Max(0, Math.Abs(arc1.Radius - arc2.Radius) - delta)))
                 return false;
+            return true;
+        }
+
+        internal static bool IsIntersect(Ellipse ellipse1, Ellipse ellipse2)
+        {
+            if (ellipse1.Contains(ellipse2.Property.Bounds) || ellipse2.Contains(ellipse1.Property.Bounds))
+                return false;
+
             return true;
         }
 
