@@ -42,6 +42,8 @@ namespace YDrawing2D.Model
                     return GeometryHelper.IsIntersect(this, (Cicle)other);
                 case PrimitiveType.Arc:
                     return GeometryHelper.IsIntersect(this, (Arc)other);
+                case PrimitiveType.Ellipse:
+                    return GeometryHelper.IsIntersect((Ellipse)other, this);
             }
             return true;
         }

@@ -21,6 +21,7 @@ namespace YDrawing2D.View
         void DrawEllipse(Point center, double radiusX, double radiusY, DrawingPen pen);
         void DrawArc(Point center, double radius, double startAngle, double endAngle, bool isClockwise, DrawingPen pen);
         void LineTo(Point point, DrawingPen pen);
+        void PolyLineTo(IEnumerable<Point> points, DrawingPen pen);
         void ArcTo(Point point, double radius, bool isLargeAngle, bool isClockwise, DrawingPen pen);
     }
 
@@ -104,6 +105,16 @@ namespace YDrawing2D.View
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
             DrawLine(_begin.Value, point, pen);
             _begin = point;
+        }
+
+        public void PolyLineTo(IEnumerable<Point> points, DrawingPen pen)
+        {
+            if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
+            foreach (var point in points)
+            {
+                DrawLine(_begin.Value, point, pen);
+                _begin = point;
+            }
         }
 
         public void ArcTo(Point point, double radius, bool isLargeAngle, bool isClockwise, DrawingPen pen)

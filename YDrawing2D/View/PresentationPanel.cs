@@ -23,7 +23,7 @@ namespace YDrawing2D
     }
 
     /// <summary>
-    /// The world coordinates are lower left
+    /// The world coordinates are left-bottom
     /// </summary>
     public class PresentationPanel : UIElement, IDisposable
     {

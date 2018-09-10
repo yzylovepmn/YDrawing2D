@@ -25,13 +25,13 @@ namespace YDrawing2D.Model
             else c = (Int32)Math.Sqrt(RadiusYSquared - RadiusXSquared);
             if (radiusX > radiusY)
             {
-                _focusP1 = new Int32Point(center.X + c, center.Y);
-                _focusP2 = new Int32Point(center.X - c, center.Y);
+                FocusP1 = new Int32Point(center.X + c, center.Y);
+                FocusP2 = new Int32Point(center.X - c, center.Y);
             }
             else
             {
-                _focusP1 = new Int32Point(center.X, center.Y + c);
-                _focusP2 = new Int32Point(center.X, center.Y - c);
+                FocusP1 = new Int32Point(center.X, center.Y + c);
+                FocusP2 = new Int32Point(center.X, center.Y - c);
             }
             var _bounds = GeometryHelper.CalcBounds(center, radiusX, RadiusY, pen.Thickness);
             _property = new PrimitiveProperty(pen, _bounds);
@@ -48,13 +48,13 @@ namespace YDrawing2D.Model
         internal readonly Int64 RadiusXSquared;
         internal readonly Int64 RadiusYSquared;
         internal readonly Int32 SplitX;
-        private readonly Int32 A_2;
-        private readonly Int32Point _focusP1;
-        private readonly Int32Point _focusP2;
+        internal readonly Int32 A_2;
+        internal readonly Int32Point FocusP1;
+        internal readonly Int32Point FocusP2;
 
         public bool HitTest(Int32Point p)
         {
-            return Math.Abs((p - _focusP1).Length + (p - _focusP2).Length - A_2) <= _property.Pen.Thickness + 1;
+            return Math.Abs((p - FocusP1).Length + (p - FocusP2).Length - A_2) <= _property.Pen.Thickness + 1;
         }
 
         public bool IsIntersect(IPrimitive other)
@@ -63,11 +63,11 @@ namespace YDrawing2D.Model
             switch (other.Type)
             {
                 case PrimitiveType.Line:
-                    break;
+                    return GeometryHelper.IsIntersect(this, (Line)other);
                 case PrimitiveType.Cicle:
-                    break;
+                    return GeometryHelper.IsIntersect(this, (Cicle)other);
                 case PrimitiveType.Arc:
-                    break;
+                    return GeometryHelper.IsIntersect(this, (Arc)other);
                 case PrimitiveType.Ellipse:
                     return GeometryHelper.IsIntersect(this, (Ellipse)other);
                 case PrimitiveType.Spline:

@@ -40,6 +40,23 @@ namespace YDrawing2D
             }
         }
 
+        public static Int64 CalcMCD(Int64 a, Int64 b)
+        {
+            if (a == b) return a;
+            if (Math.Abs(a) > Math.Abs(b))
+            {
+                if (b == 0)
+                    return a;
+                return CalcMCD(b, a % b);
+            }
+            else
+            {
+                if (a == 0)
+                    return b;
+                return CalcMCD(a, b % a);
+            }
+        }
+
         public static void Switch(ref double a, ref double b)
         {
             var c = a;
@@ -364,14 +381,17 @@ namespace YDrawing2D
             }
             else
             {
-                a = p2.Y - p1.Y;
-                b = p1.X - p2.X;
-                c = p1.Y * p2.X - p2.Y * p1.X;
-                var mcd = Helper.CalcMCD(a, b);
-                mcd = Helper.CalcMCD(mcd, c);
-                a /= mcd;
-                b /= mcd;
-                c /= mcd;
+                Int64 _a = p2.Y - p1.Y;
+                Int64 _b = p1.X - p2.X;
+                Int64 _c = (Int64)p1.Y * p2.X - p2.Y * p1.X;
+                var mcd = Helper.CalcMCD(_a, _b);
+                mcd = Helper.CalcMCD(mcd, _c);
+                _a /= mcd;
+                _b /= mcd;
+                _c /= mcd;
+                a = (int)_a;
+                b = (int)_b;
+                c = (int)_c;
             }
         }
 
@@ -1053,7 +1073,7 @@ namespace YDrawing2D
             var len = vec.Length;
             var delta = cicle1.Property.Pen.Thickness + cicle2.Property.Pen.Thickness;
             if ((len > cicle1.Radius + cicle2.Radius + delta)
-                || (len < Math.Max(0, Math.Abs(cicle1.Radius - cicle2.Radius) - delta)))
+                || (len < Math.Abs(cicle1.Radius - cicle2.Radius) - delta))
                 return false;
             return true;
         }
@@ -1073,6 +1093,64 @@ namespace YDrawing2D
         {
             if (ellipse1.Contains(ellipse2.Property.Bounds) || ellipse2.Contains(ellipse1.Property.Bounds))
                 return false;
+
+            var vec = ellipse1.Center - ellipse2.Center;
+            var len = vec.Length;
+            var delta = ellipse1.Property.Pen.Thickness + ellipse2.Property.Pen.Thickness;
+            if (len < Math.Min(ellipse1.RadiusX, ellipse1.RadiusY) - Math.Max(ellipse2.RadiusX, ellipse2.RadiusY) - delta)
+                return false;
+            if (len < Math.Min(ellipse2.RadiusX, ellipse2.RadiusY) - Math.Max(ellipse1.RadiusX, ellipse1.RadiusY) - delta)
+                return false;
+
+            return true;
+        }
+
+        internal static bool IsIntersect(Ellipse ellipse, Cicle cicle)
+        {
+            var vec = ellipse.Center - cicle.Center;
+            var len = vec.Length;
+            var delta = ellipse.Property.Pen.Thickness + cicle.Property.Pen.Thickness;
+            if (len < Math.Min(ellipse.RadiusX, ellipse.RadiusY) - cicle.Radius - delta)
+                return false;
+            if (len < cicle.Radius - Math.Max(ellipse.RadiusX, ellipse.RadiusY) - delta)
+                return false;
+
+            return true;
+        }
+
+        internal static bool IsIntersect(Ellipse ellipse, Arc arc)
+        {
+            var vec = ellipse.Center - arc.Center;
+            var len = vec.Length;
+            var delta = ellipse.Property.Pen.Thickness + arc.Property.Pen.Thickness;
+            if (len < Math.Min(ellipse.RadiusX, ellipse.RadiusY) - arc.Radius - delta)
+                return false;
+            if (len < arc.Radius - Math.Max(ellipse.RadiusX, ellipse.RadiusY) - delta)
+                return false;
+
+            return true;
+        }
+
+        internal static bool IsIntersect(Ellipse ellipse, Line line)
+        {
+            if (((line.Start - ellipse.FocusP1).Length + (line.Start - ellipse.FocusP2).Length < ellipse.A_2 - ellipse.Property.Pen.Thickness)
+                || ((line.End - ellipse.FocusP1).Length + (line.End - ellipse.FocusP2).Length < ellipse.A_2 - ellipse.Property.Pen.Thickness))
+                return false;
+
+            if (line.A == 0)
+            {
+                var y = line.C / line.B;
+                if (y > ellipse.Center.Y + ellipse.RadiusY + ellipse.Property.Pen.Thickness
+                    || y < ellipse.Center.Y - ellipse.RadiusY - ellipse.Property.Pen.Thickness)
+                    return false;
+            }
+            else if (line.B == 0)
+            {
+                var x = line.C / line.A;
+                if (x > ellipse.Center.X + ellipse.RadiusX + ellipse.Property.Pen.Thickness
+                    || x < ellipse.Center.X - ellipse.RadiusX - ellipse.Property.Pen.Thickness)
+                    return false;
+            }
 
             return true;
         }

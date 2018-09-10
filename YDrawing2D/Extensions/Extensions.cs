@@ -148,7 +148,6 @@ namespace YDrawing2D.Extensions
                         _x2 = ellipse.Center.X + Math.Min(_v1, _v2);
                         return !(rect.X <= _x1 || rect.X >= _x2 || right2 >= _x2);
                 }
-                return true;
             }
 
             return false;
@@ -158,9 +157,17 @@ namespace YDrawing2D.Extensions
         {
             if (self == other) return true;
             foreach (var primitive1 in self.Context.Primitives)
+            {
+                if (primitive1 == null || !self.Panel.Bounds.IsIntersectWith(primitive1.Property.Bounds))
+                    return false;
                 foreach (var primitive2 in other.Context.Primitives)
-                    if (primitive1 != null && primitive2 != null && primitive1.IsIntersect(primitive2))
+                {
+                    if (primitive2 == null || !self.Panel.Bounds.IsIntersectWith(primitive2.Property.Bounds))
+                        return false;
+                    if (primitive1.IsIntersect(primitive2))
                         return true;
+                }
+            }
             return false;
         }
     }
