@@ -33,7 +33,7 @@ namespace YDrawing2D.Model
 
         public bool IsIntersect(IPrimitive other)
         {
-            if (!other.IsIntersectWith(this)) return false;
+            if (!other.Property.Bounds.IsIntersectWith(_property.Bounds)) return false;
             switch (other.Type)
             {
                 case PrimitiveType.Line:

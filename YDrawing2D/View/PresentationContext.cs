@@ -42,7 +42,9 @@ namespace YDrawing2D.View
         public void DrawLine(Point start, Point end, DrawingPen pen)
         {
             start = GeometryHelper.ConvertWithTransform(start, _visual.Panel.ImageHeight, _visual.Panel.Transform);
+            start = _visual.Transform.Transform(start);
             end = GeometryHelper.ConvertWithTransform(end, _visual.Panel.ImageHeight, _visual.Panel.Transform);
+            end = _visual.Transform.Transform(end);
 
             var _start = GeometryHelper.ConvertToInt32Point(start, _visual.Panel.DPIRatio);
             var _end = GeometryHelper.ConvertToInt32Point(end, _visual.Panel.DPIRatio);
@@ -54,7 +56,8 @@ namespace YDrawing2D.View
         public void DrawCicle(Point center, double radius, DrawingPen pen)
         {
             center = GeometryHelper.ConvertWithTransform(center, _visual.Panel.ImageHeight, _visual.Panel.Transform);
-            radius *= _visual.Panel.ScaleX;
+            center = _visual.Transform.Transform(center);
+            radius *= _visual.Panel.ScaleX * _visual.Transform.ScaleX;
 
             var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
             var _radius = Helper.ConvertTo(radius * _visual.Panel.DPIRatio);
@@ -65,8 +68,9 @@ namespace YDrawing2D.View
         public void DrawEllipse(Point center, double radiusX, double radiusY, DrawingPen pen)
         {
             center = GeometryHelper.ConvertWithTransform(center, _visual.Panel.ImageHeight, _visual.Panel.Transform);
-            radiusX *= _visual.Panel.ScaleX;
-            radiusY *= _visual.Panel.ScaleY;
+            center = _visual.Transform.Transform(center);
+            radiusX *= _visual.Panel.ScaleX * _visual.Transform.ScaleX;
+            radiusY *= _visual.Panel.ScaleY * _visual.Transform.ScaleY;
 
             var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
             var _radiusX = Helper.ConvertTo(radiusX * _visual.Panel.DPIRatio);
@@ -86,7 +90,8 @@ namespace YDrawing2D.View
                 Helper.Switch(ref startRadian, ref endRadian);
 
             center = GeometryHelper.ConvertWithTransform(center, _visual.Panel.ImageHeight, _visual.Panel.Transform);
-            radius *= _visual.Panel.ScaleX;
+            center = _visual.Transform.Transform(center);
+            radius *= _visual.Panel.ScaleX * _visual.Transform.ScaleX;
 
             var startP = new Point(radius * Math.Cos(startRadian) + center.X, center.Y - radius * Math.Sin(startRadian));
             var endP = new Point(radius * Math.Cos(endRadian) + center.X, center.Y - radius * Math.Sin(endRadian));
@@ -127,8 +132,11 @@ namespace YDrawing2D.View
         private void _ArcTo(Point point, double radius, bool isLargeAngle, bool isClockwise, DrawingPen pen)
         {
             var startP = GeometryHelper.ConvertWithTransform(_begin.Value, _visual.Panel.ImageHeight, _visual.Panel.Transform);
+            startP = _visual.Transform.Transform(startP);
             var endP = GeometryHelper.ConvertWithTransform(point, _visual.Panel.ImageHeight, _visual.Panel.Transform);
-            radius *= _visual.Panel.ScaleX;
+            endP = _visual.Transform.Transform(endP);
+            radius *= _visual.Panel.ScaleX * _visual.Transform.ScaleX;
+
             var vec = endP - startP;
             if (vec.Length <= (radius * 2))
             {

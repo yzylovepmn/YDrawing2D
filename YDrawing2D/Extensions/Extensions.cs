@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using YDrawing2D.Model;
 using YDrawing2D.Util;
 using YDrawing2D.View;
@@ -101,11 +102,6 @@ namespace YDrawing2D.Extensions
             return true;
         }
 
-        public static bool IsIntersectWith(this IPrimitive self, IPrimitive other)
-        {
-            return self.Property.Bounds.IsIntersectWith(other.Property.Bounds);
-        }
-
         public static bool Contains(this IPrimitive primitive, Int32Rect rect)
         {
             var other = primitive.Property.Bounds;
@@ -169,6 +165,16 @@ namespace YDrawing2D.Extensions
                 }
             }
             return false;
+        }
+
+        public static double ScaleX(this Matrix m)
+        {
+            return Math.Sqrt(m.M11 * m.M11 + m.M12 * m.M12);
+        }
+
+        public static double ScaleY(this Matrix m)
+        {
+            return Math.Sqrt(m.M21 * m.M21 + m.M22 * m.M22);
         }
     }
 }

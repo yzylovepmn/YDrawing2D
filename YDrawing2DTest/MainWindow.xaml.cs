@@ -56,7 +56,7 @@ namespace YDrawing2DTest
             _panel = new PresentationPanel(len, len, 96, 96, Colors.Black, RenderMode.Async);
             Content = _panel;
             var r = new Random(5);
-            for (int i = 0; i < 40000; i++)
+            for (int i = 0; i < 10000; i++)
             {
                 //_panel.AddVisual(new Line(new Point(0, i), new Point(800, i + 100)));
                 //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
@@ -64,11 +64,11 @@ namespace YDrawing2DTest
                 //_panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
                 //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
             }
-            _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)));
-            _panel.AddVisual(new Cicle(new Point(200, 300), 200));
-            _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400));
-            _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200));
-            _panel.UpdateAll();
+            _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)), true);
+            _panel.AddVisual(new Cicle(new Point(200, 300), 200), true);
+            _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
+            _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
+            //_panel.UpdateAll();
             _panel.MouseMove += _panel_MouseMove;
             _panel.MouseWheel += _panel_MouseWheel;
             _panel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
@@ -92,7 +92,11 @@ namespace YDrawing2DTest
         private void _panel_MouseMove(object sender, MouseEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.None)
+            {
+                //var visual = VisualHelper.HitTest(_panel, e.GetPosition(_panel));
+                //_panel.RemoveVisual(visual);
                 ActiveVisual = VisualHelper.HitTest(_panel, e.GetPosition(_panel));
+            }
             if (Keyboard.Modifiers == ModifierKeys.Control && e.LeftButton == MouseButtonState.Pressed)
             {
                 if (isfirst)

@@ -55,6 +55,7 @@
     <Compile Include="Model\Primitive\Primitive.cs" />
     <Compile Include="Model\Primitive\Line.cs" />
     <Compile Include="Model\Primitive\Spline.cs" />
+    <Compile Include="Util\StackTransform.cs" />
     <Compile Include="View\PresentationPanel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\DrawingPen.cs" />

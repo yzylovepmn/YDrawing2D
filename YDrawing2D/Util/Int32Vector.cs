@@ -10,19 +10,17 @@ namespace YDrawing2D.Util
     {
         public Int32Vector(Int32 x, Int32 y)
         {
-            _x = x;
-            _y = y;
+            X = x;
+            Y = y;
         }
 
-        public Int32 X { get { return _x; } }
-        private Int32 _x;
+        public Int32 X;
 
-        public Int32 Y { get { return _y; } }
-        private Int32 _y;
+        public Int32 Y;
 
-        public Int64 LengthSquared { get { return _x * _x + _y * _y; } }
+        public Int64 LengthSquared { get { return X * X + Y * Y; } }
 
-        public Int32 Length { get { return (Int32)Math.Sqrt(_x * _x + _y * _y); } }
+        public Int32 Length { get { return (Int32)Math.Sqrt(X * X + Y * Y); } }
 
         public static Int32Vector operator -(Int32Vector v1, Int32Vector v2)
         {
@@ -51,7 +49,7 @@ namespace YDrawing2D.Util
 
         public override string ToString()
         {
-            return string.Format("({0}, {1})", _x, _y);
+            return string.Format("({0}, {1})", X, Y);
         }
     }
 }

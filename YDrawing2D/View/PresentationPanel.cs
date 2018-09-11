@@ -253,28 +253,30 @@ namespace YDrawing2D
 
         public void ScaleAt(double scaleX, double scaleY, double centerX, double centerY, bool toUpdate = true)
         {
+            _transform.ScaleAt(scaleX, scaleY, centerX, centerY);
             _scaleX *= scaleX;
             _scaleY *= scaleY;
-            _transform.ScaleAt(scaleX, scaleY, centerX, centerY);
             if (toUpdate)
                 UpdateAll();
         }
 
         public void Scale(double scaleX, double scaleY, bool toUpdate = true)
         {
+            _transform.Scale(scaleX, scaleY);
             _scaleX *= scaleX;
             _scaleY *= scaleY;
-            _transform.Scale(scaleX, scaleY);
             if (toUpdate)
                 UpdateAll();
         }
         #endregion
 
         /// <summary>
-        /// You must call <see cref="UpdateAll"/> or <see cref="Update(PresentationVisual)"/> after calling this method,
+        /// If param "isUpdate" is false, You must call <see cref="UpdateAll"/> or <see cref="Update(PresentationVisual)"/> after calling this method,
         /// Make sure the panel is updated!
         /// </summary>
-        public void AddVisual(PresentationVisual visual)
+        /// <param name="visual">The visual to add</param>
+        /// <param name="isUpdate">Whether to refresh the panel immediately</param>
+        public void AddVisual(PresentationVisual visual, bool isUpdate = false)
         {
             Monitor.Enter(_loopLock);
             if (!_visuals.Contains(visual))
@@ -285,26 +287,33 @@ namespace YDrawing2D
                 lock (this)
                     _visuals.Add(visual);
 
-                //Update(visual);
+                if (isUpdate)
+                    Update(visual, true);
             }
             Monitor.Exit(_loopLock);
         }
 
         /// <summary>
-        /// You must call <see cref="UpdateAll"/> or <see cref="Update(PresentationVisual)"/> after calling this method,
+        /// If param "isUpdate" is false, You must call <see cref="UpdateAll"/> or <see cref="Update(PresentationVisual)"/> after calling this method,
         /// Make sure the panel is updated!
         /// </summary>
-        public void RemoveVisual(PresentationVisual visual)
+        /// <param name="visual">The visual to remove</param>
+        /// <param name="isUpdate">Whether to refresh the panel immediately</param>
+        public void RemoveVisual(PresentationVisual visual, bool isUpdate = true)
         {
             Monitor.Enter(_loopLock);
             if (_visuals.Contains(visual))
             {
                 visual.Panel = null;
+                // It has been updated before deletion, so the count is reduced by one here.
                 if (_isUpdatingAll && visual.Mode == Mode.Normal)
                     _cnt--;
-                lock(this)
+                else visual.Mode = Mode.Normal;
+                lock (this)
                     _visuals.Remove(visual);
-                //Update(visual);
+
+                if (isUpdate)
+                    ClearVisual(visual);
             }
             Monitor.Exit(_loopLock);
         }
@@ -333,7 +342,19 @@ namespace YDrawing2D
             if (!isSingle)
                 foreach (var _visual in _visuals.Where(other => other.IsIntersectWith(visual)))
                     _UpdateSync(_visual);
+            else _UpdateSync(visual);
 
+            ExitRender();
+        }
+
+        internal void ClearVisual(PresentationVisual visual)
+        {
+            if (visual == null) return;
+            EnterRender();
+            _ClearVisual(visual);
+
+            foreach (var _visual in _visuals.Where(other => other != visual && other.IsIntersectWith(visual)))
+                _UpdateSync(_visual);
             ExitRender();
         }
 
