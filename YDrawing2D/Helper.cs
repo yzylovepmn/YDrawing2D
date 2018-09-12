@@ -13,9 +13,9 @@ namespace YDrawing2D
 {
     public class Helper
     {
-        public static int CalcColor(Color color)
+        public static int CalcColor(Color color, double opacity = 1)
         {
-            int color_data = color.A << 24;   // A
+            int color_data = ((byte)(opacity * color.A)) << 24;   // A
             color_data |= color.R << 16;      // R
             color_data |= color.G << 8;       // G
             color_data |= color.B << 0;       // B
@@ -134,7 +134,7 @@ namespace YDrawing2D
             foreach (var point in points)
             {
                 color = panel.GetColor(point.X, point.Y);
-                if (color != panel.BackColorValue)
+                //if (color != panel.BackColorValue)
                     foreach (var visual in panel.Visuals)
                         if (visual.Contains(point, color))
                             return visual;
@@ -156,22 +156,22 @@ namespace YDrawing2D
         /// </summary>
         public const int PixelByteLength = 4;
 
-        public static Point ConvertWithTransform(Point p, double height, Matrix transform)
+        internal static Point ConvertWithTransform(Point p, double height, Matrix transform1, StackTransform transform2)
         {
-            return transform.Transform(new Point(p.X, height - p.Y));
+            return transform1.Transform(transform2.Transform(new Point(p.X, height - p.Y)));
         }
 
-        public static Int32Point ConvertToInt32Point(Point p, double dpiRatio)
+        internal static Int32Point ConvertToInt32Point(Point p, double dpiRatio)
         {
             return new Int32Point((int)(p.X * dpiRatio), (int)(p.Y * dpiRatio));
         }
 
-        public static double GetRadian(double angle)
+        internal static double GetRadian(double angle)
         {
             return angle * Math.PI / 180;
         }
 
-        public static Int32Rect RestrictBounds(Int32Rect restriction, Int32Rect bounds)
+        internal static Int32Rect RestrictBounds(Int32Rect restriction, Int32Rect bounds)
         {
             int right = restriction.X + restriction.Width;
             int bottom = restriction.Y + restriction.Height;
@@ -182,7 +182,7 @@ namespace YDrawing2D
             return new Int32Rect(left, top, Math.Min(avaWitdh, bounds.Width + bounds.X - left), Math.Min(avaHeight, bounds.Height + bounds.Y - top));
         }
 
-        public static Int32Rect CalcBounds(int thickness, params Int32Point[] points)
+        internal static Int32Rect CalcBounds(int thickness, params Int32Point[] points)
         {
             var h = Math.Max(thickness >> 1, 1);
             int left = points[0].X, top = points[0].Y, right = left, bottom = top;
@@ -201,19 +201,19 @@ namespace YDrawing2D
             return new Int32Rect(left - h, top - h, right - left + (h << 1), bottom - top + (h << 1));
         }
 
-        public static Int32Rect CalcBounds(Int32Point center, Int32 radius, int thickness)
+        internal static Int32Rect CalcBounds(Int32Point center, Int32 radius, int thickness)
         {
             int h = Math.Max(thickness >> 1, 1);
             return new Int32Rect(center.X - radius - h, center.Y - radius - h, (radius + h) << 1, (radius + h) << 1);
         }
 
-        public static Int32Rect CalcBounds(Int32Point center, Int32 radiusX, Int32 radiusY, int thickness)
+        internal static Int32Rect CalcBounds(Int32Point center, Int32 radiusX, Int32 radiusY, int thickness)
         {
             int h = Math.Max(thickness >> 1, 1);
             return new Int32Rect(center.X - radiusX - h, center.Y - radiusY - h, (radiusX + h) << 1, (radiusY + h) << 1);
         }
 
-        public static Int32Rect CalcBounds(Int32Point center, Int32Point start, Int32Point end, Int32 radius, Int32 thickness)
+        internal static Int32Rect CalcBounds(Int32Point center, Int32Point start, Int32Point end, Int32 radius, Int32 thickness)
         {
             int h = Math.Max(thickness >> 1, 1);
             thickness = h << 1;
@@ -365,7 +365,7 @@ namespace YDrawing2D
             return new Int32Rect(left - h, top - h, right - left + thickness, bottom - top + thickness);
         }
 
-        public static void CalcLineABC(Int32Point p1, Int32Point p2, out Int32 a, out Int32 b, out Int32 c)
+        internal static void CalcLineABC(Int32Point p1, Int32Point p2, out Int32 a, out Int32 b, out Int32 c)
         {
             if (p1.X == p2.X)
             {
@@ -395,7 +395,7 @@ namespace YDrawing2D
             }
         }
 
-        public static IEnumerable<IntPtr> CalcPositions(int x, int y, IntPtr offset, int stride, int thickness, Int32Rect bounds)
+        internal static IEnumerable<IntPtr> CalcPositions(int x, int y, IntPtr offset, int stride, int thickness, Int32Rect bounds)
         {
             IntPtr start = offset;
             if (thickness == 1)
@@ -423,7 +423,7 @@ namespace YDrawing2D
             }
         }
 
-        public static IEnumerable<Int32Point> CalcHitTestPoints(int x, int y, Int32Rect bounds)
+        internal static IEnumerable<Int32Point> CalcHitTestPoints(int x, int y, Int32Rect bounds)
         {
             if (VisualHelper.HitTestPoints == null)
                 VisualHelper.HitTestPoints = _CalcHitTestPoints().ToList();
@@ -519,7 +519,7 @@ namespace YDrawing2D
             }
         }
 
-        public static IEnumerable<Int32Point> CalcPrimitivePoints(IPrimitive primitive)
+        internal static IEnumerable<Int32Point> CalcPrimitivePoints(IPrimitive primitive)
         {
             switch (primitive.Type)
             {
@@ -1198,7 +1198,7 @@ namespace YDrawing2D
         #endregion
 
         #region Spline
-        public static Point ComputePoint(Spline spline, double u)
+        internal static Point ComputePoint(Spline spline, double u)
         {
             if (u > spline.Domain) throw new ArgumentOutOfRangeException();
             int i = spline.Degree;

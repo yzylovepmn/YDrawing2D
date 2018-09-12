@@ -29,7 +29,8 @@ namespace YDrawing2DTest
             Loaded += OnLoaded;
         }
         public static DrawingPen WhitePen = new DrawingPen(1, Colors.White);
-        public static DrawingPen ActivePen = new DrawingPen(1, Colors.Blue);
+        public static DrawingPen ActivePen = new DrawingPen(1, Colors.Red);
+        public static DrawingPen SelectedPen = new DrawingPen(1, Colors.Blue);
         private static PresentationPanel _panel;
         public static PresentationVisual ActiveVisual
         {
@@ -49,6 +50,25 @@ namespace YDrawing2DTest
             }
         }
         private static PresentationVisual _visual;
+
+        public static PresentationVisual SelectedVisual
+        {
+            get { return _selectedVisual; }
+            set
+            {
+                if (_selectedVisual != value)
+                {
+                    var old = _selectedVisual;
+                    _selectedVisual = value;
+                    if (old != null)
+                        _panel.Update(old);
+                    if (_selectedVisual != null)
+                        _panel.Update(_selectedVisual);
+                    //_panel.UpdateAll();
+                }
+            }
+        }
+        private static PresentationVisual _selectedVisual;
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
@@ -77,6 +97,8 @@ namespace YDrawing2DTest
         private void _panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             p = e.GetPosition(_panel);
+            if (Keyboard.Modifiers == ModifierKeys.None)
+                SelectedVisual = VisualHelper.HitTest(_panel, e.GetPosition(_panel));
         }
 
         private void _panel_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -127,9 +149,11 @@ namespace YDrawing2DTest
 
         protected override void Draw(IContext context)
         {
-            if (this == MainWindow.ActiveVisual)
-                context.DrawLine(_start, _end, MainWindow.ActivePen);
-            else context.DrawLine(_start, _end, MainWindow.WhitePen);
+            if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
+                context.DrawLine(MainWindow.ActivePen, _start, _end);
+            else if(this == MainWindow.SelectedVisual)
+                context.DrawLine(MainWindow.SelectedPen, _start, _end);
+            else context.DrawLine(MainWindow.WhitePen, _start, _end);
         }
     }
 
@@ -146,9 +170,12 @@ namespace YDrawing2DTest
 
         protected override void Draw(IContext context)
         {
-            if (this == MainWindow.ActiveVisual)
-                context.DrawCicle(_center, _radius, MainWindow.ActivePen);
-            else context.DrawCicle(_center, _radius, MainWindow.WhitePen);
+            context.PushOpacity(0.5);
+            if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
+                context.DrawCicle(MainWindow.ActivePen, _center, _radius);
+            else if (this == MainWindow.SelectedVisual)
+                context.DrawCicle(MainWindow.SelectedPen, _center, _radius);
+            else context.DrawCicle(MainWindow.WhitePen, _center, _radius);
         }
     }
 
@@ -167,9 +194,11 @@ namespace YDrawing2DTest
 
         protected override void Draw(IContext context)
         {
-            if (this == MainWindow.ActiveVisual)
-                context.DrawEllipse(_center, _radiusX, _radiusY, MainWindow.ActivePen);
-            else context.DrawEllipse(_center, _radiusX, _radiusY, MainWindow.WhitePen);
+            if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
+                context.DrawEllipse(MainWindow.ActivePen, _center, _radiusX, _radiusY);
+            else if (this == MainWindow.SelectedVisual)
+                context.DrawEllipse(MainWindow.SelectedPen, _center, _radiusX, _radiusY);
+            else context.DrawEllipse(MainWindow.WhitePen, _center, _radiusX, _radiusY);
         }
     }
 
@@ -206,16 +235,20 @@ namespace YDrawing2DTest
         {
             if (!_start.HasValue)
             {
-                if (this == MainWindow.ActiveVisual)
-                    context.DrawArc(_center, _radius, _startAngle, _endAngle, _isClockwise, MainWindow.ActivePen);
-                else context.DrawArc(_center, _radius, _startAngle, _endAngle, _isClockwise, MainWindow.WhitePen);
+                if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
+                    context.DrawArc(MainWindow.ActivePen, _center, _radius, _startAngle, _endAngle, _isClockwise);
+                else if (this == MainWindow.SelectedVisual)
+                    context.DrawArc(MainWindow.SelectedPen, _center, _radius, _startAngle, _endAngle, _isClockwise);
+                else context.DrawArc(MainWindow.WhitePen, _center, _radius, _startAngle, _endAngle, _isClockwise);
             }
             else
             {
                 context.BeginFigure(_start.Value);
-                if (this == MainWindow.ActiveVisual)
-                    context.ArcTo(_end.Value, _radius, _isLargeAngle, _isClockwise, MainWindow.ActivePen);
-                else context.ArcTo(_end.Value, _radius, _isLargeAngle, _isClockwise, MainWindow.WhitePen);
+                if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
+                    context.ArcTo(MainWindow.ActivePen, _end.Value, _radius, _isLargeAngle, _isClockwise);
+                else if (this == MainWindow.SelectedVisual)
+                    context.ArcTo(MainWindow.SelectedPen, _end.Value, _radius, _isLargeAngle, _isClockwise);
+                else context.ArcTo(MainWindow.WhitePen, _end.Value, _radius, _isLargeAngle, _isClockwise);
             }
         }
     }

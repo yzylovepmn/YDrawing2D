@@ -23,7 +23,6 @@ namespace YDrawing2D.View
         public PresentationVisual()
         {
             _context = new PresentationContext(this);
-            _transform = new StackTransform();
         }
 
         public PresentationPanel Panel { get { return _panel; } internal set { _panel = value; } }
@@ -32,55 +31,8 @@ namespace YDrawing2D.View
         internal PresentationContext Context { get { return _context; } }
         private PresentationContext _context;
 
-        internal StackTransform Transform { get { return _transform; } }
-        private StackTransform _transform;
-
         internal Mode Mode { get { return _mode; } set { _mode = value; } }
         private Mode _mode;
-
-        #region Transform
-        public void Translate(double offsetX, double offsetY, bool toUpdate = true)
-        {
-            _transform.PushTranslate(offsetX, offsetY);
-            if (toUpdate)
-                _panel.Update(this);
-        }
-
-        public void ScaleAt(double scaleX, double scaleY, double centerX, double centerY, bool toUpdate = true)
-        {
-            _transform.PushScaleAt(scaleX, scaleY, centerX, centerY);
-            if (toUpdate)
-                _panel.Update(this);
-        }
-
-        public void Scale(double scaleX, double scaleY, bool toUpdate = true)
-        {
-            _transform.PushScale(scaleX, scaleY);
-            if (toUpdate)
-                _panel.Update(this);
-        }
-
-        public void Rotate(double angle, bool toUpdate = true)
-        {
-            _transform.PushRotate(angle);
-            if (toUpdate)
-                _panel.Update(this);
-        }
-
-        public void RotateAt(double angle, double centerX, double centerY, bool toUpdate = true)
-        {
-            _transform.PushRotateAt(angle, centerX, centerY);
-            if (toUpdate)
-                _panel.Update(this);
-        }
-
-        public void Pop(bool toUpdate = true)
-        {
-            _transform.Pop();
-            if (toUpdate)
-                _panel.Update(this);
-        }
-        #endregion
 
         private IContext RenderOpen()
         {
@@ -113,8 +65,6 @@ namespace YDrawing2D.View
 
         public void Dispose()
         {
-            _transform.Dispose();
-            _transform = null;
             _context.Dispose();
             _context = null;
             _panel = null;

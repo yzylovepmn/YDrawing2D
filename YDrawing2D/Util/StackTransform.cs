@@ -9,58 +9,75 @@ using YDrawing2D.Extensions;
 
 namespace YDrawing2D.Util
 {
-    public class StackTransform : IDisposable
+    internal class StackTransform : IDisposable
     {
-        public StackTransform()
+        internal StackTransform()
         {
+            _opacity = 1;
             _matrix = new Matrix();
-            _matrices = new Stack<Matrix>();
+            _transforms = new Stack<object>();
         }
 
         private Matrix _matrix;
-        private Stack<Matrix> _matrices;
+        private Stack<object> _transforms;
 
-        public double ScaleX { get { return _scaleX; } }
+        internal double Opacity { get { return _opacity; } }
+        private double _opacity;
+
+        internal double ScaleX { get { return _scaleX; } }
         private double _scaleX = 1;
 
-        public double ScaleY { get { return _scaleY; } }
+        internal double ScaleY { get { return _scaleY; } }
         private double _scaleY = 1;
 
         #region Transform
-        public Point Transform(Point point)
+        internal Point Transform(Point point)
         {
             return _matrix.Transform(point);
         }
 
-        public Vector Transform(Vector vector)
+        internal Vector Transform(Vector vector)
         {
             return _matrix.Transform(vector);
         }
 
-        public void Transform(Point[] points)
+        internal void Transform(Point[] points)
         {
             _matrix.Transform(points);
         }
 
-        public void Transform(Vector[] vectors)
+        internal void Transform(Vector[] vectors)
         {
             _matrix.Transform(vectors);
         }
 
-        public void Reset()
+        internal void Transform(Color color)
         {
-            _matrix = new Matrix();
-            _matrices.Clear();
+            color.A = (byte)(color.A * _opacity);
         }
 
-        public void PushTranslate(double offsetX, double offsetY)
+        internal void Reset()
+        {
+            _opacity = 1;
+            _matrix = new Matrix();
+            _transforms.Clear();
+            _transforms = new Stack<object>();
+        }
+
+        internal void PushOpacity(double opacity)
+        {
+            _opacity *= opacity;
+            _transforms.Push(opacity);
+        }
+
+        internal void PushTranslate(double offsetX, double offsetY)
         {
             var matrix = new Matrix();
             matrix.Translate(offsetX, offsetY);
             _Push(matrix);
         }
 
-        public void PushScale(double scaleX, double scaleY)
+        internal void PushScale(double scaleX, double scaleY)
         {
             var matrix = new Matrix();
             matrix.Scale(scaleX, scaleY);
@@ -69,7 +86,7 @@ namespace YDrawing2D.Util
             _Push(matrix);
         }
 
-        public void PushScaleAt(double scaleX, double scaleY, double centerX, double centerY)
+        internal void PushScaleAt(double scaleX, double scaleY, double centerX, double centerY)
         {
             var matrix = new Matrix();
             matrix.ScaleAt(scaleX, scaleY, centerX, centerY);
@@ -78,40 +95,51 @@ namespace YDrawing2D.Util
             _Push(matrix);
         }
 
-        public void PushRotate(double angle)
+        internal void PushRotate(double angle)
         {
             var matrix = new Matrix();
             matrix.Rotate(angle);
             _Push(matrix);
         }
 
-        public void PushRotateAt(double angle, double centerX, double centerY)
+        internal void PushRotateAt(double angle, double centerX, double centerY)
         {
             var matrix = new Matrix();
             matrix.RotateAt(angle, centerX, centerY);
             _Push(matrix);
         }
 
-        public void Pop()
+        internal void Pop()
         {
-            var m = _matrices.Pop();
-            m.Invert();
-            _matrix *= m;
-            _scaleX = _matrix.ScaleX();
-            _scaleY = _matrix.ScaleY();
+            var t = _transforms.Pop();
+            if (t is Matrix)
+            {
+                var m = (Matrix)t;
+                m.Invert();
+                _matrix *= m;
+                _scaleX = _matrix.ScaleX();
+                _scaleY = _matrix.ScaleY();
+            }
+            if (t is double)
+            {
+                var d = (double)t;
+                _opacity = 1;
+                foreach (double item in _transforms.TakeWhile(_t => _t is double))
+                    _opacity *= item;
+            }
         }
 
-        internal void _Push(Matrix matrix)
+        private void _Push(Matrix matrix)
         {
-            _matrices.Push(matrix);
+            _transforms.Push(matrix);
             _matrix *= matrix;
         }
         #endregion
 
         public void Dispose()
         {
-            _matrices.Clear();
-            _matrices = null;
+            _transforms.Clear();
+            _transforms = null;
         }
     }
 }
