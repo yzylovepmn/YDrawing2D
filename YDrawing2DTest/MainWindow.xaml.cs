@@ -76,7 +76,7 @@ namespace YDrawing2DTest
             _panel = new PresentationPanel(len, len, 96, 96, Colors.Black, RenderMode.Async);
             Content = _panel;
             var r = new Random(5);
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 40000; i++)
             {
                 //_panel.AddVisual(new Line(new Point(0, i), new Point(800, i + 100)));
                 //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
@@ -149,6 +149,15 @@ namespace YDrawing2DTest
 
         protected override void Draw(IContext context)
         {
+            //if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
+            //    context.BeginFigure(MainWindow.ActivePen, new Point(100, 100), true);
+            //else if (this == MainWindow.SelectedVisual)
+            //    context.BeginFigure(MainWindow.SelectedPen, new Point(100, 100), true);
+            //else context.BeginFigure(MainWindow.WhitePen, new Point(100, 100), true);
+            //context.LineTo(new Point(400, 100));
+            //context.LineTo(new Point(400, 400));
+            //context.LineTo(new Point(100, 400));
+            //context.EndFigure();
             if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
                 context.DrawLine(MainWindow.ActivePen, _start, _end);
             else if(this == MainWindow.SelectedVisual)
@@ -240,15 +249,6 @@ namespace YDrawing2DTest
                 else if (this == MainWindow.SelectedVisual)
                     context.DrawArc(MainWindow.SelectedPen, _center, _radius, _startAngle, _endAngle, _isClockwise);
                 else context.DrawArc(MainWindow.WhitePen, _center, _radius, _startAngle, _endAngle, _isClockwise);
-            }
-            else
-            {
-                context.BeginFigure(_start.Value);
-                if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                    context.ArcTo(MainWindow.ActivePen, _end.Value, _radius, _isLargeAngle, _isClockwise);
-                else if (this == MainWindow.SelectedVisual)
-                    context.ArcTo(MainWindow.SelectedPen, _end.Value, _radius, _isLargeAngle, _isClockwise);
-                else context.ArcTo(MainWindow.WhitePen, _end.Value, _radius, _isLargeAngle, _isClockwise);
             }
         }
     }

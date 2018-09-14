@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -89,8 +90,8 @@ namespace YDrawing2D
         }
         private Color _backColor;
 
-        public int BackColorValue { get { return _backColorValue; } }
-        private int _backColorValue;
+        public byte[] BackColorValue { get { return _backColorValue; } }
+        private byte[] _backColorValue;
 
         /// <summary>
         /// Internally used bitmap
@@ -224,7 +225,7 @@ namespace YDrawing2D
             visual.Update();
             foreach (var primitive in visual.Context.Primitives)
             {
-                if (!_bounds.IsIntersectWith(primitive)) continue;
+                if (primitive == null || !_bounds.IsIntersectWith(primitive)) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds);
                 _UpdateBounds(bounds);
@@ -235,7 +236,7 @@ namespace YDrawing2D
         {
             foreach (var primitive in visual.Context.Primitives)
             {
-                if (!_bounds.IsIntersectWith(primitive)) continue;
+                if (primitive == null || !_bounds.IsIntersectWith(primitive)) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds, true);
                 _UpdateBounds(bounds);
@@ -337,12 +338,17 @@ namespace YDrawing2D
         {
             if (visual == null) return;
             EnterRender();
-            _ClearVisual(visual);
 
+            _ClearVisual(visual);
             if (!isSingle)
-                foreach (var _visual in _visuals.Where(other => other.IsIntersectWith(visual)))
+            {
+                foreach (var _visual in _visuals.Where(other => other != visual && other.IsIntersectWith(visual)))
+                {
+                    _ClearVisual(_visual);
                     _UpdateSync(_visual);
-            else _UpdateSync(visual);
+                }
+            }
+            _UpdateSync(visual);
 
             ExitRender();
         }
@@ -362,7 +368,7 @@ namespace YDrawing2D
         /// Clear panel buffer with the specified color
         /// </summary>
         /// <param name="color">The color to clear</param>
-        public void ClearBuffer(int color)
+        public void ClearBuffer(byte[] color)
         {
             EnterRender();
             _ClearBuffer(color);
@@ -373,7 +379,7 @@ namespace YDrawing2D
         /// Clear panel buffer with the specified color(Internal call)
         /// </summary>
         /// <param name="color">The color to clear</param>
-        internal void _ClearBuffer(int color)
+        internal void _ClearBuffer(byte[] color)
         {
             var start = _offset;
             for (int i = 0; i < _bounds.Height; i++)
@@ -429,7 +435,7 @@ namespace YDrawing2D
                     _DrawPoint(point, primitive.Property.Pen.Color, primitive.Property.Pen.Thickness);
         }
 
-        private void _DrawPoint(Int32Point pos, int color, int thickness = 1)
+        private void _DrawPoint(Int32Point pos, byte[] color, int thickness = 1)
         {
             var points = GeometryHelper.CalcPositions(pos.X, pos.Y, Offset, Stride, thickness, _bounds);
 
@@ -437,12 +443,23 @@ namespace YDrawing2D
                 _DrawPixel(point, color);
         }
 
-        unsafe private void _DrawPixel(IntPtr ptr, int color)
+        unsafe private void _DrawPixel(IntPtr ptr, byte[] color)
         {
-            *((int*)ptr) = color;
+            var _ptr = (byte*)ptr;
+            if (color[3] != byte.MaxValue && color != _backColorValue)
+            {
+                var r = byte.MaxValue - color[3];
+                var _color = new byte[4];
+                _color[0] = (byte)((color[0] * color[3] + (*_ptr) * r) / byte.MaxValue);
+                _color[1] = (byte)((color[1] * color[3] + (*(_ptr + 1)) * r) / byte.MaxValue);
+                _color[2] = (byte)((color[2] * color[3] + (*(_ptr + 2)) * r) / byte.MaxValue);
+                _color[3] = byte.MaxValue;
+                Marshal.Copy(_color, 0, ptr, 4);
+            }
+            else Marshal.Copy(color, 0, ptr, 4);
         }
 
-        internal int GetColor(Int32 x, Int32 y)
+        internal byte[] GetColor(Int32 x, Int32 y)
         {
             var start = _offset;
             start += y * Stride;
@@ -450,9 +467,11 @@ namespace YDrawing2D
             return _GetPixel(start);
         }
 
-        unsafe private int _GetPixel(IntPtr ptr)
+        private byte[] _GetPixel(IntPtr ptr)
         {
-            return *((int*)ptr);
+            var colors = new byte[4];
+            Marshal.Copy(ptr, colors, 0, 4);
+            return colors;
         }
         #endregion
 

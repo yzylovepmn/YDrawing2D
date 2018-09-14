@@ -10,19 +10,25 @@ using YDrawing2D.Util;
 
 namespace YDrawing2D.View
 {
-    public interface IContext
+    public interface IContext : IDisposable
     {
         /// <summary>
-        /// Specify the starting point of the stream
+        /// Specify the starting point of the geometrystream
         /// </summary>
-        void BeginFigure(Point begin);
+        void BeginFigure(DrawingPen pen, Point begin, bool isClosed);
+
+        /// <summary>
+        /// End the current geometry stream
+        /// </summary>
+        void EndFigure();
+
         void DrawLine(DrawingPen pen, Point start, Point end);
         void DrawCicle(DrawingPen pen, Point center, double radius);
         void DrawEllipse(DrawingPen pen, Point center, double radiusX, double radiusY);
         void DrawArc(DrawingPen pen, Point center, double radius, double startAngle, double endAngle, bool isClockwise);
-        void LineTo(DrawingPen pen, Point point);
-        void PolyLineTo(DrawingPen pen, IEnumerable<Point> points);
-        void ArcTo(DrawingPen pen, Point point, double radius, bool isLargeAngle, bool isClockwise);
+        void LineTo(Point point);
+        void PolyLineTo(IEnumerable<Point> points);
+        void ArcTo(Point point, double radius, bool isLargeAngle, bool isClockwise);
         void PushOpacity(double opacity);
         void PushTranslate(double offsetX, double offsetY);
         void PushScale(double scaleX, double scaleY);
@@ -41,23 +47,31 @@ namespace YDrawing2D.View
             _transform = new StackTransform();
         }
 
-        private Point? _begin;
-        private Point? _current;
         private PresentationVisual _visual;
 
-        internal IEnumerable<IPrimitive> Primitives { get { return new List<IPrimitive>(_primitives); } }
+        #region Stream
+        private Point? _begin;
+        private Point? _current;
+        private CustomGeometry _stream = CustomGeometry.Empty;
+        #endregion
+
+        internal IEnumerable<IPrimitive> Primitives { get { return _primitives.ToList(); } }
         private List<IPrimitive> _primitives;
 
         public void DrawLine(DrawingPen pen, Point start, Point end)
+        {
+            _primitives.Add(_DrawLine(new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), start, end));
+        }
+
+        private Line _DrawLine(_DrawingPen pen, Point start, Point end)
         {
             start = GeometryHelper.ConvertWithTransform(start, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
             end = GeometryHelper.ConvertWithTransform(end, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
 
             var _start = GeometryHelper.ConvertToInt32Point(start, _visual.Panel.DPIRatio);
             var _end = GeometryHelper.ConvertToInt32Point(end, _visual.Panel.DPIRatio);
-            var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
 
-            _primitives.Add(new Line(_start, _end, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
+            return new Line(_start, _end, pen);
         }
 
         public void DrawCicle(DrawingPen pen, Point center, double radius)
@@ -109,28 +123,28 @@ namespace YDrawing2D.View
             _primitives.Add(new Arc(_startP, _endP, _center, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
         }
 
-        public void LineTo(DrawingPen pen, Point point)
+        public void LineTo(Point point)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
-            DrawLine(pen, _current.Value, point);
+            _stream.StreamTo(_DrawLine(_stream.Property.Pen, _current.Value, point));
             _current = point;
         }
 
-        public void PolyLineTo(DrawingPen pen, IEnumerable<Point> points)
+        public void PolyLineTo(IEnumerable<Point> points)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
             foreach (var point in points)
-                LineTo(pen, point);
+                LineTo(point);
         }
 
-        public void ArcTo(DrawingPen pen, Point point, double radius, bool isLargeAngle, bool isClockwise)
+        public void ArcTo(Point point, double radius, bool isLargeAngle, bool isClockwise)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
-            _ArcTo(pen, point, radius, isLargeAngle, isClockwise);
+            _ArcTo(point, radius, isLargeAngle, isClockwise);
             _current = point;
         }
 
-        private void _ArcTo(DrawingPen pen, Point point, double radius, bool isLargeAngle, bool isClockwise)
+        private void _ArcTo(Point point, double radius, bool isLargeAngle, bool isClockwise)
         {
             var startP = GeometryHelper.ConvertWithTransform(_current.Value, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
             var endP = GeometryHelper.ConvertWithTransform(point, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
@@ -152,17 +166,28 @@ namespace YDrawing2D.View
                 var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
                 var _startP = GeometryHelper.ConvertToInt32Point(startP, _visual.Panel.DPIRatio);
                 var _endP = GeometryHelper.ConvertToInt32Point(endP, _visual.Panel.DPIRatio);
-                var _radius = Helper.ConvertTo(radius * _visual.Panel.DPIRatio);
-                var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
 
-                _primitives.Add(new Arc(_startP, _endP, _center, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
+                _stream.StreamTo(new Arc(_startP, _endP, _center, _stream.Property.Pen));
             }
         }
 
-        public void BeginFigure(Point begin)
+        public void BeginFigure(DrawingPen pen, Point begin, bool isClosed)
         {
             _begin = begin;
             _current = begin;
+            _stream = new CustomGeometry(new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), isClosed);
+        }
+
+        public void EndFigure()
+        {
+            if (_begin == null)
+                throw new InvalidOperationException("Must call BeginFigure before call this method!");
+            if (_stream.IsClosed && _begin != _current)
+                LineTo(_begin.Value);
+            else _stream.UnClosedLine = _DrawLine(_stream.Property.Pen, _current.Value, _begin.Value);
+            _primitives.Add(_stream);
+            _begin = null;
+            _current = null;
         }
 
         internal void Reset()

@@ -20,7 +20,7 @@ namespace YDrawing2D.Model
         /// <summary>
         /// The boundary of the primitive
         /// </summary>
-        public Int32Rect Bounds { get { return _bounds; } }
+        public Int32Rect Bounds { get { return _bounds; } internal set { _bounds = value; } }
         private Int32Rect _bounds;
 
         /// <summary>

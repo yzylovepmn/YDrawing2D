@@ -34,7 +34,7 @@ namespace YDrawing2D.Util
 
     public struct _DrawingPen
     {
-        internal _DrawingPen(Int32 thickness, Int32 color, Int32[] dashes = null)
+        internal _DrawingPen(Int32 thickness, byte[] color, Int32[] dashes = null)
         {
             _thickness = thickness;
             _color = color;
@@ -50,8 +50,8 @@ namespace YDrawing2D.Util
         /// <summary>
         /// Color of the pen
         /// </summary>
-        public Int32 Color { get { return _color; } }
-        private Int32 _color;
+        public byte[] Color { get { return _color; } }
+        private byte[] _color;
 
         public Int32[] Dashes { get { return _dashes; } }
         private Int32[] _dashes;

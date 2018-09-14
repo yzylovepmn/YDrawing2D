@@ -13,14 +13,16 @@ namespace YDrawing2D
 {
     public class Helper
     {
-        public static int CalcColor(Color color, double opacity = 1)
+        public static byte[] CalcColor(Color color, double opacity = 1)
         {
-            int color_data = ((byte)(opacity * color.A)) << 24;   // A
-            color_data |= color.R << 16;      // R
-            color_data |= color.G << 8;       // G
-            color_data |= color.B << 0;       // B
+            byte[] colors = new byte[4];
 
-            return color_data;
+            colors[3] = (byte)(opacity * color.A); // A
+            colors[2] |= color.R; // R
+            colors[1] |= color.G; // G
+            colors[0] |= color.B; // B
+
+            return colors;
         }
 
         public static int CalcMCD(int a, int b)
@@ -130,13 +132,13 @@ namespace YDrawing2D
 
             var points = GeometryHelper.CalcHitTestPoints(_p.X, _p.Y, panel.Bounds);
 
-            int color = default(int);
+            //var color = default(byte[]);
             foreach (var point in points)
             {
-                color = panel.GetColor(point.X, point.Y);
-                //if (color != panel.BackColorValue)
+                //color = panel.GetColor(point.X, point.Y);
+                //if (color.SequenceEqual(panel.BackColorValue))
                     foreach (var visual in panel.Visuals)
-                        if (visual.Contains(point, color))
+                        if (visual.Contains(point))
                             return visual;
             }
 
@@ -169,6 +171,16 @@ namespace YDrawing2D
         internal static double GetRadian(double angle)
         {
             return angle * Math.PI / 180;
+        }
+
+        internal static Int32Rect ExtendBounds(Int32Rect origin, Int32Rect other)
+        {
+            var extend = Int32Rect.Empty;
+            extend.X = Math.Min(origin.X, other.X);
+            extend.Y = Math.Min(origin.Y, other.Y);
+            extend.Width = Math.Max(origin.X + origin.Width, other.X + other.Width) - extend.X;
+            extend.Height = Math.Max(origin.Y + origin.Height, other.Y + other.Height) - extend.Y;
+            return extend;
         }
 
         internal static Int32Rect RestrictBounds(Int32Rect restriction, Int32Rect bounds)
@@ -537,6 +549,12 @@ namespace YDrawing2D
                     if (ellipse.RadiusX == ellipse.RadiusY)
                         return _CalcCiclePoints(ellipse.Center, ellipse.RadiusX);
                     return _CalcEllipsePoints(ellipse.Center, ellipse.RadiusX, ellipse.RadiusY, ellipse.RadiusXSquared, ellipse.RadiusYSquared, ellipse.SplitX);
+                case PrimitiveType.Geometry:
+                    var geo = (CustomGeometry)primitive;
+                    var points = new List<Int32Point>();
+                    foreach (var _primitive in geo.Stream)
+                        points.AddRange(CalcPrimitivePoints(_primitive));
+                    return points;
             }
             return null;
         }
@@ -626,8 +644,24 @@ namespace YDrawing2D
             while (x <= y)
             {
                 byte condition = 0;
-                foreach (var p in _GenCiclePoints(new Int32Point(x, y)))
-                    yield return new Int32Point(p.X + center.X, p.Y + center.Y);
+                if(x == y)
+                {
+                    foreach (var p in _GenEllipsePoints(new Int32Point(x, y)))
+                        yield return new Int32Point(p.X + center.X, p.Y + center.Y);
+                    break;
+                }
+                if (x == 0)
+                {
+                    yield return new Int32Point(x + center.X, y + center.Y);
+                    yield return new Int32Point(y + center.X, x + center.Y);
+                    yield return new Int32Point(x + center.X, -y + center.Y);
+                    yield return new Int32Point(-y + center.X, x + center.Y);
+                }
+                else
+                {
+                    foreach (var p in _GenCiclePoints(new Int32Point(x, y)))
+                        yield return new Int32Point(p.X + center.X, p.Y + center.Y);
+                }
                 if (d > 0)
                 {
                     if (((d - x) << 1) > 1)
@@ -669,8 +703,16 @@ namespace YDrawing2D
             while (x <= splitX)
             {
                 byte condition = 0;
-                foreach (var p in _GenEllipsePoints(new Int32Point(x, y)))
-                    yield return new Int32Point(p.X + center.X, p.Y + center.Y);
+                if (x == 0)
+                {
+                    yield return new Int32Point(x + center.X, y + center.Y);
+                    yield return new Int32Point(x + center.X, -y + center.Y);
+                }
+                else
+                {
+                    foreach (var p in _GenEllipsePoints(new Int32Point(x, y)))
+                        yield return new Int32Point(p.X + center.X, p.Y + center.Y);
+                }
 
                 if (d > 0)
                 {
@@ -708,8 +750,16 @@ namespace YDrawing2D
             {
                 byte condition = 0;
 
-                foreach (var p in _GenEllipsePoints(new Int32Point(x, y)))
-                    yield return new Int32Point(p.X + center.X, p.Y + center.Y);
+                if (y == 0)
+                {
+                    yield return new Int32Point(x + center.X, y + center.Y);
+                    yield return new Int32Point(-x + center.X, y + center.Y);
+                }
+                else
+                {
+                    foreach (var p in _GenEllipsePoints(new Int32Point(x, y)))
+                        yield return new Int32Point(p.X + center.X, p.Y + center.Y);
+                }
 
                 if (d > 0)
                 {
@@ -1073,7 +1123,7 @@ namespace YDrawing2D
             var len = vec.Length;
             var delta = cicle1.Property.Pen.Thickness + cicle2.Property.Pen.Thickness;
             if ((len > cicle1.Radius + cicle2.Radius + delta)
-                || (len < Math.Abs(cicle1.Radius - cicle2.Radius) - delta))
+                || (len + delta < Math.Abs(cicle1.Radius - cicle2.Radius)))
                 return false;
             return true;
         }
@@ -1084,7 +1134,7 @@ namespace YDrawing2D
             var len = vec.Length;
             var delta = arc1.Property.Pen.Thickness + arc2.Property.Pen.Thickness;
             if ((len > arc1.Radius + arc2.Radius + delta)
-                || (len < Math.Max(0, Math.Abs(arc1.Radius - arc2.Radius) - delta)))
+                || (len + delta < Math.Abs(arc1.Radius - arc2.Radius)))
                 return false;
             return true;
         }
@@ -1097,9 +1147,9 @@ namespace YDrawing2D
             var vec = ellipse1.Center - ellipse2.Center;
             var len = vec.Length;
             var delta = ellipse1.Property.Pen.Thickness + ellipse2.Property.Pen.Thickness;
-            if (len < Math.Min(ellipse1.RadiusX, ellipse1.RadiusY) - Math.Max(ellipse2.RadiusX, ellipse2.RadiusY) - delta)
+            if (len + delta < Math.Min(ellipse1.RadiusX, ellipse1.RadiusY) - Math.Max(ellipse2.RadiusX, ellipse2.RadiusY))
                 return false;
-            if (len < Math.Min(ellipse2.RadiusX, ellipse2.RadiusY) - Math.Max(ellipse1.RadiusX, ellipse1.RadiusY) - delta)
+            if (len + delta < Math.Min(ellipse2.RadiusX, ellipse2.RadiusY) - Math.Max(ellipse1.RadiusX, ellipse1.RadiusY))
                 return false;
 
             return true;
@@ -1110,9 +1160,9 @@ namespace YDrawing2D
             var vec = ellipse.Center - cicle.Center;
             var len = vec.Length;
             var delta = ellipse.Property.Pen.Thickness + cicle.Property.Pen.Thickness;
-            if (len < Math.Min(ellipse.RadiusX, ellipse.RadiusY) - cicle.Radius - delta)
+            if (len + delta < Math.Min(ellipse.RadiusX, ellipse.RadiusY) - cicle.Radius)
                 return false;
-            if (len < cicle.Radius - Math.Max(ellipse.RadiusX, ellipse.RadiusY) - delta)
+            if (len + delta < cicle.Radius - Math.Max(ellipse.RadiusX, ellipse.RadiusY))
                 return false;
 
             return true;
@@ -1123,9 +1173,9 @@ namespace YDrawing2D
             var vec = ellipse.Center - arc.Center;
             var len = vec.Length;
             var delta = ellipse.Property.Pen.Thickness + arc.Property.Pen.Thickness;
-            if (len < Math.Min(ellipse.RadiusX, ellipse.RadiusY) - arc.Radius - delta)
+            if (len + delta < Math.Min(ellipse.RadiusX, ellipse.RadiusY) - arc.Radius)
                 return false;
-            if (len < arc.Radius - Math.Max(ellipse.RadiusX, ellipse.RadiusY) - delta)
+            if (len + delta < arc.Radius - Math.Max(ellipse.RadiusX, ellipse.RadiusY))
                 return false;
 
             return true;

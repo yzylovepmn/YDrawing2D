@@ -53,10 +53,10 @@ namespace YDrawing2D.View
         /// <param name="context"></param>
         protected abstract void Draw(IContext context);
 
-        internal bool Contains(Int32Point p, Int32 color)
+        internal bool Contains(Int32Point p)
         {
             foreach (var primitive in _context.Primitives)
-                if (primitive.Property.Pen.Color == color
+                if (primitive != null// && primitive.Property.Pen.Color.SequenceEqual(color)
                     && primitive.Property.Bounds.Contains(p)
                     && primitive.HitTest(p))
                     return true;
