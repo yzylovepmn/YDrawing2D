@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using YDrawing2D.Extensions;
 using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
 {
-    public struct Ellipse : IPrimitive
+    public struct Ellipse : IPrimitive, ICanFilledPrimitive
     {
-        public Ellipse(Int32Point center, Int32 radiusX, Int32 radiusY, _DrawingPen pen)
+        public Ellipse(byte[] fillColor, Int32Point center, Int32 radiusX, Int32 radiusY, _DrawingPen pen)
         {
+            _fillColor = fillColor;
             Center = center;
             RadiusX = radiusX;
             RadiusY = radiusY;
@@ -52,6 +54,9 @@ namespace YDrawing2D.Model
         internal readonly Int32Point FocusP1;
         internal readonly Int32Point FocusP2;
 
+        public byte[] FillColor { get { return _fillColor; } }
+        private byte[] _fillColor;
+
         public bool HitTest(Int32Point p)
         {
             return Math.Abs((p - FocusP1).Length + (p - FocusP2).Length - A_2) <= _property.Pen.Thickness + 1;
@@ -74,6 +79,16 @@ namespace YDrawing2D.Model
                     break;
             }
             return true;
+        }
+
+        public IEnumerable<Int32Point> GenFilledRegion(IEnumerable<PrimitivePath> paths)
+        {
+            var region = new List<Int32Point>();
+            if (_fillColor != null)
+            {
+
+            }
+            return region;
         }
     }
 }

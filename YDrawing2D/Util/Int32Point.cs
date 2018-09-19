@@ -25,6 +25,16 @@ namespace YDrawing2D.Util
 
         public Int32 Y;
 
+        public static bool operator ==(Int32Point p1, Int32Point p2)
+        {
+            return p1.X == p2.X && p1.Y == p2.Y;
+        }
+
+        public static bool operator !=(Int32Point p1, Int32Point p2)
+        {
+            return !(p1 == p2);
+        }
+
         public static Int32Vector operator -(Int32Point p1, Int32Point p2)
         {
             return new Int32Vector(p1.X - p2.X, p1.Y - p2.Y);
@@ -43,6 +53,18 @@ namespace YDrawing2D.Util
         public override string ToString()
         {
             return string.Format("({0}, {1})", X, Y);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Int32Point)
+                return this == (Int32Point)obj;
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return X ^ Y + (X - Y);
         }
     }
 }

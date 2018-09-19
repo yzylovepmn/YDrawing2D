@@ -4,11 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
+using YDrawing2D.Extensions;
 using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
 {
-    public struct CustomGeometry : IPrimitive
+    public struct CustomGeometry : IPrimitive, ICanFilledPrimitive
     {
         public static readonly CustomGeometry Empty;
 
@@ -17,8 +19,9 @@ namespace YDrawing2D.Model
             Empty = new CustomGeometry();
         }
 
-        public CustomGeometry(_DrawingPen pen, bool isClosed)
+        public CustomGeometry(byte[] fillColor, _DrawingPen pen, bool isClosed)
         {
+            _fillColor = fillColor;
             _property = new PrimitiveProperty(pen, Int32Rect.Empty);
             _isClosed = isClosed;
             _stream = new List<IPrimitive>();
@@ -38,6 +41,9 @@ namespace YDrawing2D.Model
         internal IEnumerable<IPrimitive> Stream { get { return _stream; } }
         private List<IPrimitive> _stream;
 
+        public byte[] FillColor { get { return _fillColor; } }
+        private byte[] _fillColor;
+
         internal void StreamTo(IPrimitive primitive)
         {
             _stream.Add(primitive);
@@ -54,10 +60,23 @@ namespace YDrawing2D.Model
 
         public bool IsIntersect(IPrimitive other)
         {
+            if (!other.Property.Bounds.IsIntersectWith(_property.Bounds)) return false;
+
             foreach (var primitive in _stream)
                 if (primitive.IsIntersect(other))
                     return true;
+
             return false;
+        }
+
+        public IEnumerable<Int32Point> GenFilledRegion(IEnumerable<PrimitivePath> paths)
+        {
+            var region = new List<Int32Point>();
+            if (_fillColor != null)
+            {
+
+            }
+            return region;
         }
     }
 }

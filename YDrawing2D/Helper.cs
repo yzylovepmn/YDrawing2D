@@ -114,6 +114,16 @@ namespace YDrawing2D
                 }
             }
         }
+
+        public static IEnumerable<Int32Point> FilterUniquePoints(IEnumerable<PrimitivePath> paths, Int32Rect bound, int[] dash)
+        {
+            var points = new List<Int32Point>();
+            foreach (var path in paths)
+                points.AddRange(path.Path);
+            if (dash != null)
+                return FilterWithDashes(points, dash).Where(p => bound.Contains(p));
+            return points.Where(p => bound.Contains(p));
+        }
     }
 
     public class VisualHelper
@@ -531,32 +541,44 @@ namespace YDrawing2D
             }
         }
 
-        internal static IEnumerable<Int32Point> CalcPrimitivePoints(IPrimitive primitive)
+        internal static IEnumerable<PrimitivePath> CalcPrimitivePaths(IPrimitive primitive)
         {
             switch (primitive.Type)
             {
                 case PrimitiveType.Line:
                     var line = (Line)primitive;
-                    return _CalcLinePoints(line.Start, line.End);
+                    yield return new PrimitivePath(primitive, _CalcLinePoints(line.Start, line.End));
+                    break;
                 case PrimitiveType.Cicle:
                     var cicle = (Cicle)primitive;
-                    return _CalcCiclePoints(cicle.Center, cicle.Radius);
+                    yield return new PrimitivePath(primitive, _CalcCiclePoints(cicle.Center, cicle.Radius));
+                    break;
                 case PrimitiveType.Arc:
                     var arc = (Arc)primitive;
-                    return _CalcArcPoints(arc.Center, arc.Start, arc.End, arc.Radius);
+                    yield return new PrimitivePath(primitive, _CalcArcPoints(arc.Center, arc.Start, arc.End, arc.Radius));
+                    break;
                 case PrimitiveType.Ellipse:
                     var ellipse = (Ellipse)primitive;
                     if (ellipse.RadiusX == ellipse.RadiusY)
-                        return _CalcCiclePoints(ellipse.Center, ellipse.RadiusX);
-                    return _CalcEllipsePoints(ellipse.Center, ellipse.RadiusX, ellipse.RadiusY, ellipse.RadiusXSquared, ellipse.RadiusYSquared, ellipse.SplitX);
+                        yield return new PrimitivePath(primitive, _CalcCiclePoints(ellipse.Center, ellipse.RadiusX));
+                    yield return new PrimitivePath(primitive, _CalcEllipsePoints(ellipse.Center, ellipse.RadiusX, ellipse.RadiusY, ellipse.RadiusXSquared, ellipse.RadiusYSquared, ellipse.SplitX));
+                    break;
+                case PrimitiveType.Spline:
+                    var spline = (Spline)primitive;
+                    var points = new List<Int32Point>();
+                    foreach (var l in spline.InnerLines)
+                        points.AddRange(_CalcLinePoints(l.Start, l.End));
+                    yield return new PrimitivePath(primitive, points);
+                    break;
                 case PrimitiveType.Geometry:
                     var geo = (CustomGeometry)primitive;
-                    var points = new List<Int32Point>();
+                    var paths = new List<PrimitivePath>();
                     foreach (var _primitive in geo.Stream)
-                        points.AddRange(CalcPrimitivePoints(_primitive));
-                    return points;
+                        paths.AddRange(CalcPrimitivePaths(_primitive));
+                    foreach (var path in paths)
+                        yield return path;
+                    break;
             }
-            return null;
         }
 
         /// <summary>
@@ -641,6 +663,7 @@ namespace YDrawing2D
             Int32 x = 0;
             Int32 y = radius;
             Int32 d = (1 + x - y) << 1;
+            var lastPoints = new List<Int32Point>();
             while (x <= y)
             {
                 byte condition = 0;
@@ -652,16 +675,12 @@ namespace YDrawing2D
                 }
                 if (x == 0)
                 {
-                    yield return new Int32Point(x + center.X, y + center.Y);
-                    yield return new Int32Point(y + center.X, x + center.Y);
                     yield return new Int32Point(x + center.X, -y + center.Y);
+                    yield return new Int32Point(x + center.X, y + center.Y);
                     yield return new Int32Point(-y + center.X, x + center.Y);
+                    yield return new Int32Point(y + center.X, x + center.Y);
                 }
-                else
-                {
-                    foreach (var p in _GenCiclePoints(new Int32Point(x, y)))
-                        yield return new Int32Point(p.X + center.X, p.Y + center.Y);
-                }
+                else lastPoints.AddRange(_GenCiclePoints(new Int32Point(x, y)));
                 if (d > 0)
                 {
                     if (((d - x) << 1) > 1)
@@ -690,6 +709,8 @@ namespace YDrawing2D
                         break;
                 }
             }
+            foreach (var p in lastPoints)
+                yield return new Int32Point(p.X + center.X, p.Y + center.Y);
         }
 
         /// <summary>
@@ -700,6 +721,7 @@ namespace YDrawing2D
             Int32 x = 0;
             Int32 y = b;
             Int64 d = aSquared + bSquared - ((aSquared * b) << 1);
+            var lastPoints = new List<Int32Point>();
             while (x <= splitX)
             {
                 byte condition = 0;
@@ -708,11 +730,7 @@ namespace YDrawing2D
                     yield return new Int32Point(x + center.X, y + center.Y);
                     yield return new Int32Point(x + center.X, -y + center.Y);
                 }
-                else
-                {
-                    foreach (var p in _GenEllipsePoints(new Int32Point(x, y)))
-                        yield return new Int32Point(p.X + center.X, p.Y + center.Y);
-                }
+                else lastPoints.AddRange(_GenEllipsePoints(new Int32Point(x, y)));
 
                 if (d > 0)
                 {
@@ -755,11 +773,7 @@ namespace YDrawing2D
                     yield return new Int32Point(x + center.X, y + center.Y);
                     yield return new Int32Point(-x + center.X, y + center.Y);
                 }
-                else
-                {
-                    foreach (var p in _GenEllipsePoints(new Int32Point(x, y)))
-                        yield return new Int32Point(p.X + center.X, p.Y + center.Y);
-                }
+                else lastPoints.AddRange(_GenEllipsePoints(new Int32Point(x, y)));
 
                 if (d > 0)
                 {
@@ -789,6 +803,8 @@ namespace YDrawing2D
                         break;
                 }
             }
+            foreach (var p in lastPoints)
+                yield return new Int32Point(p.X + center.X, p.Y + center.Y);
         }
 
         private static IEnumerable<Int32Point> _CalcArcPoints(Int32Point center, Int32Point start, Int32Point end, Int32 radius)
@@ -798,22 +814,28 @@ namespace YDrawing2D
 
         private static IEnumerable<Int32Point> _GenCiclePoints(Int32Point origin)
         {
-            yield return origin;
-            yield return new Int32Point(origin.Y, origin.X);
             yield return new Int32Point(origin.X, -origin.Y);
-            yield return new Int32Point(origin.Y, -origin.X);
-            yield return new Int32Point(-origin.X, origin.Y);
-            yield return new Int32Point(-origin.Y, origin.X);
+            yield return origin;
             yield return new Int32Point(-origin.X, -origin.Y);
+            yield return new Int32Point(-origin.X, origin.Y);
+            yield return new Int32Point(origin.Y, -origin.X);
+            yield return new Int32Point(origin.Y, origin.X);
             yield return new Int32Point(-origin.Y, -origin.X);
+            yield return new Int32Point(-origin.Y, origin.X);
         }
 
         private static IEnumerable<Int32Point> _GenEllipsePoints(Int32Point origin)
         {
-            yield return origin;
             yield return new Int32Point(origin.X, -origin.Y);
-            yield return new Int32Point(-origin.X, origin.Y);
+            yield return origin;
             yield return new Int32Point(-origin.X, -origin.Y);
+            yield return new Int32Point(-origin.X, origin.Y);
+        }
+
+        public static IEnumerable<Int32Point> GenScanPoints(Int32Point start, Int32Point end, int delta)
+        {
+            for (int i = start.Y + delta + 1; i < end.Y - delta; i++)
+                yield return new Int32Point(start.X, i);
         }
 
         internal static IEnumerable<Int32Point> ArcContains(Int32Point center, Int32Point start, Int32Point end, IEnumerable<Int32Point> points)
@@ -1122,9 +1144,19 @@ namespace YDrawing2D
             var vec = cicle2.Center - cicle1.Center;
             var len = vec.Length;
             var delta = cicle1.Property.Pen.Thickness + cicle2.Property.Pen.Thickness;
-            if ((len > cicle1.Radius + cicle2.Radius + delta)
-                || (len + delta < Math.Abs(cicle1.Radius - cicle2.Radius)))
+            if (len > cicle1.Radius + cicle2.Radius + delta)
                 return false;
+            var reduce = cicle1.Radius - cicle2.Radius;
+            if (reduce >= 0)
+            {
+                if (len < reduce - delta && cicle1.FillColor == null)
+                    return false;
+            }
+            else
+            {
+                if (len < -reduce - delta && cicle2.FillColor == null)
+                    return false;
+            }
             return true;
         }
 
@@ -1160,9 +1192,13 @@ namespace YDrawing2D
             var vec = ellipse.Center - cicle.Center;
             var len = vec.Length;
             var delta = ellipse.Property.Pen.Thickness + cicle.Property.Pen.Thickness;
-            if (len + delta < Math.Min(ellipse.RadiusX, ellipse.RadiusY) - cicle.Radius)
+            var mRadius = Math.Max(ellipse.RadiusX, ellipse.RadiusY);
+            var sRadius = Math.Min(ellipse.RadiusX, ellipse.RadiusY);
+            if (len > mRadius + cicle.Radius + delta)
                 return false;
-            if (len + delta < cicle.Radius - Math.Max(ellipse.RadiusX, ellipse.RadiusY))
+            if (len + delta < sRadius - cicle.Radius && ellipse.FillColor == null)
+                return false;
+            if (len + delta < cicle.Radius - mRadius && cicle.FillColor == null)
                 return false;
 
             return true;
@@ -1210,9 +1246,19 @@ namespace YDrawing2D
             var vec = arc.Center - cicle.Center;
             var len = vec.Length;
             var delta = cicle.Property.Pen.Thickness + arc.Property.Pen.Thickness;
-            if ((len > cicle.Radius + arc.Radius + delta)
-                || (len < Math.Max(0, Math.Abs(cicle.Radius - arc.Radius) - delta)))
+            if (len > cicle.Radius + arc.Radius + delta)
                 return false;
+            var reduce = cicle.Radius - arc.Radius;
+            if (reduce >= 0)
+            {
+                if (len < reduce - delta && cicle.FillColor == null)
+                    return false;
+            }
+            else
+            {
+                if (len < -reduce - delta)
+                    return false;
+            }
             return true;
         }
 
@@ -1221,13 +1267,14 @@ namespace YDrawing2D
             var len = line.A * cicle.Center.X + line.B * cicle.Center.Y + line.C;
             if (len > cicle.Radius * line.Len)
                 return false;
-            else
+            else if (cicle.FillColor == null)
             {
                 var radiusSquared = (long)cicle.Radius * cicle.Radius;
                 var len1 = (line.Start - cicle.Center).LengthSquared - radiusSquared;
                 var len2 = (line.End - cicle.Center).LengthSquared - radiusSquared;
                 return !IsAllNegative(len1, len2);
             }
+            else return true;
         }
 
         internal static bool IsIntersect(Line line, Arc arc)
@@ -1247,7 +1294,54 @@ namespace YDrawing2D
         }
         #endregion
 
+        #region Region
+        public static IEnumerable<Int32Point> CalcRegionSingle(IPrimitive primitive)
+        {
+            if (primitive.Type != PrimitiveType.Cicle && primitive.Type != PrimitiveType.Ellipse)
+                throw new InvalidOperationException(string.Format("Primitive {0} can not be filled!", primitive.Type));
+            int startx = primitive.Property.Bounds.X;
+            int starty, endy;
+            int right = primitive.Property.Bounds.Width + startx;
+            int bottom = primitive.Property.Bounds.Height + primitive.Property.Bounds.Y;
+            for (int i = startx; i <= right; i++)
+            {
+                starty = primitive.Property.Bounds.Y;
+                endy = starty;
+                while (starty < bottom)
+                {
+                    if (primitive.HitTest(new Int32Point(i, starty)))
+                    {
+                        endy = starty + primitive.Property.Pen.Thickness;
+                        while (endy < bottom && !primitive.HitTest(new Int32Point(i, endy)))
+                            endy++;
+                        for (int j = starty + 1; j < endy; j++)
+                            yield return new Int32Point(i, j);
+                        break;
+                    }
+                    else starty++;
+                }
+            }
+        }
+        #endregion
+
         #region Spline
+        internal static List<Line> CalcSampleLines(Spline spline, double dpiRatio)
+        {
+            var lines = new List<Line>();
+
+            var samplePoints = new List<Point>();
+            if (spline.Knots.Length == 0)
+                samplePoints = spline.FitPoints.ToList();
+            else for(int i = 0; i <= (int)spline.Domain; i+=2)
+                    samplePoints.Add(ComputePoint(spline, i));
+
+            var _samplePoints = samplePoints.Select(sp => ConvertToInt32Point(sp, dpiRatio)).ToArray();
+            for (int i = 1; i < _samplePoints.Length; i++)
+                lines.Add(new Line(_samplePoints[i - 1], _samplePoints[i], spline.Property.Pen));
+
+            return lines;
+        }
+
         internal static Point ComputePoint(Spline spline, double u)
         {
             if (u > spline.Domain) throw new ArgumentOutOfRangeException();
@@ -1256,7 +1350,7 @@ namespace YDrawing2D
             int start = i - spline.Degree;
             var p = new Point();
             double down = 0;
-            if (spline.Weights.Count > 0)
+            if (spline.Weights.Length > 0)
             {
                 for (int j = start; j <= i; j++)
                 {

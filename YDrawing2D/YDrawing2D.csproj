@@ -48,12 +48,14 @@
   <ItemGroup>
     <Compile Include="Extensions\Extensions.cs" />
     <Compile Include="Helper.cs" />
+    <Compile Include="Model\PrimitivePath.cs" />
     <Compile Include="Model\PrimitiveProperty.cs" />
     <Compile Include="Model\Primitive\Arc.cs" />
     <Compile Include="Model\Primitive\Cicle.cs" />
     <Compile Include="Model\Primitive\CustomGeometry.cs" />
     <Compile Include="Model\Primitive\Ellipse.cs" />
-    <Compile Include="Model\Primitive\Primitive.cs" />
+    <Compile Include="Model\Primitive\ICanFilledPrimitive.cs" />
+    <Compile Include="Model\Primitive\IPrimitive.cs" />
     <Compile Include="Model\Primitive\Line.cs" />
     <Compile Include="Model\Primitive\Spline.cs" />
     <Compile Include="Util\StackTransform.cs" />

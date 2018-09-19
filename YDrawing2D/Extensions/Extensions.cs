@@ -82,7 +82,7 @@ namespace YDrawing2D.Extensions
                             radius = arc.Radius;
                             center = arc.Center;
                         }
-                        Int64 radiusSquared = radius * radius;
+                        Int64 radiusSquared = (Int64)radius * radius;
                         var _v1 = (Int32)Math.Sqrt(radiusSquared - (rect.Y - center.Y) * (rect.Y - center.Y));
                         var _v2 = (Int32)Math.Sqrt(radiusSquared - (bottom1 - center.Y) * (bottom1 - center.Y));
                         var _x1 = center.X - Math.Min(_v1, _v2);
@@ -96,7 +96,6 @@ namespace YDrawing2D.Extensions
                         _x2 = ellipse.Center.X + Math.Min(_v1, _v2);
                         return rect.X <= _x1 || rect.X >= _x2 || right1 >= _x2;
                 }
-                return true;
             }
 
             return true;

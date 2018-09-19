@@ -15,7 +15,7 @@ namespace YDrawing2D.View
         /// <summary>
         /// Specify the starting point of the geometrystream
         /// </summary>
-        void BeginFigure(DrawingPen pen, Point begin, bool isClosed);
+        void BeginFigure(Color? fillColor, DrawingPen pen, Point begin, bool isClosed);
 
         /// <summary>
         /// End the current geometry stream
@@ -23,12 +23,18 @@ namespace YDrawing2D.View
         void EndFigure();
 
         void DrawLine(DrawingPen pen, Point start, Point end);
-        void DrawCicle(DrawingPen pen, Point center, double radius);
-        void DrawEllipse(DrawingPen pen, Point center, double radiusX, double radiusY);
+        void DrawCicle(Color? fillColor, DrawingPen pen, Point center, double radius);
         void DrawArc(DrawingPen pen, Point center, double radius, double startAngle, double endAngle, bool isClockwise);
+        void DrawEllipse(Color? fillColor, DrawingPen pen, Point center, double radiusX, double radiusY);
+        void DrawRectangle(Color? fillColor, DrawingPen pen, Rect rectangle);
+        void DrawSpline(DrawingPen pen, int degree, List<double> knots, List<Point> controlPoints, List<double> weights, List<Point> fitPoints);
+
+
         void LineTo(Point point);
         void PolyLineTo(IEnumerable<Point> points);
         void ArcTo(Point point, double radius, bool isLargeAngle, bool isClockwise);
+
+
         void PushOpacity(double opacity);
         void PushTranslate(double offsetX, double offsetY);
         void PushScale(double scaleX, double scaleY);
@@ -74,7 +80,7 @@ namespace YDrawing2D.View
             return new Line(_start, _end, pen);
         }
 
-        public void DrawCicle(DrawingPen pen, Point center, double radius)
+        public void DrawCicle(Color? fillColor, DrawingPen pen, Point center, double radius)
         {
             center = GeometryHelper.ConvertWithTransform(center, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
             radius *= _visual.Panel.ScaleX * _transform.ScaleX;
@@ -82,10 +88,10 @@ namespace YDrawing2D.View
             var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
             var _radius = Helper.ConvertTo(radius * _visual.Panel.DPIRatio);
             var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
-            _primitives.Add(new Cicle(_center, _radius, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
+            _primitives.Add(new Cicle(fillColor.HasValue ? Helper.CalcColor(fillColor.Value, _transform.Opacity) : null, _center, _radius, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
         }
 
-        public void DrawEllipse(DrawingPen pen, Point center, double radiusX, double radiusY)
+        public void DrawEllipse(Color? fillColor, DrawingPen pen, Point center, double radiusX, double radiusY)
         {
             center = GeometryHelper.ConvertWithTransform(center, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
             radiusX *= _visual.Panel.ScaleX * _transform.ScaleX;
@@ -95,7 +101,7 @@ namespace YDrawing2D.View
             var _radiusX = Helper.ConvertTo(radiusX * _visual.Panel.DPIRatio);
             var _radiusY = Helper.ConvertTo(radiusY * _visual.Panel.DPIRatio);
             var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
-            _primitives.Add(new Ellipse(_center, _radiusX, _radiusY, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
+            _primitives.Add(new Ellipse(fillColor.HasValue ? Helper.CalcColor(fillColor.Value, _transform.Opacity) : null, _center, _radiusX, _radiusY, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
         }
 
         public void DrawArc(DrawingPen pen, Point center, double radius, double startAngle, double endAngle, bool isClockwise)
@@ -121,6 +127,20 @@ namespace YDrawing2D.View
             var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
 
             _primitives.Add(new Arc(_startP, _endP, _center, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
+        }
+
+        public void DrawRectangle(Color? fillColor, DrawingPen pen, Rect rectangle)
+        {
+            BeginFigure(fillColor, pen, rectangle.Location, true);
+            LineTo(rectangle.TopRight);
+            LineTo(rectangle.BottomRight);
+            LineTo(rectangle.BottomLeft);
+            EndFigure();
+        }
+
+        public void DrawSpline(DrawingPen pen, int degree, List<double> knots, List<Point> controlPoints, List<double> weights, List<Point> fitPoints)
+        {
+            _primitives.Add(new Spline(degree, knots.ToArray(), controlPoints?.Select(ctrlP => GeometryHelper.ConvertWithTransform(ctrlP, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform)).ToArray(), weights.ToArray(), fitPoints?.Select(fitP => GeometryHelper.ConvertWithTransform(fitP, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform)).ToArray(), new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), _visual.Panel.DPIRatio));
         }
 
         public void LineTo(Point point)
@@ -171,11 +191,11 @@ namespace YDrawing2D.View
             }
         }
 
-        public void BeginFigure(DrawingPen pen, Point begin, bool isClosed)
+        public void BeginFigure(Color? fillColor, DrawingPen pen, Point begin, bool isClosed)
         {
             _begin = begin;
             _current = begin;
-            _stream = new CustomGeometry(new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), isClosed);
+            _stream = new CustomGeometry(fillColor.HasValue ? Helper.CalcColor(fillColor.Value, _transform.Opacity) : null, new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), isClosed);
         }
 
         public void EndFigure()

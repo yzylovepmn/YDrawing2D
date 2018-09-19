@@ -344,6 +344,7 @@ namespace YDrawing2D
             {
                 foreach (var _visual in _visuals.Where(other => other != visual && other.IsIntersectWith(visual)))
                 {
+                    if (_needUpdate) break;
                     _ClearVisual(_visual);
                     _UpdateSync(_visual);
                 }
@@ -423,16 +424,34 @@ namespace YDrawing2D
 
         private void _DrawPrimitive(IPrimitive primitive, Int32Rect bounds, bool isClear = false)
         {
-            IEnumerable<Int32Point> points;
-            if (primitive.Property.Pen.Dashes == null)
-                points = GeometryHelper.CalcPrimitivePoints(primitive).Where(p => bounds.Contains(p));
-            else points = Helper.FilterWithDashes(GeometryHelper.CalcPrimitivePoints(primitive), primitive.Property.Pen.Dashes).Where(p => bounds.Contains(p));
+            var paths = GeometryHelper.CalcPrimitivePaths(primitive);
 
             if (isClear)
-                foreach (var point in points)
+            {
+                foreach (var point in Helper.FilterUniquePoints(paths, _bounds, primitive.Property.Pen.Dashes))
                     _DrawPoint(point, _backColorValue, primitive.Property.Pen.Thickness);
-            else foreach (var point in points)
+
+                if (primitive is ICanFilledPrimitive)
+                {
+                    var canfilled = primitive as ICanFilledPrimitive;
+                    if (canfilled.FillColor != null)
+                        foreach (var fillP in canfilled.GenFilledRegion(paths).Where(p => bounds.Contains(p)))
+                            _DrawPoint(fillP, _backColorValue, 1);
+                }
+            }
+            else
+            {
+                foreach (var point in Helper.FilterUniquePoints(paths, _bounds, primitive.Property.Pen.Dashes))
                     _DrawPoint(point, primitive.Property.Pen.Color, primitive.Property.Pen.Thickness);
+
+                if (primitive is ICanFilledPrimitive)
+                {
+                    var canfilled = primitive as ICanFilledPrimitive;
+                    if (canfilled.FillColor != null)
+                        foreach (var fillP in canfilled.GenFilledRegion(paths).Where(p => bounds.Contains(p)))
+                            _DrawPoint(fillP, canfilled.FillColor, 1);
+                }
+            }
         }
 
         private void _DrawPoint(Int32Point pos, byte[] color, int thickness = 1)
