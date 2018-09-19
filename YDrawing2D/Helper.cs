@@ -119,7 +119,10 @@ namespace YDrawing2D
         {
             var points = new List<Int32Point>();
             foreach (var path in paths)
+            {
+                if (path.IsVirtual) continue;
                 points.AddRange(path.Path);
+            }
             if (dash != null)
                 return FilterWithDashes(points, dash).Where(p => bound.Contains(p));
             return points.Where(p => bound.Contains(p));
@@ -551,40 +554,42 @@ namespace YDrawing2D
             }
         }
 
-        internal static IEnumerable<PrimitivePath> CalcPrimitivePaths(IPrimitive primitive)
+        internal static IEnumerable<PrimitivePath> CalcPrimitivePaths(IPrimitive primitive, bool isVirtual = false)
         {
             switch (primitive.Type)
             {
                 case PrimitiveType.Line:
                     var line = (Line)primitive;
-                    yield return new PrimitivePath(primitive, _CalcLinePoints(line.Start, line.End));
+                    yield return new PrimitivePath(primitive, _CalcLinePoints(line.Start, line.End), isVirtual);
                     break;
                 case PrimitiveType.Cicle:
                     var cicle = (Cicle)primitive;
-                    yield return new PrimitivePath(primitive, _CalcCiclePoints(cicle.Center, cicle.Radius));
+                    yield return new PrimitivePath(primitive, _CalcCiclePoints(cicle.Center, cicle.Radius), isVirtual);
                     break;
                 case PrimitiveType.Arc:
                     var arc = (Arc)primitive;
-                    yield return new PrimitivePath(primitive, _CalcArcPoints(arc.Center, arc.Start, arc.End, arc.Radius));
+                    yield return new PrimitivePath(primitive, _CalcArcPoints(arc.Center, arc.Start, arc.End, arc.Radius), isVirtual);
                     break;
                 case PrimitiveType.Ellipse:
                     var ellipse = (Ellipse)primitive;
                     if (ellipse.RadiusX == ellipse.RadiusY)
-                        yield return new PrimitivePath(primitive, _CalcCiclePoints(ellipse.Center, ellipse.RadiusX));
-                    yield return new PrimitivePath(primitive, _CalcEllipsePoints(ellipse.Center, ellipse.RadiusX, ellipse.RadiusY, ellipse.RadiusXSquared, ellipse.RadiusYSquared, ellipse.SplitX));
+                        yield return new PrimitivePath(primitive, _CalcCiclePoints(ellipse.Center, ellipse.RadiusX), isVirtual);
+                    yield return new PrimitivePath(primitive, _CalcEllipsePoints(ellipse.Center, ellipse.RadiusX, ellipse.RadiusY, ellipse.RadiusXSquared, ellipse.RadiusYSquared, ellipse.SplitX), isVirtual);
                     break;
                 case PrimitiveType.Spline:
                     var spline = (Spline)primitive;
                     var points = new List<Int32Point>();
                     foreach (var l in spline.InnerLines)
                         points.AddRange(_CalcLinePoints(l.Start, l.End));
-                    yield return new PrimitivePath(primitive, points);
+                    yield return new PrimitivePath(primitive, points, isVirtual);
                     break;
                 case PrimitiveType.Geometry:
                     var geo = (CustomGeometry)primitive;
                     var paths = new List<PrimitivePath>();
                     foreach (var _primitive in geo.Stream)
                         paths.AddRange(CalcPrimitivePaths(_primitive));
+                    if (geo.UnClosedLine.HasValue)
+                        paths.AddRange(CalcPrimitivePaths(geo.UnClosedLine.Value, true));
                     foreach (var path in paths)
                         yield return path;
                     break;
@@ -1312,6 +1317,48 @@ namespace YDrawing2D
                 }
                 flag = !flag;
             }
+        }
+
+        internal static IEnumerable<Int32Point> GetVerticalPoints(IEnumerable<PrimitivePath> paths, int x)
+        {
+            var points = new SortedSet<Int32Point>();
+            foreach (var path in paths)
+            {
+                switch (path.Primitive.Type)
+                {
+                    case PrimitiveType.Line:
+                        foreach (var p in path.Path)
+                        {
+                            if (p.X == x)
+                            {
+                                points.Add(p);
+                                break;
+                            }
+                        }
+                        break;
+                    case PrimitiveType.Arc:
+                        var flag = false;
+                        foreach (var p in path.Path)
+                        {
+                            if (flag)
+                            {
+                                if (p.X == x)
+                                    points.Add(p);
+                                break;
+                            }
+                            else
+                            {
+                                if (p.X == x)
+                                {
+                                    points.Add(p);
+                                    flag = true;
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+            return points;
         }
         #endregion
 

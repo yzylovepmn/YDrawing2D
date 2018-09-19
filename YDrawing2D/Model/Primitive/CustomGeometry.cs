@@ -54,9 +54,13 @@ namespace YDrawing2D.Model
 
         public bool HitTest(Int32Point p)
         {
-            foreach (var primitive in _stream)
-                if (primitive.HitTest(p))
-                    return true;
+            if (_fillColor == null)
+            {
+                foreach (var primitive in _stream)
+                    if (primitive.HitTest(p))
+                        return true;
+            }
+            else return true;
             return false;
         }
 
@@ -64,9 +68,13 @@ namespace YDrawing2D.Model
         {
             if (!other.Property.Bounds.IsIntersectWith(_property.Bounds)) return false;
 
-            foreach (var primitive in _stream)
-                if (primitive.IsIntersect(other))
-                    return true;
+            if (_fillColor == null)
+            {
+                foreach (var primitive in _stream)
+                    if (primitive.IsIntersect(other))
+                        return true;
+            }
+            else return true;
 
             return false;
         }
@@ -74,9 +82,31 @@ namespace YDrawing2D.Model
         public IEnumerable<Int32Point> GenFilledRegion(IEnumerable<PrimitivePath> paths)
         {
             var region = new List<Int32Point>();
+            var delta = _property.Pen.Thickness / 2;
             if (_fillColor != null)
             {
-
+                var flag = false;
+                Int32Point startp = default(Int32Point), endp = default(Int32Point);
+                var right = _property.Bounds.Width + _property.Bounds.X;
+                for (int i = _property.Bounds.X; i <= right; i++)
+                {
+                    flag = false;
+                    foreach (var point in GeometryHelper.GetVerticalPoints(paths, i))
+                    {
+                        if (!flag)
+                            startp = point;
+                        else
+                        {
+                            if ((point.Y - startp.Y) > 1)
+                            {
+                                endp = point;
+                                region.AddRange(GeometryHelper.GenScanPoints(startp, endp, delta));
+                            }
+                            else flag = !flag;
+                        }
+                        flag = !flag;
+                    }
+                }
             }
             return region;
         }

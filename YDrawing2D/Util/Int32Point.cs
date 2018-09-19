@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace YDrawing2D.Util
 {
-    public struct Int32Point
+    public struct Int32Point : IComparable<Int32Point>
     {
         public static readonly Int32Point Empty;
 
@@ -48,6 +48,13 @@ namespace YDrawing2D.Util
         public static implicit operator Int32Vector(Int32Point p)
         {
             return new Int32Vector(p.X, p.Y);
+        }
+
+        public int CompareTo(Int32Point other)
+        {
+            if (X != other.X)
+                return X - other.X;
+            return Y - other.Y;
         }
 
         public override string ToString()

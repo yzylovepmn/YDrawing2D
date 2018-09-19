@@ -168,7 +168,10 @@ namespace YDrawing2D
                 while (true)
                 {
                     if (!_completeLoop)
+                    {
+                        Thread.Sleep(10);
                         continue;
+                    }
                     break;
                 }
                 _cnt = 0;

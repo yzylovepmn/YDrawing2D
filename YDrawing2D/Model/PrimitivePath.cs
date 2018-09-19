@@ -9,10 +9,11 @@ namespace YDrawing2D.Model
 {
     public struct PrimitivePath
     {
-        public PrimitivePath(IPrimitive primitive, IEnumerable<Int32Point> path)
+        public PrimitivePath(IPrimitive primitive, IEnumerable<Int32Point> path, bool isVirtual = false)
         {
             _primitive = primitive;
             _path = path;
+            _isVirtual = isVirtual;
         }
 
         public IPrimitive Primitive { get { return _primitive; } }
@@ -20,5 +21,8 @@ namespace YDrawing2D.Model
 
         public IEnumerable<Int32Point> Path { get { return _path; } }
         private IEnumerable<Int32Point> _path;
+
+        public bool IsVirtual { get { return _isVirtual; } }
+        private bool _isVirtual;
     }
 }

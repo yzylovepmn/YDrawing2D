@@ -87,7 +87,8 @@ namespace YDrawing2DTest
             _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
             _panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(500, 500))), true);
             _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
-            _panel.AddVisual(new Cicle(new Point(200, 300), 200), true);
+            _panel.AddVisual(new Cicle(new Point(200, 300), 300), true);
+            _panel.AddVisual(new CustomShape(), true);
             //_panel.UpdateAll();
             _panel.MouseMove += _panel_MouseMove;
             _panel.MouseWheel += _panel_MouseWheel;
@@ -136,6 +137,29 @@ namespace YDrawing2DTest
         }
     }
 
+    public class CustomShape : PresentationVisual
+    {
+        protected override void Draw(IContext context)
+        {
+            context.PushOpacity(0.5);
+            if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
+                context.BeginFigure(Colors.Blue, MainWindow.ActivePen, new Point(100, 400), true);
+            else if (this == MainWindow.SelectedVisual)
+                context.BeginFigure(Colors.Red, MainWindow.SelectedPen, new Point(100, 400), true);
+            else context.BeginFigure(Colors.White, MainWindow.WhitePen, new Point(100, 400), true);
+
+            context.LineTo(new Point(200, 400));
+            context.LineTo(new Point(250, 480));
+            context.LineTo(new Point(300, 400));
+            context.LineTo(new Point(400, 400));
+            context.LineTo(new Point(320, 350));
+
+            //context.ArcTo(new Point(200, 480), 90, true, false);
+
+            context.EndFigure();
+        }
+    }
+
     public class Rectangle : PresentationVisual
     {
         public Rectangle(Rect rect)
@@ -148,6 +172,7 @@ namespace YDrawing2DTest
 
         protected override void Draw(IContext context)
         {
+            context.PushOpacity(0.5);
             if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
                 context.DrawRectangle(null, MainWindow.ActivePen, _rect);
             else if (this == MainWindow.SelectedVisual)
@@ -192,10 +217,10 @@ namespace YDrawing2DTest
         {
             context.PushOpacity(0.5);
             if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                context.DrawCicle(Colors.Blue, MainWindow.ActivePen, _center, _radius);
+                context.DrawCicle(null, MainWindow.ActivePen, _center, _radius);
             else if (this == MainWindow.SelectedVisual)
-                context.DrawCicle(Colors.ForestGreen, MainWindow.SelectedPen, _center, _radius);
-            else context.DrawCicle(Colors.White, MainWindow.WhitePen, _center, _radius);
+                context.DrawCicle(null, MainWindow.SelectedPen, _center, _radius);
+            else context.DrawCicle(null, MainWindow.WhitePen, _center, _radius);
         }
     }
 
