@@ -341,6 +341,12 @@ namespace YDrawing2D
         public void Update(PresentationVisual visual, bool isSingle = false)
         {
             if (visual == null) return;
+            Monitor.Enter(_loopLock);
+            if (visual.Mode != Mode.Normal)
+            {
+                Monitor.Exit(_loopLock);
+                return;
+            }
             EnterRender();
 
             if (isSingle)
@@ -358,6 +364,7 @@ namespace YDrawing2D
             }
 
             ExitRender();
+            Monitor.Exit(_loopLock);
         }
 
         internal void ClearVisual(PresentationVisual visual)
