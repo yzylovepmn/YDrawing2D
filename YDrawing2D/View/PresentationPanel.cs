@@ -41,6 +41,7 @@ namespace YDrawing2D
             _offset = _image.BackBuffer;
             _stride = _image.BackBufferStride;
             _imageHeight = _image.Height;
+            _flags = new bool[_image.PixelWidth, _image.PixelHeight];
             RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.NearestNeighbor);
             RenderOptions.SetEdgeMode(this, EdgeMode.Aliased);
 
@@ -71,6 +72,8 @@ namespace YDrawing2D
 
         internal double ImageHeight { get { return _imageHeight; } }
         private double _imageHeight;
+
+        private bool[,] _flags;
 
         /// <summary>
         /// The background color used by the panel
@@ -232,11 +235,12 @@ namespace YDrawing2D
             }
         }
 
-        internal void _ClearVisual(PresentationVisual visual)
+        internal void _ClearVisual(PresentationVisual visual, bool optimizate = false)
         {
             foreach (var primitive in visual.Context.Primitives)
             {
                 if (primitive == null || !_bounds.IsIntersectWith(primitive)) continue;
+                if (optimizate && primitive.Property.Pen.Color[3] == byte.MaxValue) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds, true);
                 _UpdateBounds(bounds);
@@ -339,17 +343,19 @@ namespace YDrawing2D
             if (visual == null) return;
             EnterRender();
 
-            _ClearVisual(visual);
-            if (!isSingle)
+            if (isSingle)
             {
-                foreach (var _visual in _visuals.Where(other => other != visual && other.IsIntersectWith(visual)))
-                {
-                    if (_needUpdate) break;
-                    _ClearVisual(_visual);
-                    _UpdateSync(_visual);
-                }
+                _ClearVisual(visual);
+                _UpdateSync(visual);
             }
-            _UpdateSync(visual);
+            else
+            {
+                var visuals = _visuals.Where(other => other.IsIntersectWith(visual));
+                foreach (var _visual in visuals)
+                    _ClearVisual(_visual, _visual != visual);
+                foreach (var _visual in visuals)
+                    _UpdateSync(_visual);
+            }
 
             ExitRender();
         }
@@ -425,6 +431,7 @@ namespace YDrawing2D
         private void _DrawPrimitive(IPrimitive primitive, Int32Rect bounds, bool isClear = false)
         {
             var paths = GeometryHelper.CalcPrimitivePaths(primitive);
+            Array.Clear(_flags, 0, _flags.Length);
 
             if (isClear)
             {
@@ -436,7 +443,7 @@ namespace YDrawing2D
                     var canfilled = primitive as ICanFilledPrimitive;
                     if (canfilled.FillColor != null)
                         foreach (var fillP in canfilled.GenFilledRegion(paths).Where(p => bounds.Contains(p)))
-                            _DrawPoint(fillP, _backColorValue, 1);
+                            _DrawPoint(fillP, _backColorValue);
                 }
             }
             else
@@ -449,16 +456,14 @@ namespace YDrawing2D
                     var canfilled = primitive as ICanFilledPrimitive;
                     if (canfilled.FillColor != null)
                         foreach (var fillP in canfilled.GenFilledRegion(paths).Where(p => bounds.Contains(p)))
-                            _DrawPoint(fillP, canfilled.FillColor, 1);
+                            _DrawPoint(fillP, canfilled.FillColor);
                 }
             }
         }
 
         private void _DrawPoint(Int32Point pos, byte[] color, int thickness = 1)
         {
-            var points = GeometryHelper.CalcPositions(pos.X, pos.Y, Offset, Stride, thickness, _bounds);
-
-            foreach (var point in points)
+            foreach (var point in GeometryHelper.CalcPositions(pos.X, pos.Y, Offset, Stride, thickness, _bounds, _flags))
                 _DrawPixel(point, color);
         }
 

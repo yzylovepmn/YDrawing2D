@@ -52,6 +52,8 @@ namespace YDrawing2D.Model
                     return GeometryHelper.IsIntersect(this, (Arc)other);
                 case PrimitiveType.Ellipse:
                     return GeometryHelper.IsIntersect((Ellipse)other, this);
+                case PrimitiveType.Spline:
+                    return GeometryHelper.IsIntersect((Spline)other, this);
             }
             return true;
         }
@@ -61,64 +63,8 @@ namespace YDrawing2D.Model
             var region = new List<Int32Point>();
             var delta = _property.Pen.Thickness / 2;
             if (_fillColor != null)
-            {
-                var flag = false;
-                var isfirst = true;
-                var skip = false;
-                int y = 0, cnt = 0;
-                Int32Point startp = default(Int32Point), endp = default(Int32Point);
                 foreach (var path in paths)
-                {
-                    var res = path.Path.Count() % 8;
-                    foreach (var point in path.Path.Take(res))
-                    {
-                        if (!flag)
-                        {
-                            isfirst = false;
-                            startp = point;
-                            y = startp.Y;
-                        }
-                        else
-                        {
-                            endp = point;
-                            region.AddRange(GeometryHelper.GenScanPoints(startp, endp, delta));
-                        }
-                        flag = !flag;
-                        if (!flag) break;
-                    }
-                    foreach (var point in path.Path.Skip(res))
-                    {
-                        if (!flag)
-                        {
-                            startp = point;
-                            if (cnt == 0)
-                            {
-                                skip = false;
-                                if (isfirst)
-                                {
-                                    y = startp.Y;
-                                    isfirst = false;
-                                }
-                                else
-                                {
-                                    if (y == startp.Y)
-                                        skip = true;
-                                    y = startp.Y;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            endp = point;
-                            if ((!skip || cnt < 4))
-                                region.AddRange(GeometryHelper.GenScanPoints(startp, endp, delta));
-                        }
-                        flag = !flag;
-                        if (++cnt == 8)
-                            cnt = 0;
-                    }
-                }
-            }
+                    region.AddRange(GeometryHelper.CalcRegionSingle(path.Path, delta));
             return region;
         }
     }

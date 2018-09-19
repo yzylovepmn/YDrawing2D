@@ -102,11 +102,7 @@ namespace YDrawing2D.Model
         {
             if (!other.Property.Bounds.IsIntersectWith(_property.Bounds)) return false;
 
-            foreach (var innerLine in _innerLines)
-                if (innerLine.IsIntersect(other))
-                    return true;
-
-            return false;
+            return GeometryHelper.IsIntersect(this, other);
         }
     }
 }

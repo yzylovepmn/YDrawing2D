@@ -72,8 +72,7 @@ namespace YDrawing2DTest
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            var len = Math.Max(ActualWidth, ActualHeight);
-            _panel = new PresentationPanel(len, len, 96, 96, Colors.Black, RenderMode.Async);
+            _panel = new PresentationPanel(ActualWidth, ActualHeight, 96, 96, Colors.Black, RenderMode.Async);
             Content = _panel;
             var r = new Random(5);
             for (int i = 0; i < 10000; i++)
@@ -84,11 +83,11 @@ namespace YDrawing2DTest
                 //_panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
                 //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
             }
-            _panel.AddVisual(new Cicle(new Point(200, 300), 200), true);
             _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)), true);
-            _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
             _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
             _panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(500, 500))), true);
+            _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
+            _panel.AddVisual(new Cicle(new Point(200, 300), 200), true);
             //_panel.UpdateAll();
             _panel.MouseMove += _panel_MouseMove;
             _panel.MouseWheel += _panel_MouseWheel;
@@ -170,15 +169,6 @@ namespace YDrawing2DTest
 
         protected override void Draw(IContext context)
         {
-            //if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-            //    context.BeginFigure(MainWindow.ActivePen, new Point(100, 100), true);
-            //else if (this == MainWindow.SelectedVisual)
-            //    context.BeginFigure(MainWindow.SelectedPen, new Point(100, 100), true);
-            //else context.BeginFigure(MainWindow.WhitePen, new Point(100, 100), true);
-            //context.LineTo(new Point(400, 100));
-            //context.LineTo(new Point(400, 400));
-            //context.LineTo(new Point(100, 400));
-            //context.EndFigure();
             if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
                 context.DrawLine(MainWindow.ActivePen, _start, _end);
             else if(this == MainWindow.SelectedVisual)
@@ -204,7 +194,7 @@ namespace YDrawing2DTest
             if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
                 context.DrawCicle(Colors.Blue, MainWindow.ActivePen, _center, _radius);
             else if (this == MainWindow.SelectedVisual)
-                context.DrawCicle(Colors.Red, MainWindow.SelectedPen, _center, _radius);
+                context.DrawCicle(Colors.ForestGreen, MainWindow.SelectedPen, _center, _radius);
             else context.DrawCicle(Colors.White, MainWindow.WhitePen, _center, _radius);
         }
     }
@@ -224,6 +214,7 @@ namespace YDrawing2DTest
 
         protected override void Draw(IContext context)
         {
+            //context.PushOpacity(0.5);
             if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
                 context.DrawEllipse(null, MainWindow.ActivePen, _center, _radiusX, _radiusY);
             else if (this == MainWindow.SelectedVisual)

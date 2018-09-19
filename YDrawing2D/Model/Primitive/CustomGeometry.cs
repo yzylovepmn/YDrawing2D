@@ -47,7 +47,9 @@ namespace YDrawing2D.Model
         internal void StreamTo(IPrimitive primitive)
         {
             _stream.Add(primitive);
-            _property.Bounds = GeometryHelper.ExtendBounds(_property.Bounds, primitive.Property.Bounds);
+            if (_property.Bounds == Int32Rect.Empty)
+                _property.Bounds = primitive.Property.Bounds;
+            else _property.Bounds = GeometryHelper.ExtendBounds(_property.Bounds, primitive.Property.Bounds);
         }
 
         public bool HitTest(Int32Point p)

@@ -417,15 +417,17 @@ namespace YDrawing2D
             }
         }
 
-        internal static IEnumerable<IntPtr> CalcPositions(int x, int y, IntPtr offset, int stride, int thickness, Int32Rect bounds)
+        internal static IEnumerable<IntPtr> CalcPositions(int x, int y, IntPtr offset, int stride, int thickness, Int32Rect bounds, bool[,] flags)
         {
             IntPtr start = offset;
             if (thickness == 1)
             {
                 start += y * stride;
                 start += x * PixelByteLength;
+                if (flags[x, y])
+                    yield break;
+                flags[x, y] = true;
                 yield return start;
-                yield break;
             }
             else
             {
@@ -436,10 +438,18 @@ namespace YDrawing2D
                 int height = Math.Min(y + thickness, bounds.Height + bounds.Y) - y;
                 start += y * stride;
                 start += x * PixelByteLength;
+                var curx = x;
+                var cury = y;
                 for (int i = 0; i < height; i++)
                 {
                     for (int j = 0; j < width; j++)
+                    {
+                        cury = y + i;
+                        curx = x + j;
+                        if (flags[curx, cury]) continue;
+                        flags[curx, cury] = true;
                         yield return start + j * PixelByteLength;
+                    }
                     start += stride;
                 }
             }
@@ -663,24 +673,11 @@ namespace YDrawing2D
             Int32 x = 0;
             Int32 y = radius;
             Int32 d = (1 + x - y) << 1;
-            var lastPoints = new List<Int32Point>();
             while (x <= y)
             {
                 byte condition = 0;
-                if(x == y)
-                {
-                    foreach (var p in _GenEllipsePoints(new Int32Point(x, y)))
-                        yield return new Int32Point(p.X + center.X, p.Y + center.Y);
-                    break;
-                }
-                if (x == 0)
-                {
-                    yield return new Int32Point(x + center.X, -y + center.Y);
-                    yield return new Int32Point(x + center.X, y + center.Y);
-                    yield return new Int32Point(-y + center.X, x + center.Y);
-                    yield return new Int32Point(y + center.X, x + center.Y);
-                }
-                else lastPoints.AddRange(_GenCiclePoints(new Int32Point(x, y)));
+                foreach (var point in _GenCiclePoints(new Int32Point(x, y)))
+                    yield return new Int32Point(point.X + center.X, point.Y + center.Y);
                 if (d > 0)
                 {
                     if (((d - x) << 1) > 1)
@@ -709,8 +706,6 @@ namespace YDrawing2D
                         break;
                 }
             }
-            foreach (var p in lastPoints)
-                yield return new Int32Point(p.X + center.X, p.Y + center.Y);
         }
 
         /// <summary>
@@ -721,16 +716,11 @@ namespace YDrawing2D
             Int32 x = 0;
             Int32 y = b;
             Int64 d = aSquared + bSquared - ((aSquared * b) << 1);
-            var lastPoints = new List<Int32Point>();
             while (x <= splitX)
             {
                 byte condition = 0;
-                if (x == 0)
-                {
-                    yield return new Int32Point(x + center.X, y + center.Y);
-                    yield return new Int32Point(x + center.X, -y + center.Y);
-                }
-                else lastPoints.AddRange(_GenEllipsePoints(new Int32Point(x, y)));
+                foreach (var point in _GenEllipsePoints(new Int32Point(x, y)))
+                    yield return new Int32Point(point.X + center.X, point.Y + center.Y);
 
                 if (d > 0)
                 {
@@ -767,13 +757,8 @@ namespace YDrawing2D
             while (x > splitX)
             {
                 byte condition = 0;
-
-                if (y == 0)
-                {
-                    yield return new Int32Point(x + center.X, y + center.Y);
-                    yield return new Int32Point(-x + center.X, y + center.Y);
-                }
-                else lastPoints.AddRange(_GenEllipsePoints(new Int32Point(x, y)));
+                foreach (var point in _GenEllipsePoints(new Int32Point(x, y)))
+                    yield return new Int32Point(point.X + center.X, point.Y + center.Y);
 
                 if (d > 0)
                 {
@@ -803,8 +788,6 @@ namespace YDrawing2D
                         break;
                 }
             }
-            foreach (var p in lastPoints)
-                yield return new Int32Point(p.X + center.X, p.Y + center.Y);
         }
 
         private static IEnumerable<Int32Point> _CalcArcPoints(Int32Point center, Int32Point start, Int32Point end, Int32 radius)
@@ -1178,10 +1161,16 @@ namespace YDrawing2D
 
             var vec = ellipse1.Center - ellipse2.Center;
             var len = vec.Length;
+            var mRadius1 = Math.Max(ellipse1.RadiusX, ellipse1.RadiusY);
+            var sRadius1 = Math.Min(ellipse1.RadiusX, ellipse1.RadiusY);
+            var mRadius2 = Math.Max(ellipse2.RadiusX, ellipse2.RadiusY);
+            var sRadius2 = Math.Min(ellipse2.RadiusX, ellipse2.RadiusY);
             var delta = ellipse1.Property.Pen.Thickness + ellipse2.Property.Pen.Thickness;
-            if (len + delta < Math.Min(ellipse1.RadiusX, ellipse1.RadiusY) - Math.Max(ellipse2.RadiusX, ellipse2.RadiusY))
+            if (len > mRadius1 + mRadius2 + delta)
                 return false;
-            if (len + delta < Math.Min(ellipse2.RadiusX, ellipse2.RadiusY) - Math.Max(ellipse1.RadiusX, ellipse1.RadiusY))
+            if (len + delta < sRadius1 - mRadius2 && ellipse1.FillColor == null)
+                return false;
+            if (len + delta < sRadius2 - mRadius1 && ellipse2.FillColor == null)
                 return false;
 
             return true;
@@ -1209,9 +1198,13 @@ namespace YDrawing2D
             var vec = ellipse.Center - arc.Center;
             var len = vec.Length;
             var delta = ellipse.Property.Pen.Thickness + arc.Property.Pen.Thickness;
-            if (len + delta < Math.Min(ellipse.RadiusX, ellipse.RadiusY) - arc.Radius)
+            var mRadius = Math.Max(ellipse.RadiusX, ellipse.RadiusY);
+            var sRadius = Math.Min(ellipse.RadiusX, ellipse.RadiusY);
+            if (len > mRadius + arc.Radius + delta)
                 return false;
-            if (len + delta < arc.Radius - Math.Max(ellipse.RadiusX, ellipse.RadiusY))
+            if (len + delta < sRadius - arc.Radius && ellipse.FillColor == null)
+                return false;
+            if (len + delta < arc.Radius - mRadius)
                 return false;
 
             return true;
@@ -1219,20 +1212,20 @@ namespace YDrawing2D
 
         internal static bool IsIntersect(Ellipse ellipse, Line line)
         {
-            if (((line.Start - ellipse.FocusP1).Length + (line.Start - ellipse.FocusP2).Length < ellipse.A_2 - ellipse.Property.Pen.Thickness)
-                || ((line.End - ellipse.FocusP1).Length + (line.End - ellipse.FocusP2).Length < ellipse.A_2 - ellipse.Property.Pen.Thickness))
+            if (ellipse.FillColor == null && ((line.Start - ellipse.FocusP1).Length + (line.Start - ellipse.FocusP2).Length < ellipse.A_2 - ellipse.Property.Pen.Thickness)
+                && ((line.End - ellipse.FocusP1).Length + (line.End - ellipse.FocusP2).Length < ellipse.A_2 - ellipse.Property.Pen.Thickness))
                 return false;
 
             if (line.A == 0)
             {
-                var y = line.C / line.B;
+                var y = -line.C / line.B;
                 if (y > ellipse.Center.Y + ellipse.RadiusY + ellipse.Property.Pen.Thickness
                     || y < ellipse.Center.Y - ellipse.RadiusY - ellipse.Property.Pen.Thickness)
                     return false;
             }
             else if (line.B == 0)
             {
-                var x = line.C / line.A;
+                var x = -line.C / line.A;
                 if (x > ellipse.Center.X + ellipse.RadiusX + ellipse.Property.Pen.Thickness
                     || x < ellipse.Center.X - ellipse.RadiusX - ellipse.Property.Pen.Thickness)
                     return false;
@@ -1292,34 +1285,32 @@ namespace YDrawing2D
                 return !IsAllNegative(len1, len2);
             }
         }
+
+        internal static bool IsIntersect(Spline spline, IPrimitive other)
+        {
+            foreach (var line in spline.InnerLines)
+                if (line.IsIntersect(other))
+                    return true;
+            return false;
+        }
         #endregion
 
         #region Region
-        public static IEnumerable<Int32Point> CalcRegionSingle(IPrimitive primitive)
+        public static IEnumerable<Int32Point> CalcRegionSingle(IEnumerable<Int32Point> path, int delta)
         {
-            if (primitive.Type != PrimitiveType.Cicle && primitive.Type != PrimitiveType.Ellipse)
-                throw new InvalidOperationException(string.Format("Primitive {0} can not be filled!", primitive.Type));
-            int startx = primitive.Property.Bounds.X;
-            int starty, endy;
-            int right = primitive.Property.Bounds.Width + startx;
-            int bottom = primitive.Property.Bounds.Height + primitive.Property.Bounds.Y;
-            for (int i = startx; i <= right; i++)
+            var flag = false;
+            Int32Point startp = default(Int32Point), endp = default(Int32Point);
+            foreach (var point in path)
             {
-                starty = primitive.Property.Bounds.Y;
-                endy = starty;
-                while (starty < bottom)
+                if (!flag)
+                    startp = point;
+                else
                 {
-                    if (primitive.HitTest(new Int32Point(i, starty)))
-                    {
-                        endy = starty + primitive.Property.Pen.Thickness;
-                        while (endy < bottom && !primitive.HitTest(new Int32Point(i, endy)))
-                            endy++;
-                        for (int j = starty + 1; j < endy; j++)
-                            yield return new Int32Point(i, j);
-                        break;
-                    }
-                    else starty++;
+                    endp = point;
+                    foreach (var p in GenScanPoints(startp, endp, delta))
+                        yield return p;
                 }
+                flag = !flag;
             }
         }
         #endregion

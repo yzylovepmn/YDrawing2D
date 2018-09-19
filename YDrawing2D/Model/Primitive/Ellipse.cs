@@ -59,7 +59,11 @@ namespace YDrawing2D.Model
 
         public bool HitTest(Int32Point p)
         {
-            return Math.Abs((p - FocusP1).Length + (p - FocusP2).Length - A_2) <= _property.Pen.Thickness + 1;
+            var len1 = (p - FocusP1).Length;
+            var len2 = (p - FocusP2).Length;
+            if (_fillColor == null)
+                return Math.Abs(len1 + len2 - A_2) <= _property.Pen.Thickness + 1;
+            else return len1 + len2 <= A_2 + _property.Pen.Thickness + 1;
         }
 
         public bool IsIntersect(IPrimitive other)
@@ -76,7 +80,7 @@ namespace YDrawing2D.Model
                 case PrimitiveType.Ellipse:
                     return GeometryHelper.IsIntersect(this, (Ellipse)other);
                 case PrimitiveType.Spline:
-                    break;
+                    return GeometryHelper.IsIntersect((Spline)other, this);
             }
             return true;
         }
@@ -84,10 +88,10 @@ namespace YDrawing2D.Model
         public IEnumerable<Int32Point> GenFilledRegion(IEnumerable<PrimitivePath> paths)
         {
             var region = new List<Int32Point>();
+            var delta = _property.Pen.Thickness / 2;
             if (_fillColor != null)
-            {
-
-            }
+                foreach (var path in paths)
+                    region.AddRange(GeometryHelper.CalcRegionSingle(path.Path, delta));
             return region;
         }
     }
