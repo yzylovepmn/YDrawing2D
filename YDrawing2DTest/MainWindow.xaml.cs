@@ -83,11 +83,11 @@ namespace YDrawing2DTest
                 //_panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
                 //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
             }
-            _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)), true);
-            _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
-            _panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(500, 500))), true);
-            _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
-            _panel.AddVisual(new Cicle(new Point(200, 300), 300), true);
+            //_panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)), true);
+            //_panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
+            //_panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(500, 500))), true);
+            //_panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
+            //_panel.AddVisual(new Cicle(new Point(200, 300), 300), true);
             _panel.AddVisual(new CustomShape(), true);
             //_panel.UpdateAll();
             _panel.MouseMove += _panel_MouseMove;
@@ -143,18 +143,18 @@ namespace YDrawing2DTest
         {
             context.PushOpacity(0.5);
             if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                context.BeginFigure(Colors.Blue, MainWindow.ActivePen, new Point(100, 400), true);
+                context.BeginFigure(Colors.Blue, MainWindow.ActivePen, new Point(500, 400), true);
             else if (this == MainWindow.SelectedVisual)
-                context.BeginFigure(Colors.Red, MainWindow.SelectedPen, new Point(100, 400), true);
-            else context.BeginFigure(Colors.White, MainWindow.WhitePen, new Point(100, 400), true);
+                context.BeginFigure(Colors.Red, MainWindow.SelectedPen, new Point(500, 400), true);
+            else context.BeginFigure(Colors.White, MainWindow.WhitePen, new Point(500, 400), true);
 
-            context.LineTo(new Point(200, 400));
-            context.LineTo(new Point(250, 480));
-            context.LineTo(new Point(300, 400));
-            context.LineTo(new Point(400, 400));
-            context.LineTo(new Point(320, 350));
+            context.LineTo(new Point(600, 400));
+            context.LineTo(new Point(650, 480));
+            context.LineTo(new Point(700, 400));
+            context.LineTo(new Point(800, 400));
+            context.LineTo(new Point(720, 350));
 
-            //context.ArcTo(new Point(200, 480), 90, true, false);
+            context.ArcTo(new Point(500, 480), 180, false, false);
 
             context.EndFigure();
         }

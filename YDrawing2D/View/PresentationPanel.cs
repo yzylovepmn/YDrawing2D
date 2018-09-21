@@ -49,7 +49,7 @@ namespace YDrawing2D
             _transform = new Matrix();
 
             #region Async
-            _timer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(5) };
+            _timer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(1) };
             _timer.Tick += _UpdateSample;
             #endregion
 

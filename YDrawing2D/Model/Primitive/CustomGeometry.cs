@@ -60,7 +60,7 @@ namespace YDrawing2D.Model
                     if (primitive.HitTest(p))
                         return true;
             }
-            else return true;
+            else return GeometryHelper.Contains(this, p);
             return false;
         }
 
