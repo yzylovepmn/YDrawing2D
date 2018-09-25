@@ -25,6 +25,11 @@ namespace YDrawing2D
             return colors;
         }
 
+        public static Int32 ColorToInt32(byte[] color)
+        {
+            return color[0] + (color[1] << 8) + (color[2] << 16) + (color[3] << 24);
+        }
+
         public static int CalcMCD(int a, int b)
         {
             if (a == b) return a;

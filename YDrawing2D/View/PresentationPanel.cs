@@ -73,7 +73,7 @@ namespace YDrawing2D
         internal double ImageHeight { get { return _imageHeight; } }
         private double _imageHeight;
 
-        private bool[,] _flags;
+        private bool[, ] _flags;
 
         /// <summary>
         /// The background color used by the panel
@@ -87,6 +87,7 @@ namespace YDrawing2D
                 {
                     _backColor = value;
                     _backColorValue = Helper.CalcColor(_backColor);
+                    _backColorValue32 = Helper.ColorToInt32(_backColorValue);
                     UpdateAll();
                 }
             }
@@ -95,6 +96,7 @@ namespace YDrawing2D
 
         internal byte[] BackColorValue { get { return _backColorValue; } }
         private byte[] _backColorValue;
+        private int _backColorValue32;
 
         /// <summary>
         /// Internally used bitmap
@@ -121,6 +123,8 @@ namespace YDrawing2D
         bool _completeLoop = false;
         int _cnt = 0;
         object _loopLock = new object();
+        ParallelOptions _option = new ParallelOptions();
+        CancellationTokenSource _currentSource;
 
         /// <summary>
         /// Update the entire panel async
@@ -130,6 +134,9 @@ namespace YDrawing2D
             Monitor.Enter(_loopLock);
             if (_isUpdatingAll)
             {
+                if (_currentSource != null && _currentSource.Token.CanBeCanceled)
+                    _currentSource.Cancel();
+
                 _needUpdate = true;
                 Monitor.Exit(_loopLock);
                 return;
@@ -137,7 +144,7 @@ namespace YDrawing2D
             _isUpdatingAll = true;
             foreach (var visual in _visuals)
                 visual.Mode = Mode.WatingForUpdate;
-            ClearBuffer(_backColorValue);
+            ClearBuffer();
             _cnt = 0;
             _timer.Start();
             ThreadPool.QueueUserWorkItem(e =>
@@ -148,7 +155,15 @@ namespace YDrawing2D
                 lock (this)
                     visuals = _visuals.ToList();
 
-                var ret = Parallel.ForEach(visuals, _UpdateAsync);
+                _currentSource = new CancellationTokenSource();
+                _option.CancellationToken = _currentSource.Token;
+                try
+                {
+                    var ret = Parallel.ForEach(visuals, _option, _UpdateAsync);
+                }
+                catch (Exception)
+                {
+                }
                 //foreach (var visual in visuals)
                 //{
                 //    if (_needUpdate) break;
@@ -222,7 +237,7 @@ namespace YDrawing2D
         internal void _UpdateAllSync()
         {
             EnterRender();
-            _ClearBuffer(_backColorValue);
+            _ClearBuffer();
             foreach (var visual in _visuals)
                 _UpdateSync(visual);
             ExitRender();
@@ -387,10 +402,10 @@ namespace YDrawing2D
         /// Clear panel buffer with the specified color
         /// </summary>
         /// <param name="color">The color to clear</param>
-        public void ClearBuffer(byte[] color)
+        public void ClearBuffer()
         {
             EnterRender();
-            _ClearBuffer(color);
+            _ClearBuffer();
             ExitRender();
         }
 
@@ -398,14 +413,14 @@ namespace YDrawing2D
         /// Clear panel buffer with the specified color(Internal call)
         /// </summary>
         /// <param name="color">The color to clear</param>
-        internal void _ClearBuffer(byte[] color)
+        unsafe internal void _ClearBuffer()
         {
             var start = _offset;
             for (int i = 0; i < _bounds.Height; i++)
             {
                 for (int j = 0; j < _bounds.Width; j++)
                 {
-                    _DrawPixel(start, color);
+                    *(int*)start = _backColorValue32;
                     start += GeometryHelper.PixelByteLength;
                 }
             }
@@ -523,6 +538,12 @@ namespace YDrawing2D
 
         public void Dispose()
         {
+            if (_currentSource != null && _currentSource.Token.CanBeCanceled)
+                _currentSource.Cancel();
+
+            _timer.Stop();
+            _timer = null;
+
             foreach (var visual in _visuals)
                 visual.Dispose();
             _visuals.Clear();
