@@ -93,7 +93,7 @@ namespace YDrawing2D
         }
         private Color _backColor;
 
-        public byte[] BackColorValue { get { return _backColorValue; } }
+        internal byte[] BackColorValue { get { return _backColorValue; } }
         private byte[] _backColorValue;
 
         /// <summary>
@@ -148,11 +148,12 @@ namespace YDrawing2D
                 lock (this)
                     visuals = _visuals.ToList();
 
-                foreach (var visual in visuals)
-                {
-                    if (_needUpdate) break;
-                    _UpdateAsync(visual);
-                }
+                var ret = Parallel.ForEach(visuals, _UpdateAsync);
+                //foreach (var visual in visuals)
+                //{
+                //    if (_needUpdate) break;
+                //    _UpdateAsync(visual);
+                //}
                 _completeLoop = true;
             });
             Monitor.Exit(_loopLock);
@@ -169,7 +170,7 @@ namespace YDrawing2D
                 {
                     if (!_completeLoop)
                     {
-                        Thread.Sleep(10);
+                        Thread.Sleep(1);
                         continue;
                     }
                     break;
@@ -205,6 +206,7 @@ namespace YDrawing2D
             visual.Update();
             foreach (var primitive in visual.Context.Primitives)
             {
+                if (_needUpdate) break;
                 if (primitive == null || !_bounds.IsIntersectWith(primitive)) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds);
@@ -415,6 +417,7 @@ namespace YDrawing2D
         /// </summary>
         internal void EnterRender()
         {
+            //Dispatcher.Invoke(() => _image.Lock());
             _image.Lock();
         }
 
@@ -423,18 +426,20 @@ namespace YDrawing2D
         /// </summary>
         internal void ExitRender()
         {
+            //Dispatcher.Invoke(() => _image.Unlock());
             _image.Unlock();
         }
 
         internal void UpdateBounds(Int32Rect bounds)
         {
             EnterRender();
-            _image.AddDirtyRect(bounds);
+            _UpdateBounds(bounds);
             ExitRender();
         }
 
         private void _UpdateBounds(Int32Rect bounds)
         {
+            //Dispatcher.Invoke(() => _image.AddDirtyRect(bounds));
             _image.AddDirtyRect(bounds);
         }
 
@@ -445,7 +450,7 @@ namespace YDrawing2D
 
             if (isClear)
             {
-                foreach (var point in Helper.FilterUniquePoints(paths, _bounds, primitive.Property.Pen.Dashes))
+                foreach (var point in Helper.FilterUniquePoints(paths, bounds, primitive.Property.Pen.Dashes))
                     _DrawPoint(point, _backColorValue, primitive.Property.Pen.Thickness);
 
                 if (primitive is ICanFilledPrimitive)
@@ -458,7 +463,7 @@ namespace YDrawing2D
             }
             else
             {
-                foreach (var point in Helper.FilterUniquePoints(paths, _bounds, primitive.Property.Pen.Dashes))
+                foreach (var point in Helper.FilterUniquePoints(paths, bounds, primitive.Property.Pen.Dashes))
                     _DrawPoint(point, primitive.Property.Pen.Color, primitive.Property.Pen.Thickness);
 
                 if (primitive is ICanFilledPrimitive)
