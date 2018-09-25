@@ -843,7 +843,7 @@ namespace YDrawing2D
                         // start 1 end 1
                         if (end.Y <= center.Y)
                         {
-                            if (start.X < end.X)
+                            if (start.X <= end.X)
                                 return points.Where(p => p.X >= start.X && p.Y <= end.Y);
                             else return points.Where(p => p.X <= end.X || p.Y >= start.Y);
                         }
@@ -875,7 +875,7 @@ namespace YDrawing2D
                         else
                         {
                             // start 4 end 4
-                            if (end.X < start.X)
+                            if (end.X <= start.X)
                                 return points.Where(p => p.X >= end.X && p.Y >= start.Y);
                             else return points.Where(p => p.X <= start.X || p.Y <= end.Y);
                         }
@@ -910,7 +910,7 @@ namespace YDrawing2D
                         // start 2 end 2
                         if (end.Y <= center.Y)
                         {
-                            if (start.X < end.X)
+                            if (start.X <= end.X)
                                 return points.Where(p => p.X <= end.X && p.Y <= start.Y);
                             else return points.Where(p => p.X >= start.X || p.Y >= end.Y);
                         }
@@ -936,7 +936,7 @@ namespace YDrawing2D
                         else
                         {
                             // start 3 end 3
-                            if (end.X < start.X)
+                            if (end.X <= start.X)
                                 return points.Where(p => p.X <= start.X && p.Y >= end.Y);
                             else return points.Where(p => p.X >= end.X || p.Y <= start.Y);
                         }
@@ -956,7 +956,7 @@ namespace YDrawing2D
                         // start 1 end 1
                         if (end.Y <= center.Y)
                         {
-                            if (start.X < end.X)
+                            if (start.X <= end.X)
                                 return true;
                             else return points.Any(p => p.X <= end.X || p.Y >= start.Y);
                         }
@@ -988,7 +988,7 @@ namespace YDrawing2D
                         else
                         {
                             // start 4 end 4
-                            if (end.X < start.X)
+                            if (end.X <= start.X)
                                 return true;
                             else return points.Any(p => p.X <= start.X || p.Y <= end.Y);
                         }
@@ -1023,7 +1023,7 @@ namespace YDrawing2D
                         // start 2 end 2
                         if (end.Y <= center.Y)
                         {
-                            if (start.X < end.X)
+                            if (start.X <= end.X)
                                 return true;
                             else return points.Any(p => p.X >= start.X || p.Y >= end.Y);
                         }
@@ -1049,7 +1049,7 @@ namespace YDrawing2D
                         else
                         {
                             // start 3 end 3
-                            if (end.X < start.X)
+                            if (end.X <= start.X)
                                 return true;
                             else return points.Any(p => p.X >= end.X || p.Y <= start.Y);
                         }
