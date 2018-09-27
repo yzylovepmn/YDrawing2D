@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -83,12 +84,13 @@ namespace YDrawing2DTest
                 //_panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
                 //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
             }
-            _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)), true);
-            _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
-            _panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(500, 500))), true);
-            _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
-            _panel.AddVisual(new Cicle(new Point(200, 300), 300), true);
-            _panel.AddVisual(new CustomShape(), true);
+            //_panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)), true);
+            //_panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
+            //_panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(500, 500))), true);
+            //_panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
+            //_panel.AddVisual(new Cicle(new Point(200, 300), 300), true);
+            //_panel.AddVisual(new CustomShape(), true);
+            _panel.AddVisual(new Text(), true);
             //_panel.UpdateAll();
             _panel.MouseMove += _panel_MouseMove;
             _panel.MouseWheel += _panel_MouseWheel;
@@ -134,6 +136,20 @@ namespace YDrawing2DTest
                     p = _p;
                 }
             }
+        }
+    }
+
+    public class Text : PresentationVisual
+    {
+        protected override void Draw(IContext context)
+        {
+            var typeFace = new Typeface(new FontFamily("新宋体"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+            var text = new FormattedText("Hello world!", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeFace, 50, Brushes.White);
+            if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
+                context.DrawText(null, MainWindow.ActivePen, text, new Point(300, 300));
+            else if (this == MainWindow.SelectedVisual)
+                context.DrawText(null, MainWindow.SelectedPen, text, new Point(300, 300));
+            else context.DrawText(null, MainWindow.WhitePen, text, new Point(300, 300));
         }
     }
 

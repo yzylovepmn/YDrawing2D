@@ -176,9 +176,11 @@ namespace YDrawing2D
         /// </summary>
         public const int PixelByteLength = 4;
 
-        internal static Point ConvertWithTransform(Point p, double height, Matrix transform1, StackTransform transform2)
+        internal static Point ConvertWithTransform(Point p, PresentationContext context)
         {
-            return transform1.Transform(transform2.Transform(new Point(p.X, height - p.Y)));
+            if (context.NeedFilpCoordinate)
+                return context.Visual.Panel.Transform.Transform(context.Transform.Transform(new Point(p.X, context.Visual.Panel.ImageHeight - p.Y)));
+            else return context.Visual.Panel.Transform.Transform(context.Transform.Transform(p));
         }
 
         internal static Int32Point ConvertToInt32Point(Point p, double dpiRatio)

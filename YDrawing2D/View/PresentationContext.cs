@@ -38,6 +38,8 @@ namespace YDrawing2D.View
         /// </summary>
         void DrawBezier(DrawingPen pen, int degree, IEnumerable<Point> points);
 
+        void DrawText(Color? fillColor, DrawingPen pen, FormattedText formattedText, Point origin);
+
 
         void LineTo(Point point);
         void PolyLineTo(IEnumerable<Point> points);
@@ -72,7 +74,11 @@ namespace YDrawing2D.View
             _transform = new StackTransform();
         }
 
+        internal PresentationVisual Visual { get { return _visual; } }
         private PresentationVisual _visual;
+
+        internal bool NeedFilpCoordinate { get { return _needFilpCoordinate; } }
+        private bool _needFilpCoordinate = true;
 
         #region Stream
         private Point? _begin;
@@ -90,8 +96,8 @@ namespace YDrawing2D.View
 
         private Line _DrawLine(_DrawingPen pen, Point start, Point end)
         {
-            start = GeometryHelper.ConvertWithTransform(start, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
-            end = GeometryHelper.ConvertWithTransform(end, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
+            start = GeometryHelper.ConvertWithTransform(start, this);
+            end = GeometryHelper.ConvertWithTransform(end, this);
 
             var _start = GeometryHelper.ConvertToInt32Point(start, _visual.Panel.DPIRatio);
             var _end = GeometryHelper.ConvertToInt32Point(end, _visual.Panel.DPIRatio);
@@ -101,7 +107,7 @@ namespace YDrawing2D.View
 
         public void DrawCicle(Color? fillColor, DrawingPen pen, Point center, double radius)
         {
-            center = GeometryHelper.ConvertWithTransform(center, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
+            center = GeometryHelper.ConvertWithTransform(center, this);
             radius *= _visual.Panel.ScaleX * _transform.ScaleX;
 
             var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
@@ -112,7 +118,7 @@ namespace YDrawing2D.View
 
         public void DrawEllipse(Color? fillColor, DrawingPen pen, Point center, double radiusX, double radiusY)
         {
-            center = GeometryHelper.ConvertWithTransform(center, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
+            center = GeometryHelper.ConvertWithTransform(center, this);
             radiusX *= _visual.Panel.ScaleX * _transform.ScaleX;
             radiusY *= _visual.Panel.ScaleY * _transform.ScaleY;
 
@@ -133,7 +139,7 @@ namespace YDrawing2D.View
             if (!isClockwise)
                 Helper.Switch(ref startRadian, ref endRadian);
 
-            center = GeometryHelper.ConvertWithTransform(center, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
+            center = GeometryHelper.ConvertWithTransform(center, this);
             radius *= _visual.Panel.ScaleX * _transform.ScaleX;
 
             var startP = new Point(radius * Math.Cos(startRadian) + center.X, center.Y - radius * Math.Sin(startRadian));
@@ -159,7 +165,7 @@ namespace YDrawing2D.View
 
         public void DrawSpline(DrawingPen pen, int degree, IEnumerable<double> knots, IEnumerable<Point> controlPoints, IEnumerable<double> weights, IEnumerable<Point> fitPoints)
         {
-            _primitives.Add(new Spline(degree, knots.ToArray(), controlPoints?.Select(ctrlP => GeometryHelper.ConvertWithTransform(ctrlP, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform)).ToArray(), weights.ToArray(), fitPoints?.Select(fitP => GeometryHelper.ConvertWithTransform(fitP, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform)).ToArray(), new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), _visual.Panel.DPIRatio));
+            _primitives.Add(new Spline(degree, knots.ToArray(), controlPoints?.Select(ctrlP => GeometryHelper.ConvertWithTransform(ctrlP, this)).ToArray(), weights.ToArray(), fitPoints?.Select(fitP => GeometryHelper.ConvertWithTransform(fitP, this)).ToArray(), new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), _visual.Panel.DPIRatio));
         }
 
         public void DrawBezier(DrawingPen pen, int degree, IEnumerable<Point> points)
@@ -170,10 +176,68 @@ namespace YDrawing2D.View
         private void _DrawBezier(_DrawingPen pen, int degree, IEnumerable<Point> points, bool isStream = false)
         {
             if (points.Count() != degree + 1) throw new ArgumentException("points.Count() != degree + 1");
-            var bezier = new Bezier(points.Select(p => GeometryHelper.ConvertWithTransform(p, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform)).ToArray(), degree, pen, _visual.Panel.DPIRatio);
+            var bezier = new Bezier(points.Select(p => GeometryHelper.ConvertWithTransform(p, this)).ToArray(), degree, pen, _visual.Panel.DPIRatio);
             if (!isStream)
                 _primitives.Add(bezier);
             else _stream.StreamTo(bezier);
+        }
+
+        private void _DrawPathGeometry(Color? foreground, DrawingPen pen, Geometry geometry)
+        {
+            var pathGeos = new List<PathGeometry>();
+
+            _AddPathGeometry(pathGeos, geometry);
+
+            foreach (var geo in pathGeos)
+            {
+                foreach (var figure in geo.Figures)
+                {
+                    BeginFigure(foreground, pen, figure.StartPoint, figure.IsClosed);
+                    foreach (var segment in figure.Segments)
+                    {
+                        if (segment is LineSegment)
+                        {
+                            var line = (LineSegment)segment;
+                            LineTo(line.Point);
+                        }
+                        if (segment is PolyLineSegment)
+                        {
+                            var line = (PolyLineSegment)segment;
+                            PolyLineTo(line.Points);
+                        }
+                        if (segment is BezierSegment)
+                        {
+                            var bezier = (BezierSegment)segment;
+                            BezierTo(3, new List<Point>() { bezier.Point1, bezier.Point2, bezier.Point3 });
+                        }
+                        if (segment is QuadraticBezierSegment)
+                        {
+                            var bezier = (QuadraticBezierSegment)segment;
+                            BezierTo(2, new List<Point>() { bezier.Point1, bezier.Point2 });
+                        }
+                        if (segment is PolyBezierSegment)
+                        {
+                            var bezier = (PolyBezierSegment)segment;
+                            PolyBezierTo(3, bezier.Points);
+                        }
+                        if (segment is PolyQuadraticBezierSegment)
+                        {
+                            var bezier = (PolyQuadraticBezierSegment)segment;
+                            PolyBezierTo(2, bezier.Points);
+                        }
+                    }
+                    EndFigure();
+                }
+            }
+        }
+
+        private void _AddPathGeometry(List<PathGeometry> source, Geometry geo)
+        {
+            if (geo is PathGeometry)
+                source.Add(geo as PathGeometry);
+            else if (geo is GeometryGroup)
+                foreach (var geometry in (geo as GeometryGroup).Children)
+                    _AddPathGeometry(source, geometry);
         }
 
         public void LineTo(Point point)
@@ -199,8 +263,8 @@ namespace YDrawing2D.View
 
         private void _ArcTo(Point point, double radius, bool isLargeAngle, bool isClockwise)
         {
-            var startP = GeometryHelper.ConvertWithTransform(_current.Value, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
-            var endP = GeometryHelper.ConvertWithTransform(point, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform);
+            var startP = GeometryHelper.ConvertWithTransform(_current.Value, this);
+            var endP = GeometryHelper.ConvertWithTransform(point, this);
             radius *= _visual.Panel.ScaleX * _transform.ScaleX;
 
             var vec = endP - startP;
@@ -248,6 +312,16 @@ namespace YDrawing2D.View
                 }
             }
         }
+
+        #region Text
+        public void DrawText(Color? fillColor, DrawingPen pen, FormattedText formattedText, Point origin)
+        {
+            _needFilpCoordinate = false;
+            origin = new Point(origin.X, _visual.Panel.ImageHeight - origin.Y);
+            _DrawPathGeometry(fillColor, pen, formattedText.BuildGeometry(origin));
+            _needFilpCoordinate = true;
+        }
+        #endregion
 
         public void BeginFigure(Color? fillColor, DrawingPen pen, Point begin, bool isClosed)
         {
