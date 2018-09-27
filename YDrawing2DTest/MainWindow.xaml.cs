@@ -146,10 +146,10 @@ namespace YDrawing2DTest
             var typeFace = new Typeface(new FontFamily("新宋体"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
             var text = new FormattedText("Hello world!", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeFace, 50, Brushes.White);
             if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                context.DrawText(null, MainWindow.ActivePen, text, new Point(300, 300));
+                context.DrawText(null, MainWindow.ActivePen, text, 50, new Point(300, 300));
             else if (this == MainWindow.SelectedVisual)
-                context.DrawText(null, MainWindow.SelectedPen, text, new Point(300, 300));
-            else context.DrawText(null, MainWindow.WhitePen, text, new Point(300, 300));
+                context.DrawText(null, MainWindow.SelectedPen, text, 50, new Point(300, 300));
+            else context.DrawText(null, MainWindow.WhitePen, text, 50, new Point(300, 300));
         }
     }
 

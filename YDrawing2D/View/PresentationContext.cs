@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -38,7 +39,7 @@ namespace YDrawing2D.View
         /// </summary>
         void DrawBezier(DrawingPen pen, int degree, IEnumerable<Point> points);
 
-        void DrawText(Color? fillColor, DrawingPen pen, FormattedText formattedText, Point origin);
+        void DrawText(Color? fillColor, DrawingPen pen, FormattedText formattedText, double emSize, Point origin);
 
 
         void LineTo(Point point);
@@ -80,13 +81,25 @@ namespace YDrawing2D.View
         internal bool NeedFilpCoordinate { get { return _needFilpCoordinate; } }
         private bool _needFilpCoordinate = true;
 
+        private int _flagSync = 0;
+
         #region Stream
         private Point? _begin;
         private Point? _current;
         private CustomGeometry _stream = CustomGeometry.Empty;
         #endregion
 
-        internal IEnumerable<IPrimitive> Primitives { get { return _primitives.ToList(); } }
+        internal IEnumerable<IPrimitive> Primitives
+        {
+            get
+            {
+                while (Interlocked.Exchange(ref _flagSync, 1) == 1)
+                    Thread.Sleep(1);
+                var primitives = _primitives.ToList();
+                Interlocked.Exchange(ref _flagSync, 0);
+                return primitives;
+            }
+        }
         private List<IPrimitive> _primitives;
 
         public void DrawLine(DrawingPen pen, Point start, Point end)
@@ -184,60 +197,44 @@ namespace YDrawing2D.View
 
         private void _DrawPathGeometry(Color? foreground, DrawingPen pen, Geometry geometry)
         {
-            var pathGeos = new List<PathGeometry>();
-
-            _AddPathGeometry(pathGeos, geometry);
-
-            foreach (var geo in pathGeos)
+            foreach (var figure in geometry.GetFlattenedPathGeometry().Figures)
             {
-                foreach (var figure in geo.Figures)
+                BeginFigure(foreground, pen, figure.StartPoint, figure.IsClosed);
+                foreach (var segment in figure.Segments)
                 {
-                    BeginFigure(foreground, pen, figure.StartPoint, figure.IsClosed);
-                    foreach (var segment in figure.Segments)
+                    if (segment is LineSegment)
                     {
-                        if (segment is LineSegment)
-                        {
-                            var line = (LineSegment)segment;
-                            LineTo(line.Point);
-                        }
-                        if (segment is PolyLineSegment)
-                        {
-                            var line = (PolyLineSegment)segment;
-                            PolyLineTo(line.Points);
-                        }
-                        if (segment is BezierSegment)
-                        {
-                            var bezier = (BezierSegment)segment;
-                            BezierTo(3, new List<Point>() { bezier.Point1, bezier.Point2, bezier.Point3 });
-                        }
-                        if (segment is QuadraticBezierSegment)
-                        {
-                            var bezier = (QuadraticBezierSegment)segment;
-                            BezierTo(2, new List<Point>() { bezier.Point1, bezier.Point2 });
-                        }
-                        if (segment is PolyBezierSegment)
-                        {
-                            var bezier = (PolyBezierSegment)segment;
-                            PolyBezierTo(3, bezier.Points);
-                        }
-                        if (segment is PolyQuadraticBezierSegment)
-                        {
-                            var bezier = (PolyQuadraticBezierSegment)segment;
-                            PolyBezierTo(2, bezier.Points);
-                        }
+                        var line = (LineSegment)segment;
+                        LineTo(line.Point);
                     }
-                    EndFigure();
+                    if (segment is PolyLineSegment)
+                    {
+                        var line = (PolyLineSegment)segment;
+                        PolyLineTo(line.Points);
+                    }
+                    if (segment is BezierSegment)
+                    {
+                        var bezier = (BezierSegment)segment;
+                        BezierTo(3, new List<Point>() { bezier.Point1, bezier.Point2, bezier.Point3 });
+                    }
+                    if (segment is QuadraticBezierSegment)
+                    {
+                        var bezier = (QuadraticBezierSegment)segment;
+                        BezierTo(2, new List<Point>() { bezier.Point1, bezier.Point2 });
+                    }
+                    if (segment is PolyBezierSegment)
+                    {
+                        var bezier = (PolyBezierSegment)segment;
+                        PolyBezierTo(3, bezier.Points);
+                    }
+                    if (segment is PolyQuadraticBezierSegment)
+                    {
+                        var bezier = (PolyQuadraticBezierSegment)segment;
+                        PolyBezierTo(2, bezier.Points);
+                    }
                 }
+                EndFigure();
             }
-        }
-
-        private void _AddPathGeometry(List<PathGeometry> source, Geometry geo)
-        {
-            if (geo is PathGeometry)
-                source.Add(geo as PathGeometry);
-            else if (geo is GeometryGroup)
-                foreach (var geometry in (geo as GeometryGroup).Children)
-                    _AddPathGeometry(source, geometry);
         }
 
         public void LineTo(Point point)
@@ -314,7 +311,7 @@ namespace YDrawing2D.View
         }
 
         #region Text
-        public void DrawText(Color? fillColor, DrawingPen pen, FormattedText formattedText, Point origin)
+        public void DrawText(Color? fillColor, DrawingPen pen, FormattedText formattedText, double emSize, Point origin)
         {
             _needFilpCoordinate = false;
             origin = new Point(origin.X, _visual.Panel.ImageHeight - origin.Y);
@@ -344,10 +341,14 @@ namespace YDrawing2D.View
 
         internal void Reset()
         {
+            while (Interlocked.Exchange(ref _flagSync, 1) == 1)
+                Thread.Sleep(1);
+            _primitives.Clear();
+            Interlocked.Exchange(ref _flagSync, 0);
+
             _transform.Reset();
             _begin = null;
             _current = null;
-            _primitives.Clear();
         }
 
         #region Transform
@@ -392,8 +393,11 @@ namespace YDrawing2D.View
 
         public void Dispose()
         {
-            _transform.Dispose();
+            while (Interlocked.Exchange(ref _flagSync, 1) == 1)
+                Thread.Sleep(1);
             _primitives.Clear();
+            Interlocked.Exchange(ref _flagSync, 0);
+            _transform.Dispose();
             _primitives = null;
             _visual = null;
         }
