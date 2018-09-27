@@ -221,7 +221,7 @@ namespace YDrawing2D
             visual.Update();
             foreach (var primitive in visual.Context.Primitives)
             {
-                if (_needUpdate) break;
+                if (_currentSource.IsCancellationRequested) break;
                 if (primitive == null || !_bounds.IsIntersectWith(primitive)) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds);
@@ -540,12 +540,13 @@ namespace YDrawing2D
         {
             if (_currentSource != null && _currentSource.Token.CanBeCanceled)
                 _currentSource.Cancel();
+            _currentSource?.Dispose();
 
             _timer.Stop();
             _timer = null;
 
-            foreach (var visual in _visuals)
-                visual.Dispose();
+            //foreach (var visual in _visuals)
+            //    visual.Dispose();
             _visuals.Clear();
             _visuals = null;
 

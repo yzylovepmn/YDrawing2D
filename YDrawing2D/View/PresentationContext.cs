@@ -27,12 +27,31 @@ namespace YDrawing2D.View
         void DrawArc(DrawingPen pen, Point center, double radius, double startAngle, double endAngle, bool isClockwise);
         void DrawEllipse(Color? fillColor, DrawingPen pen, Point center, double radiusX, double radiusY);
         void DrawRectangle(Color? fillColor, DrawingPen pen, Rect rectangle);
-        void DrawSpline(DrawingPen pen, int degree, List<double> knots, List<Point> controlPoints, List<double> weights, List<Point> fitPoints);
+
+        /// <summary>
+        /// Non-uniform rational B-spline (NURBS)
+        /// </summary>
+        void DrawSpline(DrawingPen pen, int degree, IEnumerable<double> knots, IEnumerable<Point> controlPoints, IEnumerable<double> weights, IEnumerable<Point> fitPoints);
+
+        /// <summary>
+        /// The points.Count() == degree + 1;
+        /// </summary>
+        void DrawBezier(DrawingPen pen, int degree, IEnumerable<Point> points);
 
 
         void LineTo(Point point);
         void PolyLineTo(IEnumerable<Point> points);
         void ArcTo(Point point, double radius, bool isLargeAngle, bool isClockwise);
+
+        /// <summary>
+        /// The points.Count() == degree;
+        /// The last point of points is end point, the other is the control point
+        /// </summary>
+        void BezierTo(int degree, IEnumerable<Point> points);
+        /// <summary>
+        /// The points.Count() must be an integer multiple of degree
+        /// </summary>
+        void PolyBezierTo(int degree, IEnumerable<Point> points);
 
 
         void PushOpacity(double opacity);
@@ -138,9 +157,23 @@ namespace YDrawing2D.View
             EndFigure();
         }
 
-        public void DrawSpline(DrawingPen pen, int degree, List<double> knots, List<Point> controlPoints, List<double> weights, List<Point> fitPoints)
+        public void DrawSpline(DrawingPen pen, int degree, IEnumerable<double> knots, IEnumerable<Point> controlPoints, IEnumerable<double> weights, IEnumerable<Point> fitPoints)
         {
             _primitives.Add(new Spline(degree, knots.ToArray(), controlPoints?.Select(ctrlP => GeometryHelper.ConvertWithTransform(ctrlP, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform)).ToArray(), weights.ToArray(), fitPoints?.Select(fitP => GeometryHelper.ConvertWithTransform(fitP, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform)).ToArray(), new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), _visual.Panel.DPIRatio));
+        }
+
+        public void DrawBezier(DrawingPen pen, int degree, IEnumerable<Point> points)
+        {
+            _DrawBezier(new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), degree, points);
+        }
+
+        private void _DrawBezier(_DrawingPen pen, int degree, IEnumerable<Point> points, bool isStream = false)
+        {
+            if (points.Count() != degree + 1) throw new ArgumentException("points.Count() != degree + 1");
+            var bezier = new Bezier(points.Select(p => GeometryHelper.ConvertWithTransform(p, _visual.Panel.ImageHeight, _visual.Panel.Transform, _transform)).ToArray(), degree, pen, _visual.Panel.DPIRatio);
+            if (!isStream)
+                _primitives.Add(bezier);
+            else _stream.StreamTo(bezier);
         }
 
         public void LineTo(Point point)
@@ -188,6 +221,31 @@ namespace YDrawing2D.View
                 var _endP = GeometryHelper.ConvertToInt32Point(endP, _visual.Panel.DPIRatio);
 
                 _stream.StreamTo(new Arc(_startP, _endP, _center, _stream.Property.Pen));
+            }
+        }
+
+        public void BezierTo(int degree, IEnumerable<Point> points)
+        {
+            if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
+            var _points = new List<Point>();
+            _points.Add(_current.Value);
+            _points.AddRange(points);
+            _DrawBezier(_stream.Property.Pen, degree, _points, true);
+            _current = points.Last();
+        }
+
+        public void PolyBezierTo(int degree, IEnumerable<Point> points)
+        {
+            if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
+            var _points = new List<Point>();
+            foreach (var point in points)
+            {
+                _points.Add(point);
+                if (_points.Count == degree)
+                {
+                    BezierTo(degree, _points);
+                    _points.Clear();
+                }
             }
         }
 

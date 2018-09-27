@@ -193,6 +193,7 @@ namespace YDrawing2D
 
         internal static Int32Rect ExtendBounds(Int32Rect origin, Int32Rect other)
         {
+            if (origin == Int32Rect.Empty) return other;
             var extend = Int32Rect.Empty;
             extend.X = Math.Min(origin.X, other.X);
             extend.Y = Math.Min(origin.Y, other.Y);
@@ -594,6 +595,11 @@ namespace YDrawing2D
                         points.AddRange(_CalcLinePoints(l.Start, l.End));
                     yield return new PrimitivePath(primitive, points, isVirtual);
                     break;
+                case PrimitiveType.Bezier:
+                    var bezier = (Bezier)primitive;
+                    foreach (var l in bezier.InnerLines)
+                        yield return new PrimitivePath(l, _CalcLinePoints(l.Start, l.End), isVirtual);
+                    break;
                 case PrimitiveType.Geometry:
                     var geo = (CustomGeometry)primitive;
                     var paths = new List<PrimitivePath>();
@@ -831,10 +837,16 @@ namespace YDrawing2D
             yield return new Int32Point(-origin.X, origin.Y);
         }
 
-        public static IEnumerable<Int32Point> GenScanPoints(Int32Point start, Int32Point end, int delta)
+        public static IEnumerable<Int32Point> GenVerticalScanPoints(Int32Point start, Int32Point end, int delta)
         {
             for (int i = start.Y + delta + 1; i < end.Y - delta; i++)
                 yield return new Int32Point(start.X, i);
+        }
+
+        public static IEnumerable<Int32Point> GenHorizontalScanPoints(Int32Point start, Int32Point end, int delta)
+        {
+            for (int i = start.X + delta + 1; i < end.X - delta; i++)
+                yield return new Int32Point(i, start.Y);
         }
 
         internal static IEnumerable<Int32Point> ArcContains(Int32Point center, Int32Point start, Int32Point end, IEnumerable<Int32Point> points)
@@ -1309,15 +1321,38 @@ namespace YDrawing2D
                     return true;
             return false;
         }
+
+        internal static bool IsIntersect(Bezier bezier, IPrimitive other)
+        {
+            foreach (var line in bezier.InnerLines)
+                if (line.IsIntersect(other))
+                    return true;
+            return false;
+        }
         #endregion
 
         #region Region
         public static bool Contains(CustomGeometry geo, Int32Point point)
         {
             int leftpass = 0, toppass = 0, rightpass = 0, bottompass = 0;
-            var primitives = geo.Stream.ToList();
+            var primitives = new List<IPrimitive>();
+            foreach (var primitive in geo.Stream)
+            {
+                switch (primitive.Type)
+                {
+                    case PrimitiveType.Line:
+                    case PrimitiveType.Arc:
+                        primitives.Add(primitive);
+                        break;
+                    case PrimitiveType.Bezier:
+                        primitives.AddRange(((Bezier)primitive).InnerLines.Cast<IPrimitive>());
+                        break;
+                }
+            }
+
             if (geo.UnClosedLine.HasValue)
                 primitives.Add(geo.UnClosedLine.Value);
+
             foreach (var primitive in primitives)
             {
                 switch (primitive.Type)
@@ -1732,11 +1767,54 @@ namespace YDrawing2D
                 else
                 {
                     endp = point;
-                    foreach (var p in GenScanPoints(startp, endp, delta))
+                    foreach (var p in GenVerticalScanPoints(startp, endp, delta))
                         yield return p;
                 }
                 flag = !flag;
             }
+        }
+
+        internal static IEnumerable<Int32Point> GetHorizontalPoints(IEnumerable<PrimitivePath> paths, int y)
+        {
+            var points = new SortedSet<Int32Point>();
+            foreach (var path in paths)
+            {
+                switch (path.Primitive.Type)
+                {
+                    case PrimitiveType.Line:
+                        foreach (var p in path.Path)
+                        {
+                            if (p.Y == y)
+                            {
+                                if (path.Path.Last().Y != y)
+                                    points.Add(p);
+                                break;
+                            }
+                        }
+                        break;
+                    case PrimitiveType.Arc:
+                        var flag = false;
+                        foreach (var p in path.Path)
+                        {
+                            if (flag)
+                            {
+                                if (p.Y == y)
+                                    points.Add(p);
+                                break;
+                            }
+                            else
+                            {
+                                if (p.Y == y)
+                                {
+                                    points.Add(p);
+                                    flag = true;
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+            return points;
         }
 
         internal static IEnumerable<Int32Point> GetVerticalPoints(IEnumerable<PrimitivePath> paths, int x)
@@ -1864,6 +1942,46 @@ namespace YDrawing2D
             double down = spline.Knots[pbase + rank + 1] - spline.Knots[pbase + 1];
             if (down < 0.001) return 0;
             return up / down;
+        }
+        #endregion
+
+        #region Bezier
+        internal static List<Line> CalcSampleLines(Bezier bezier, double dpiRatio)
+        {
+            var lines = new List<Line>();
+
+            var samplePoints = new List<Point>();
+            var i = 0.0;
+            while (i <= 1.0)
+            {
+                samplePoints.Add(ComputePoint(bezier, i));
+                i += 0.002;
+            }
+
+            var _samplePoints = samplePoints.Select(sp => ConvertToInt32Point(sp, dpiRatio)).ToArray();
+            for (int j = 1; j < _samplePoints.Length; j++)
+                lines.Add(new Line(_samplePoints[j - 1], _samplePoints[j], bezier.Property.Pen));
+
+            return lines;
+        }
+
+        internal static Point ComputePoint(Bezier bezier, double u)
+        {
+            return CalcValue(bezier, bezier.Degree, 0, u);
+        }
+
+        internal static Point CalcValue(Bezier bezier, int degree, int index, double u)
+        {
+            if (degree == 0)
+                return bezier.Points[index];
+            else return Combine(CalcValue(bezier, degree -1, index, u), CalcValue(bezier, degree - 1, index + 1, u), u);
+        }
+
+        internal static Point Combine(Point p1, Point p2, double u)
+        {
+            var u1 = 1 - u;
+            var u2 = u;
+            return new Point(u1 * p1.X + u2 * p2.X, u1 * p1.Y + u2 * p2.Y);
         }
         #endregion
     }

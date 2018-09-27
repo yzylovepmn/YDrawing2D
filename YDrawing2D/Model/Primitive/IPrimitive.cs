@@ -22,6 +22,7 @@ namespace YDrawing2D.Model
         Arc,
         Ellipse,
         Spline,
+        Bezier,
         Geometry
     }
 }

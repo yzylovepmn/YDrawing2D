@@ -87,24 +87,50 @@ namespace YDrawing2D.Model
             {
                 var flag = false;
                 Int32Point startp = default(Int32Point), endp = default(Int32Point);
-                var right = _property.Bounds.Width + _property.Bounds.X;
-                for (int i = _property.Bounds.X; i <= right; i++)
+                if (_property.Bounds.Width < _property.Bounds.Height)
                 {
-                    flag = false;
-                    foreach (var point in GeometryHelper.GetVerticalPoints(paths, i))
+                    var right = _property.Bounds.Width + _property.Bounds.X;
+                    for (int i = _property.Bounds.X; i <= right; i++)
                     {
-                        if (!flag)
-                            startp = point;
-                        else
+                        flag = false;
+                        foreach (var point in GeometryHelper.GetVerticalPoints(paths, i))
                         {
-                            if ((point.Y - startp.Y) > 1)
+                            if (!flag)
+                                startp = point;
+                            else
                             {
-                                endp = point;
-                                region.AddRange(GeometryHelper.GenScanPoints(startp, endp, delta));
+                                if ((point.Y - startp.Y) > 1)
+                                {
+                                    endp = point;
+                                    region.AddRange(GeometryHelper.GenVerticalScanPoints(startp, endp, delta));
+                                }
+                                else flag = !flag;
                             }
-                            else flag = !flag;
+                            flag = !flag;
                         }
-                        flag = !flag;
+                    }
+                }
+                else
+                {
+                    var bottom = _property.Bounds.Height + _property.Bounds.Y;
+                    for (int i = _property.Bounds.Y; i <= bottom; i++)
+                    {
+                        flag = false;
+                        foreach (var point in GeometryHelper.GetHorizontalPoints(paths, i))
+                        {
+                            if (!flag)
+                                startp = point;
+                            else
+                            {
+                                if ((point.X - startp.X) > 1)
+                                {
+                                    endp = point;
+                                    region.AddRange(GeometryHelper.GenHorizontalScanPoints(startp, endp, delta));
+                                }
+                                else flag = !flag;
+                            }
+                            flag = !flag;
+                        }
                     }
                 }
             }

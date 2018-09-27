@@ -148,13 +148,15 @@ namespace YDrawing2DTest
                 context.BeginFigure(Colors.Red, MainWindow.SelectedPen, new Point(600, 400), true);
             else context.BeginFigure(Colors.White, MainWindow.WhitePen, new Point(600, 400), true);
 
-            context.LineTo(new Point(700, 400));
-            context.LineTo(new Point(750, 480));
-            context.LineTo(new Point(800, 400));
-            context.LineTo(new Point(900, 400));
-            context.LineTo(new Point(820, 350));
+            //context.LineTo(new Point(700, 400));
+            //context.LineTo(new Point(750, 480));
+            //context.LineTo(new Point(800, 400));
+            //context.LineTo(new Point(900, 400));
+            //context.LineTo(new Point(820, 350));
+            //
+            //context.ArcTo(new Point(600, 480), 180, false, false);
 
-            context.ArcTo(new Point(600, 480), 180, false, false);
+            context.BezierTo(2, new List<Point>() { new Point(500, 300), new Point(300, 700) });
 
             context.EndFigure();
         }
