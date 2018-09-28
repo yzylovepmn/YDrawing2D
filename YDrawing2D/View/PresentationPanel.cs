@@ -122,6 +122,7 @@ namespace YDrawing2D
         bool _needUpdate = false;
         bool _completeLoop = false;
         int _cnt = 0;
+        int _flagSync = 0;
         object _loopLock = new object();
         ParallelOptions _option = new ParallelOptions();
         CancellationTokenSource _currentSource;
@@ -152,8 +153,10 @@ namespace YDrawing2D
                 _completeLoop = false;
 
                 var visuals = default(List<PresentationVisual>);
-                lock (this)
-                    visuals = _visuals.ToList();
+                while (Interlocked.Exchange(ref _flagSync, 1) == 1)
+                    Thread.Sleep(1);
+                visuals = _visuals.ToList();
+                Interlocked.Exchange(ref _flagSync, 0);
 
                 _currentSource = new CancellationTokenSource();
                 _option.CancellationToken = _currentSource.Token;
@@ -222,7 +225,7 @@ namespace YDrawing2D
             foreach (var primitive in visual.Context.Primitives)
             {
                 if (_currentSource.IsCancellationRequested) break;
-                if (primitive == null || !_bounds.IsIntersectWith(primitive)) continue;
+                if (!_bounds.IsIntersectWith(primitive)) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds);
             }
@@ -248,7 +251,7 @@ namespace YDrawing2D
             visual.Update();
             foreach (var primitive in visual.Context.Primitives)
             {
-                if (primitive == null || !_bounds.IsIntersectWith(primitive)) continue;
+                if (!_bounds.IsIntersectWith(primitive)) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds);
                 _UpdateBounds(bounds);
@@ -259,7 +262,7 @@ namespace YDrawing2D
         {
             foreach (var primitive in visual.Context.Primitives)
             {
-                if (primitive == null || !_bounds.IsIntersectWith(primitive)) continue;
+                if (!_bounds.IsIntersectWith(primitive)) continue;
                 if (optimizate && primitive.Property.Pen.Color[3] == byte.MaxValue) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds, true);
@@ -309,11 +312,15 @@ namespace YDrawing2D
                 visual.Panel = this;
                 if (_isUpdatingAll)
                     _cnt++;
-                lock (this)
-                    _visuals.Add(visual);
+
+                _Add(visual);
 
                 if (isUpdate)
+                {
+                    Monitor.Exit(_loopLock);
                     Update(visual, true);
+                    Monitor.Enter(_loopLock);
+                }
             }
             Monitor.Exit(_loopLock);
         }
@@ -334,13 +341,47 @@ namespace YDrawing2D
                 if (_isUpdatingAll && visual.Mode == Mode.Normal)
                     _cnt--;
                 else visual.Mode = Mode.Normal;
-                lock (this)
-                    _visuals.Remove(visual);
+
+                _Remove(visual);
 
                 if (isUpdate)
+                {
+                    Monitor.Exit(_loopLock);
                     ClearVisual(visual);
+                    Monitor.Enter(_loopLock);
+                }
             }
             Monitor.Exit(_loopLock);
+        }
+
+        private void _Add(PresentationVisual visual)
+        {
+            while (Interlocked.Exchange(ref _flagSync, 1) == 1)
+                Thread.Sleep(1);
+            _visuals.Add(visual);
+            Interlocked.Exchange(ref _flagSync, 0);
+        }
+
+        private void _Remove(PresentationVisual visual)
+        {
+            while (Interlocked.Exchange(ref _flagSync, 1) == 1)
+                Thread.Sleep(1);
+            _visuals.Remove(visual);
+            Interlocked.Exchange(ref _flagSync, 0);
+        }
+
+        private void _Clear()
+        {
+            while (Interlocked.Exchange(ref _flagSync, 1) == 1)
+                Thread.Sleep(1);
+            _visuals.Clear();
+            Interlocked.Exchange(ref _flagSync, 0);
+        }
+
+        public void ClearAll()
+        {
+            _Clear();
+            UpdateAll();
         }
 
         #region Render
@@ -362,21 +403,19 @@ namespace YDrawing2D
         {
             if (visual == null) return;
             Monitor.Enter(_loopLock);
-            if (visual.Mode != Mode.Normal)
-            {
-                Monitor.Exit(_loopLock);
-                return;
-            }
             EnterRender();
 
             if (isSingle)
             {
-                _ClearVisual(visual);
-                _UpdateSync(visual);
+                if (visual.Mode == Mode.Normal)
+                {
+                    _ClearVisual(visual);
+                    _UpdateSync(visual);
+                }
             }
             else
             {
-                var visuals = _visuals.Where(other => other.IsIntersectWith(visual));
+                var visuals = _visuals.Where(other => other.Mode == Mode.Normal && other.IsIntersectWith(visual));
                 foreach (var _visual in visuals)
                     _ClearVisual(_visual, _visual != visual);
                 foreach (var _visual in visuals)
@@ -390,12 +429,18 @@ namespace YDrawing2D
         internal void ClearVisual(PresentationVisual visual)
         {
             if (visual == null) return;
+            Monitor.Enter(_loopLock);
             EnterRender();
             _ClearVisual(visual);
 
-            foreach (var _visual in _visuals.Where(other => other != visual && other.IsIntersectWith(visual)))
+            var visuals = _visuals.Where(other => other.Mode == Mode.Normal && other != visual && other.IsIntersectWith(visual));
+            foreach (var _visual in visuals)
+                _ClearVisual(_visual, _visual != visual);
+            foreach (var _visual in visuals)
                 _UpdateSync(_visual);
+
             ExitRender();
+            Monitor.Exit(_loopLock);
         }
 
         /// <summary>
@@ -415,13 +460,13 @@ namespace YDrawing2D
         /// <param name="color">The color to clear</param>
         unsafe internal void _ClearBuffer()
         {
-            var start = _offset;
+            var start = (int*)_offset;
             for (int i = 0; i < _bounds.Height; i++)
             {
                 for (int j = 0; j < _bounds.Width; j++)
                 {
-                    *(int*)start = _backColorValue32;
-                    start += GeometryHelper.PixelByteLength;
+                    *start = _backColorValue32;
+                    start++;
                 }
             }
             _UpdateBounds(_bounds);
@@ -460,13 +505,17 @@ namespace YDrawing2D
 
         private void _DrawPrimitive(IPrimitive primitive, Int32Rect bounds, bool isClear = false)
         {
-            var paths = GeometryHelper.CalcPrimitivePaths(primitive);
+            var paths = default(IEnumerable<PrimitivePath>);
+            if (primitive.Property.Pen.Thickness > 0 || ((primitive is ICanFilledPrimitive) && (primitive as ICanFilledPrimitive).FillColor != null))
+                paths = GeometryHelper.CalcPrimitivePaths(primitive);
+
             Array.Clear(_flags, 0, _flags.Length);
 
             if (isClear)
             {
-                foreach (var point in Helper.FilterUniquePoints(paths, bounds, primitive.Property.Pen.Dashes))
-                    _DrawPoint(point, _backColorValue, primitive.Property.Pen.Thickness);
+                if (primitive.Property.Pen.Thickness > 0)
+                    foreach (var point in Helper.FilterUniquePoints(paths, bounds, primitive.Property.Pen.Dashes))
+                        _DrawPoint(point, _backColorValue, primitive.Property.Pen.Thickness);
 
                 if (primitive is ICanFilledPrimitive)
                 {
@@ -478,8 +527,9 @@ namespace YDrawing2D
             }
             else
             {
-                foreach (var point in Helper.FilterUniquePoints(paths, bounds, primitive.Property.Pen.Dashes))
-                    _DrawPoint(point, primitive.Property.Pen.Color, primitive.Property.Pen.Thickness);
+                if (primitive.Property.Pen.Thickness > 0)
+                    foreach (var point in Helper.FilterUniquePoints(paths, bounds, primitive.Property.Pen.Dashes))
+                        _DrawPoint(point, primitive.Property.Pen.Color, primitive.Property.Pen.Thickness);
 
                 if (primitive is ICanFilledPrimitive)
                 {
@@ -529,9 +579,14 @@ namespace YDrawing2D
         }
         #endregion
 
+        public virtual void OnRenderCustom(DrawingContext drawingContext)
+        {
+        }
+
         protected override void OnRender(DrawingContext drawingContext)
         {
             base.OnRender(drawingContext);
+            OnRenderCustom(drawingContext);
             if (_image == null) return;
             drawingContext.DrawImage(_image, new Rect(new Point(), new Size(_image.Width, _image.Height)));
         }
@@ -547,7 +602,7 @@ namespace YDrawing2D
 
             //foreach (var visual in _visuals)
             //    visual.Dispose();
-            _visuals.Clear();
+            _Clear();
             _visuals = null;
 
             _image = null;

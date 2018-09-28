@@ -153,11 +153,11 @@ namespace YDrawing2D.Extensions
             if (self == other) return true;
             foreach (var primitive1 in self.Context.Primitives)
             {
-                if (primitive1 == null || !self.Panel.Bounds.IsIntersectWith(primitive1.Property.Bounds))
+                if (!self.Panel.Bounds.IsIntersectWith(primitive1.Property.Bounds))
                     return false;
                 foreach (var primitive2 in other.Context.Primitives)
                 {
-                    if (primitive2 == null || !self.Panel.Bounds.IsIntersectWith(primitive2.Property.Bounds))
+                    if (!self.Panel.Bounds.IsIntersectWith(primitive2.Property.Bounds))
                         return false;
                     if (primitive1.IsIntersect(primitive2))
                         return true;

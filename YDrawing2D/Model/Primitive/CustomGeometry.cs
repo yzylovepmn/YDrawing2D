@@ -35,7 +35,7 @@ namespace YDrawing2D.Model
 
         internal Line? UnClosedLine;
 
-        internal bool IsClosed { get { return _isClosed; } }
+        internal bool IsClosed { get { return _isClosed; } set { _isClosed = value; } }
         private bool _isClosed;
 
         internal IEnumerable<IPrimitive> Stream { get { return _stream; } }
@@ -43,6 +43,16 @@ namespace YDrawing2D.Model
 
         public byte[] FillColor { get { return _fillColor; } }
         private byte[] _fillColor;
+
+        internal void SetPen(_DrawingPen pen)
+        {
+            _property.Pen = pen;
+        }
+
+        internal void SetFillColor(byte[] fillColor)
+        {
+            _fillColor = fillColor;
+        }
 
         internal void StreamTo(IPrimitive primitive)
         {
@@ -54,13 +64,13 @@ namespace YDrawing2D.Model
 
         public bool HitTest(Int32Point p)
         {
-            if (_fillColor == null)
+            if (_fillColor == null && _property.Pen.Thickness > 0)
             {
                 foreach (var primitive in _stream)
-                    if (primitive.HitTest(p))
+                    if (primitive.Property.Bounds.Contains(p) && primitive.HitTest(p))
                         return true;
             }
-            else return GeometryHelper.Contains(this, p);
+            else return GeometryHelper.Contains(GeometryHelper._GetCustomGeometryPrimitives(this), p);
             return false;
         }
 
@@ -68,7 +78,7 @@ namespace YDrawing2D.Model
         {
             if (!other.Property.Bounds.IsIntersectWith(_property.Bounds)) return false;
 
-            if (_fillColor == null)
+            if (_fillColor == null && _property.Pen.Thickness > 0)
             {
                 foreach (var primitive in _stream)
                     if (primitive.IsIntersect(other))
@@ -82,55 +92,20 @@ namespace YDrawing2D.Model
         public IEnumerable<Int32Point> GenFilledRegion(IEnumerable<PrimitivePath> paths)
         {
             var region = new List<Int32Point>();
-            var delta = _property.Pen.Thickness / 2;
             if (_fillColor != null)
             {
-                var flag = false;
-                Int32Point startp = default(Int32Point), endp = default(Int32Point);
-                if (_property.Bounds.Width < _property.Bounds.Height)
+                var curx = _property.Bounds.X;
+                var cury = _property.Bounds.Y;
+                var right = curx + _property.Bounds.Width;
+                var bottom = cury + _property.Bounds.Height;
+                var primitives = GeometryHelper._GetCustomGeometryPrimitives(this);
+                for (int i = curx; i <= right; i++)
                 {
-                    var right = _property.Bounds.Width + _property.Bounds.X;
-                    for (int i = _property.Bounds.X; i <= right; i++)
+                    for (int j = cury; j <= bottom; j++)
                     {
-                        flag = false;
-                        foreach (var point in GeometryHelper.GetVerticalPoints(paths, i))
-                        {
-                            if (!flag)
-                                startp = point;
-                            else
-                            {
-                                if ((point.Y - startp.Y) > 1)
-                                {
-                                    endp = point;
-                                    region.AddRange(GeometryHelper.GenVerticalScanPoints(startp, endp, delta));
-                                }
-                                else flag = !flag;
-                            }
-                            flag = !flag;
-                        }
-                    }
-                }
-                else
-                {
-                    var bottom = _property.Bounds.Height + _property.Bounds.Y;
-                    for (int i = _property.Bounds.Y; i <= bottom; i++)
-                    {
-                        flag = false;
-                        foreach (var point in GeometryHelper.GetHorizontalPoints(paths, i))
-                        {
-                            if (!flag)
-                                startp = point;
-                            else
-                            {
-                                if ((point.X - startp.X) > 1)
-                                {
-                                    endp = point;
-                                    region.AddRange(GeometryHelper.GenHorizontalScanPoints(startp, endp, delta));
-                                }
-                                else flag = !flag;
-                            }
-                            flag = !flag;
-                        }
+                        var p = new Int32Point(i, j);
+                        if (GeometryHelper.Contains(primitives, p))
+                            region.Add(p);
                     }
                 }
             }

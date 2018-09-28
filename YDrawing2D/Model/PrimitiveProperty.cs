@@ -26,7 +26,7 @@ namespace YDrawing2D.Model
         /// <summary>
         /// Pen of the primitive
         /// </summary>
-        public _DrawingPen Pen { get { return _pen; } }
+        public _DrawingPen Pen { get { return _pen; } internal set { _pen = value; } }
         private _DrawingPen _pen;
     }
 }

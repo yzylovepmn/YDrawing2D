@@ -84,12 +84,12 @@ namespace YDrawing2DTest
                 //_panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
                 //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
             }
-            //_panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)), true);
-            //_panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
-            //_panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(500, 500))), true);
-            //_panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
-            //_panel.AddVisual(new Cicle(new Point(200, 300), 300), true);
-            //_panel.AddVisual(new CustomShape(), true);
+            _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)), true);
+            _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
+            _panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(500, 500))), true);
+            _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
+            _panel.AddVisual(new Cicle(new Point(200, 300), 300), true);
+            _panel.AddVisual(new CustomShape(), true);
             _panel.AddVisual(new Text(), true);
             //_panel.UpdateAll();
             _panel.MouseMove += _panel_MouseMove;
@@ -144,12 +144,12 @@ namespace YDrawing2DTest
         protected override void Draw(IContext context)
         {
             var typeFace = new Typeface(new FontFamily("新宋体"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
-            var text = new FormattedText("Hello world!", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeFace, 50, Brushes.White);
+            var text = "Hello World!";
             if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                context.DrawText(null, MainWindow.ActivePen, text, 50, new Point(300, 300));
+                context.DrawText(null, MainWindow.ActivePen, text, typeFace, 80, new Point(300, 300));
             else if (this == MainWindow.SelectedVisual)
-                context.DrawText(null, MainWindow.SelectedPen, text, 50, new Point(300, 300));
-            else context.DrawText(null, MainWindow.WhitePen, text, 50, new Point(300, 300));
+                context.DrawText(null, MainWindow.SelectedPen, text, typeFace, 80, new Point(300, 300));
+            else context.DrawText(null, MainWindow.WhitePen, text, typeFace, 80, new Point(300, 300));
         }
     }
 
@@ -159,10 +159,10 @@ namespace YDrawing2DTest
         {
             context.PushOpacity(0.5);
             if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                context.BeginFigure(Colors.Blue, MainWindow.ActivePen, new Point(600, 400), true);
+                context.BeginFigure(null, MainWindow.ActivePen, new Point(600, 400), true);
             else if (this == MainWindow.SelectedVisual)
-                context.BeginFigure(Colors.Red, MainWindow.SelectedPen, new Point(600, 400), true);
-            else context.BeginFigure(Colors.White, MainWindow.WhitePen, new Point(600, 400), true);
+                context.BeginFigure(null, MainWindow.SelectedPen, new Point(600, 400), true);
+            else context.BeginFigure(null, MainWindow.WhitePen, new Point(600, 400), true);
 
             //context.LineTo(new Point(700, 400));
             //context.LineTo(new Point(750, 480));

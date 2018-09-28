@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using YDrawing2D.Model;
 using YDrawing2D.Util;
 
@@ -39,8 +41,9 @@ namespace YDrawing2D.View
         /// </summary>
         void DrawBezier(DrawingPen pen, int degree, IEnumerable<Point> points);
 
-        void DrawText(Color? fillColor, DrawingPen pen, FormattedText formattedText, double emSize, Point origin);
+        void DrawText(Color? foreground, DrawingPen pen, string textToDraw, Typeface typeface, double emSize, Point origin);
 
+        void DrawGlyphRun(Color? foreground, DrawingPen pen, GlyphRun glyphRun);
 
         void LineTo(Point point);
         void PolyLineTo(IEnumerable<Point> points);
@@ -102,9 +105,27 @@ namespace YDrawing2D.View
         }
         private List<IPrimitive> _primitives;
 
+        #region Sync
+        private void _Add(IPrimitive primitive)
+        {
+            while (Interlocked.Exchange(ref _flagSync, 1) == 1)
+                Thread.Sleep(1);
+            _primitives.Add(primitive);
+            Interlocked.Exchange(ref _flagSync, 0);
+        }
+
+        private void _Clear()
+        {
+            while (Interlocked.Exchange(ref _flagSync, 1) == 1)
+                Thread.Sleep(1);
+            _primitives.Clear();
+            Interlocked.Exchange(ref _flagSync, 0);
+        }
+        #endregion
+
         public void DrawLine(DrawingPen pen, Point start, Point end)
         {
-            _primitives.Add(_DrawLine(new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), start, end));
+            _Add(_DrawLine(new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), start, end));
         }
 
         private Line _DrawLine(_DrawingPen pen, Point start, Point end)
@@ -126,7 +147,8 @@ namespace YDrawing2D.View
             var _center = GeometryHelper.ConvertToInt32Point(center, _visual.Panel.DPIRatio);
             var _radius = Helper.ConvertTo(radius * _visual.Panel.DPIRatio);
             var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
-            _primitives.Add(new Cicle(fillColor.HasValue ? Helper.CalcColor(fillColor.Value, _transform.Opacity) : null, _center, _radius, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
+
+            _Add(new Cicle(fillColor.HasValue ? Helper.CalcColor(fillColor.Value, _transform.Opacity) : null, _center, _radius, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
         }
 
         public void DrawEllipse(Color? fillColor, DrawingPen pen, Point center, double radiusX, double radiusY)
@@ -139,7 +161,8 @@ namespace YDrawing2D.View
             var _radiusX = Helper.ConvertTo(radiusX * _visual.Panel.DPIRatio);
             var _radiusY = Helper.ConvertTo(radiusY * _visual.Panel.DPIRatio);
             var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
-            _primitives.Add(new Ellipse(fillColor.HasValue ? Helper.CalcColor(fillColor.Value, _transform.Opacity) : null, _center, _radiusX, _radiusY, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
+
+            _Add(new Ellipse(fillColor.HasValue ? Helper.CalcColor(fillColor.Value, _transform.Opacity) : null, _center, _radiusX, _radiusY, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
         }
 
         public void DrawArc(DrawingPen pen, Point center, double radius, double startAngle, double endAngle, bool isClockwise)
@@ -164,7 +187,7 @@ namespace YDrawing2D.View
             var _radius = Helper.ConvertTo(radius * _visual.Panel.DPIRatio);
             var _thickness = Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio);
 
-            _primitives.Add(new Arc(_startP, _endP, _center, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
+            _Add(new Arc(_startP, _endP, _center, new _DrawingPen(_thickness, Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray())));
         }
 
         public void DrawRectangle(Color? fillColor, DrawingPen pen, Rect rectangle)
@@ -178,7 +201,7 @@ namespace YDrawing2D.View
 
         public void DrawSpline(DrawingPen pen, int degree, IEnumerable<double> knots, IEnumerable<Point> controlPoints, IEnumerable<double> weights, IEnumerable<Point> fitPoints)
         {
-            _primitives.Add(new Spline(degree, knots.ToArray(), controlPoints?.Select(ctrlP => GeometryHelper.ConvertWithTransform(ctrlP, this)).ToArray(), weights.ToArray(), fitPoints?.Select(fitP => GeometryHelper.ConvertWithTransform(fitP, this)).ToArray(), new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), _visual.Panel.DPIRatio));
+            _Add(new Spline(degree, knots.ToArray(), controlPoints?.Select(ctrlP => GeometryHelper.ConvertWithTransform(ctrlP, this)).ToArray(), weights.ToArray(), fitPoints?.Select(fitP => GeometryHelper.ConvertWithTransform(fitP, this)).ToArray(), new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), _visual.Panel.DPIRatio));
         }
 
         public void DrawBezier(DrawingPen pen, int degree, IEnumerable<Point> points)
@@ -191,12 +214,33 @@ namespace YDrawing2D.View
             if (points.Count() != degree + 1) throw new ArgumentException("points.Count() != degree + 1");
             var bezier = new Bezier(points.Select(p => GeometryHelper.ConvertWithTransform(p, this)).ToArray(), degree, pen, _visual.Panel.DPIRatio);
             if (!isStream)
-                _primitives.Add(bezier);
+                _Add(bezier);
             else _stream.StreamTo(bezier);
+        }
+
+        public void DrawText(Color? fillColor, DrawingPen pen, string textToDraw, Typeface typeface, double emSize, Point origin)
+        {
+            _needFilpCoordinate = false;
+            origin = new Point(origin.X, _visual.Panel.ImageHeight - origin.Y);
+            var textFormat = new FormattedText(textToDraw, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, emSize, null);
+            for (int i = 0; i < textToDraw.Length; i++)
+            {
+                var charFormat = new FormattedText(textToDraw[i].ToString(), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, emSize, Brushes.White);
+                _DrawPathGeometry(fillColor, pen, charFormat.BuildGeometry(textFormat.BuildHighlightGeometry(origin, i, 1).Bounds.TopLeft));
+            }
+            _needFilpCoordinate = true;
+        }
+
+        public void DrawGlyphRun(Color? foreground, DrawingPen pen, GlyphRun glyphRun)
+        {
+            _needFilpCoordinate = false;
+            _DrawPathGeometry(foreground, pen, glyphRun.BuildGeometry());
+            _needFilpCoordinate = true;
         }
 
         private void _DrawPathGeometry(Color? foreground, DrawingPen pen, Geometry geometry)
         {
+            if (geometry.IsEmpty()) return;
             foreach (var figure in geometry.GetFlattenedPathGeometry().Figures)
             {
                 BeginFigure(foreground, pen, figure.StartPoint, figure.IsClosed);
@@ -233,8 +277,8 @@ namespace YDrawing2D.View
                         PolyBezierTo(2, bezier.Points);
                     }
                 }
-                EndFigure();
             }
+            EndFigure();
         }
 
         public void LineTo(Point point)
@@ -310,21 +354,24 @@ namespace YDrawing2D.View
             }
         }
 
-        #region Text
-        public void DrawText(Color? fillColor, DrawingPen pen, FormattedText formattedText, double emSize, Point origin)
-        {
-            _needFilpCoordinate = false;
-            origin = new Point(origin.X, _visual.Panel.ImageHeight - origin.Y);
-            _DrawPathGeometry(fillColor, pen, formattedText.BuildGeometry(origin));
-            _needFilpCoordinate = true;
-        }
-        #endregion
-
         public void BeginFigure(Color? fillColor, DrawingPen pen, Point begin, bool isClosed)
         {
-            _begin = begin;
-            _current = begin;
-            _stream = new CustomGeometry(fillColor.HasValue ? Helper.CalcColor(fillColor.Value, _transform.Opacity) : null, new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), isClosed);
+            if (_begin == null)
+            {
+                _begin = begin;
+                _current = begin;
+                _stream = new CustomGeometry(fillColor.HasValue ? Helper.CalcColor(fillColor.Value, _transform.Opacity) : null, pen.Thickness < 0 ? _DrawingPen.EMPTY : new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()), isClosed);
+            }
+            else
+            {
+                if (_stream.IsClosed && _begin != _current)
+                    LineTo(_begin.Value);
+                _stream.IsClosed = isClosed;
+                _stream.SetPen(pen.Thickness < 0 ? _DrawingPen.EMPTY : new _DrawingPen(Helper.ConvertTo(pen.Thickness * _visual.Panel.DPIRatio), Helper.CalcColor(pen.Color, _transform.Opacity), pen.Dashes == null ? null : Helper.ConvertTo(pen.Dashes).ToArray()));
+                _stream.SetFillColor(fillColor.HasValue ? Helper.CalcColor(fillColor.Value, _transform.Opacity) : null);
+                _begin = begin;
+                _current = begin;
+            }
         }
 
         public void EndFigure()
@@ -334,17 +381,14 @@ namespace YDrawing2D.View
             if (_stream.IsClosed && _begin != _current)
                 LineTo(_begin.Value);
             else _stream.UnClosedLine = _DrawLine(_stream.Property.Pen, _current.Value, _begin.Value);
-            _primitives.Add(_stream);
+            _Add(_stream);
             _begin = null;
             _current = null;
         }
 
         internal void Reset()
         {
-            while (Interlocked.Exchange(ref _flagSync, 1) == 1)
-                Thread.Sleep(1);
-            _primitives.Clear();
-            Interlocked.Exchange(ref _flagSync, 0);
+            _Clear();
 
             _transform.Reset();
             _begin = null;
@@ -393,10 +437,8 @@ namespace YDrawing2D.View
 
         public void Dispose()
         {
-            while (Interlocked.Exchange(ref _flagSync, 1) == 1)
-                Thread.Sleep(1);
-            _primitives.Clear();
-            Interlocked.Exchange(ref _flagSync, 0);
+            _Clear();
+
             _transform.Dispose();
             _primitives = null;
             _visual = null;

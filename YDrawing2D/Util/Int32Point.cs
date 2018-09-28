@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace YDrawing2D.Util
 {
@@ -48,6 +49,11 @@ namespace YDrawing2D.Util
         public static implicit operator Int32Vector(Int32Point p)
         {
             return new Int32Vector(p.X, p.Y);
+        }
+
+        public static implicit operator Point(Int32Point p)
+        {
+            return new Point(p.X, p.Y);
         }
 
         public int CompareTo(Int32Point other)

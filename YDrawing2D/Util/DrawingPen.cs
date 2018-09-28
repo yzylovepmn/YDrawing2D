@@ -9,6 +9,8 @@ namespace YDrawing2D.Util
 {
     public struct DrawingPen
     {
+        public static readonly DrawingPen EMPTY = new DrawingPen(-1, Colors.Transparent, null);
+
         public DrawingPen(double thickness, Color color, double[] dashes = null)
         {
             _thickness = thickness;
@@ -34,6 +36,8 @@ namespace YDrawing2D.Util
 
     public struct _DrawingPen
     {
+        internal static readonly _DrawingPen EMPTY = new _DrawingPen(-1, null, null);
+
         internal _DrawingPen(Int32 thickness, byte[] color, Int32[] dashes = null)
         {
             _thickness = thickness;

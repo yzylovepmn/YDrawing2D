@@ -1334,9 +1334,8 @@ namespace YDrawing2D
         #endregion
 
         #region Region
-        public static bool Contains(CustomGeometry geo, Int32Point point)
+        internal static IEnumerable<IPrimitive> _GetCustomGeometryPrimitives(CustomGeometry geo)
         {
-            int leftpass = 0, toppass = 0, rightpass = 0, bottompass = 0;
             var primitives = new List<IPrimitive>();
             foreach (var primitive in geo.Stream)
             {
@@ -1354,6 +1353,12 @@ namespace YDrawing2D
 
             if (geo.UnClosedLine.HasValue)
                 primitives.Add(geo.UnClosedLine.Value);
+            return primitives;
+        }
+
+        public static bool Contains(IEnumerable<IPrimitive> primitives, Int32Point point)
+        {
+            int leftpass = 0, toppass = 0, rightpass = 0, bottompass = 0;
 
             foreach (var primitive in primitives)
             {
@@ -1775,91 +1780,6 @@ namespace YDrawing2D
                 flag = !flag;
             }
         }
-
-        internal static IEnumerable<Int32Point> GetHorizontalPoints(IEnumerable<PrimitivePath> paths, int y)
-        {
-            var points = new SortedSet<Int32Point>();
-            foreach (var path in paths)
-            {
-                switch (path.Primitive.Type)
-                {
-                    case PrimitiveType.Line:
-                        foreach (var p in path.Path)
-                        {
-                            if (p.Y == y)
-                            {
-                                if (path.Path.Last().Y != y)
-                                    points.Add(p);
-                                break;
-                            }
-                        }
-                        break;
-                    case PrimitiveType.Arc:
-                        var flag = false;
-                        foreach (var p in path.Path)
-                        {
-                            if (flag)
-                            {
-                                if (p.Y == y)
-                                    points.Add(p);
-                                break;
-                            }
-                            else
-                            {
-                                if (p.Y == y)
-                                {
-                                    points.Add(p);
-                                    flag = true;
-                                }
-                            }
-                        }
-                        break;
-                }
-            }
-            return points;
-        }
-
-        internal static IEnumerable<Int32Point> GetVerticalPoints(IEnumerable<PrimitivePath> paths, int x)
-        {
-            var points = new SortedSet<Int32Point>();
-            foreach (var path in paths)
-            {
-                switch (path.Primitive.Type)
-                {
-                    case PrimitiveType.Line:
-                        foreach (var p in path.Path)
-                        {
-                            if (p.X == x)
-                            {
-                                points.Add(p);
-                                break;
-                            }
-                        }
-                        break;
-                    case PrimitiveType.Arc:
-                        var flag = false;
-                        foreach (var p in path.Path)
-                        {
-                            if (flag)
-                            {
-                                if (p.X == x)
-                                    points.Add(p);
-                                break;
-                            }
-                            else
-                            {
-                                if (p.X == x)
-                                {
-                                    points.Add(p);
-                                    flag = true;
-                                }
-                            }
-                        }
-                        break;
-                }
-            }
-            return points;
-        }
         #endregion
 
         #region Spline
@@ -1954,10 +1874,10 @@ namespace YDrawing2D
 
             var samplePoints = new List<Point>();
             var i = 0.0;
-            while (i <= 1.0)
+            while (i <= 1.0001)
             {
                 samplePoints.Add(ComputePoint(bezier, i));
-                i += 0.002;
+                i += 0.01;
             }
 
             var _samplePoints = samplePoints.Select(sp => ConvertToInt32Point(sp, dpiRatio)).ToArray();
