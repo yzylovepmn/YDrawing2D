@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 using YDrawing2D.Extensions;
 using YDrawing2D.Util;
@@ -60,13 +61,12 @@ namespace YDrawing2D.Model
             return true;
         }
 
-        public IEnumerable<Int32Point> GenFilledRegion(IEnumerable<PrimitivePath> paths)
+        public IEnumerable<Int32Point> GenFilledRegion(IEnumerable<PrimitivePath> paths, Int32Rect bounds)
         {
             var region = new List<Int32Point>();
-            var delta = _property.Pen.Thickness / 2;
             if (_fillColor != null)
                 foreach (var path in paths)
-                    region.AddRange(GeometryHelper.CalcRegionSingle(path.Path, delta));
+                    region.AddRange(GeometryHelper.CalcRegionSingle(path.Path, bounds));
             return region;
         }
     }

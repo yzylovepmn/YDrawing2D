@@ -86,9 +86,9 @@ namespace YDrawing2DTest
             }
             _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)), true);
             _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
-            _panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(500, 500))), true);
+            _panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(600, 500))), true);
             _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
-            _panel.AddVisual(new Cicle(new Point(200, 300), 300), true);
+            _panel.AddVisual(new Cicle(new Point(100, 300), 300), true);
             _panel.AddVisual(new CustomShape(), true);
             _panel.AddVisual(new Text(), true);
             //_panel.UpdateAll();

@@ -193,6 +193,7 @@ namespace YDrawing2D.View
         public void DrawRectangle(Color? fillColor, DrawingPen pen, Rect rectangle)
         {
             BeginFigure(fillColor, pen, rectangle.Location, true);
+            _stream.Shape = Shape.Rect;
             LineTo(rectangle.TopRight);
             LineTo(rectangle.BottomRight);
             LineTo(rectangle.BottomLeft);

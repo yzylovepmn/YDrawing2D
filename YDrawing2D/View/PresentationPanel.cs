@@ -515,52 +515,58 @@ namespace YDrawing2D
             {
                 if (primitive.Property.Pen.Thickness > 0)
                     foreach (var point in Helper.FilterUniquePoints(paths, bounds, primitive.Property.Pen.Dashes))
-                        _DrawPoint(point, _backColorValue, primitive.Property.Pen.Thickness);
+                        _DrawPoint(point, _backColorValue, _backColorValue32, primitive.Property.Pen.Thickness);
 
                 if (primitive is ICanFilledPrimitive)
                 {
                     var canfilled = primitive as ICanFilledPrimitive;
                     if (canfilled.FillColor != null)
-                        foreach (var fillP in canfilled.GenFilledRegion(paths).Where(p => bounds.Contains(p)))
-                            _DrawPoint(fillP, _backColorValue);
+                        foreach (var fillP in canfilled.GenFilledRegion(paths, bounds))
+                            _DrawPoint(fillP, _backColorValue, _backColorValue32);
                 }
             }
             else
             {
                 if (primitive.Property.Pen.Thickness > 0)
+                {
+                    var colorValue = Helper.ColorToInt32(primitive.Property.Pen.Color);
                     foreach (var point in Helper.FilterUniquePoints(paths, bounds, primitive.Property.Pen.Dashes))
-                        _DrawPoint(point, primitive.Property.Pen.Color, primitive.Property.Pen.Thickness);
+                        _DrawPoint(point, primitive.Property.Pen.Color, colorValue, primitive.Property.Pen.Thickness);
+                }
 
                 if (primitive is ICanFilledPrimitive)
                 {
                     var canfilled = primitive as ICanFilledPrimitive;
                     if (canfilled.FillColor != null)
-                        foreach (var fillP in canfilled.GenFilledRegion(paths).Where(p => bounds.Contains(p)))
-                            _DrawPoint(fillP, canfilled.FillColor);
+                    {
+                        var colorValue = Helper.ColorToInt32(canfilled.FillColor);
+                        foreach (var fillP in canfilled.GenFilledRegion(paths, bounds))
+                            _DrawPoint(fillP, canfilled.FillColor, colorValue);
+                    }
                 }
             }
         }
 
-        private void _DrawPoint(Int32Point pos, byte[] color, int thickness = 1)
+        private void _DrawPoint(Int32Point pos, byte[] color, int colorValue, int thickness = 1)
         {
             foreach (var point in GeometryHelper.CalcPositions(pos.X, pos.Y, Offset, Stride, thickness, _bounds, _flags))
-                _DrawPixel(point, color);
+                _DrawPixel(point, color, colorValue);
         }
 
-        unsafe private void _DrawPixel(IntPtr ptr, byte[] color)
+        unsafe private void _DrawPixel(IntPtr ptr, byte[] color, int colorValue)
         {
             var _ptr = (byte*)ptr;
             if (color[3] != byte.MaxValue && color != _backColorValue)
             {
                 var r = byte.MaxValue - color[3];
-                var _color = new byte[4];
-                _color[0] = (byte)((color[0] * color[3] + (*_ptr) * r) / byte.MaxValue);
-                _color[1] = (byte)((color[1] * color[3] + (*(_ptr + 1)) * r) / byte.MaxValue);
-                _color[2] = (byte)((color[2] * color[3] + (*(_ptr + 2)) * r) / byte.MaxValue);
-                _color[3] = byte.MaxValue;
-                Marshal.Copy(_color, 0, ptr, 4);
+                var _color = 0;
+                _color += (color[0] * color[3] + (*_ptr) * r) / byte.MaxValue;
+                _color += ((color[1] * color[3] + (*(_ptr + 1)) * r) / byte.MaxValue) << 8;
+                _color += ((color[2] * color[3] + (*(_ptr + 2)) * r) / byte.MaxValue) << 16;
+                _color += byte.MaxValue << 24;
+                *(int*)ptr = _color;
             }
-            else Marshal.Copy(color, 0, ptr, 4);
+            else *(int*)ptr = colorValue;
         }
 
         internal byte[] GetColor(Int32 x, Int32 y)
@@ -579,6 +585,9 @@ namespace YDrawing2D
         }
         #endregion
 
+        /// <summary>
+        /// Add some custom logic(Do not participate in transform), such as coordinate system, etc.
+        /// </summary>
         public virtual void OnRenderCustom(DrawingContext drawingContext)
         {
         }

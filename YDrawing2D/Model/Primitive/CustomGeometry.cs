@@ -10,6 +10,12 @@ using YDrawing2D.Util;
 
 namespace YDrawing2D.Model
 {
+    public enum Shape
+    {
+        Custom,
+        Rect
+    }
+
     public struct CustomGeometry : IPrimitive, ICanFilledPrimitive
     {
         public static readonly CustomGeometry Empty;
@@ -26,12 +32,16 @@ namespace YDrawing2D.Model
             _isClosed = isClosed;
             _stream = new List<IPrimitive>();
             UnClosedLine = null;
+            _shape = Shape.Custom;
         }
 
         public PrimitiveProperty Property { get { return _property; } }
         private PrimitiveProperty _property;
 
         public PrimitiveType Type { get { return PrimitiveType.Geometry; } }
+
+        internal Shape Shape { get { return _shape; } set { _shape = value; } }
+        private Shape _shape;
 
         internal Line? UnClosedLine;
 
@@ -70,7 +80,16 @@ namespace YDrawing2D.Model
                     if (primitive.Property.Bounds.Contains(p) && primitive.HitTest(p))
                         return true;
             }
-            else return GeometryHelper.Contains(GeometryHelper._GetCustomGeometryPrimitives(this), p);
+            else
+            {
+                switch (_shape)
+                {
+                    case Shape.Rect:
+                        return _property.Bounds.Contains(p);
+                }
+
+                return GeometryHelper.Contains(GeometryHelper._GetCustomGeometryPrimitives(this), p);
+            }
             return false;
         }
 
@@ -89,24 +108,34 @@ namespace YDrawing2D.Model
             return false;
         }
 
-        public IEnumerable<Int32Point> GenFilledRegion(IEnumerable<PrimitivePath> paths)
+        public IEnumerable<Int32Point> GenFilledRegion(IEnumerable<PrimitivePath> paths, Int32Rect bounds)
         {
             var region = new List<Int32Point>();
             if (_fillColor != null)
             {
-                var curx = _property.Bounds.X;
-                var cury = _property.Bounds.Y;
-                var right = curx + _property.Bounds.Width;
-                var bottom = cury + _property.Bounds.Height;
-                var primitives = GeometryHelper._GetCustomGeometryPrimitives(this);
-                for (int i = curx; i <= right; i++)
+                var curx = bounds.X;
+                var cury = bounds.Y;
+                var right = curx + bounds.Width;
+                var bottom = cury + bounds.Height;
+                switch (_shape)
                 {
-                    for (int j = cury; j <= bottom; j++)
-                    {
-                        var p = new Int32Point(i, j);
-                        if (GeometryHelper.Contains(primitives, p))
-                            region.Add(p);
-                    }
+                    case Shape.Rect:
+                        for (int i = curx + 1; i < right; i++)
+                            for (int j = cury + 1; j < bottom; j++)
+                                region.Add(new Int32Point(i, j));
+                        break;
+                    default:
+                        var primitives = GeometryHelper._GetCustomGeometryPrimitives(this);
+                        for (int i = curx + 1; i < right; i++)
+                        {
+                            for (int j = cury + 1; j < bottom; j++)
+                            {
+                                var p = new Int32Point(i, j);
+                                if (GeometryHelper.Contains(primitives, p))
+                                    region.Add(p);
+                            }
+                        }
+                        break;
                 }
             }
             return region;

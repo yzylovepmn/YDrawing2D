@@ -206,13 +206,13 @@ namespace YDrawing2D
 
         internal static Int32Rect RestrictBounds(Int32Rect restriction, Int32Rect bounds)
         {
-            int right = restriction.X + restriction.Width;
-            int bottom = restriction.Y + restriction.Height;
+            int right = Math.Min(restriction.X + restriction.Width, bounds.X + bounds.Width);
+            int bottom = Math.Min(restriction.Y + restriction.Height, bounds.Y + bounds.Height);
             int left = Math.Min(Math.Max(restriction.X, bounds.X), right);
             int top = Math.Min(Math.Max(restriction.Y, bounds.Y), bottom);
             int avaWitdh = right - left;
             int avaHeight = bottom - top;
-            return new Int32Rect(left, top, Math.Min(avaWitdh, bounds.Width + bounds.X - left), Math.Min(avaHeight, bounds.Height + bounds.Y - top));
+            return new Int32Rect(left, top, avaWitdh, avaHeight);
         }
 
         internal static Int32Rect CalcBounds(int thickness, params Int32Point[] points)
@@ -439,10 +439,10 @@ namespace YDrawing2D
             IntPtr start = offset;
             if (thickness == 1)
             {
-                start += y * stride;
-                start += x * PixelByteLength;
                 if (flags[x, y])
                     yield break;
+                start += y * stride;
+                start += x * PixelByteLength;
                 flags[x, y] = true;
                 yield return start;
             }
@@ -461,9 +461,9 @@ namespace YDrawing2D
                 {
                     for (int j = 0; j < width; j++)
                     {
+                        if (flags[curx, cury]) continue;
                         cury = y + i;
                         curx = x + j;
-                        if (flags[curx, cury]) continue;
                         flags[curx, cury] = true;
                         yield return start + j * PixelByteLength;
                     }
@@ -839,16 +839,14 @@ namespace YDrawing2D
             yield return new Int32Point(-origin.X, origin.Y);
         }
 
-        public static IEnumerable<Int32Point> GenVerticalScanPoints(Int32Point start, Int32Point end, int delta)
+        public static IEnumerable<Int32Point> GenScanPoints(Int32Point start, Int32Point end, Int32Rect bounds)
         {
-            for (int i = start.Y + delta + 1; i < end.Y - delta; i++)
-                yield return new Int32Point(start.X, i);
-        }
-
-        public static IEnumerable<Int32Point> GenHorizontalScanPoints(Int32Point start, Int32Point end, int delta)
-        {
-            for (int i = start.X + delta + 1; i < end.X - delta; i++)
-                yield return new Int32Point(i, start.Y);
+            if ((start.X > bounds.X) && (start.X < bounds.X + bounds.Width))
+            {
+                var bottom = Math.Min(end.Y, bounds.Y + bounds.Height);
+                for (int i = Math.Max(start.Y + 1, bounds.Y); i < bottom; i++)
+                    yield return new Int32Point(start.X, i);
+            }
         }
 
         internal static IEnumerable<Int32Point> ArcContains(Int32Point center, Int32Point start, Int32Point end, IEnumerable<Int32Point> points)
@@ -1763,7 +1761,7 @@ namespace YDrawing2D
             return leftpass % 2 == 1 && toppass % 2 == 1 && rightpass % 2 == 1 && bottompass % 2 == 1;
         }
 
-        public static IEnumerable<Int32Point> CalcRegionSingle(IEnumerable<Int32Point> path, int delta)
+        public static IEnumerable<Int32Point> CalcRegionSingle(IEnumerable<Int32Point> path, Int32Rect bounds)
         {
             var flag = false;
             Int32Point startp = default(Int32Point), endp = default(Int32Point);
@@ -1774,7 +1772,7 @@ namespace YDrawing2D
                 else
                 {
                     endp = point;
-                    foreach (var p in GenVerticalScanPoints(startp, endp, delta))
+                    foreach (var p in GenScanPoints(startp, endp, bounds))
                         yield return p;
                 }
                 flag = !flag;
