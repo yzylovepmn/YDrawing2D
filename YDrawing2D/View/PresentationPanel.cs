@@ -28,13 +28,14 @@ namespace YDrawing2D
     /// </summary>
     public class PresentationPanel : UIElement, IDisposable
     {
-        public PresentationPanel(double width, double height, double dpiX, double dpiY, Color backColor, RenderMode renderMode)
+        public PresentationPanel(double width, double height, double dpiX, double dpiY, Color backColor, Point origin, RenderMode renderMode)
         {
             _renderMode = renderMode;
 
             DPIRatio = dpiX / GeometryHelper.SysDPI;
             VisualHelper.HitTestThickness = (int)(VisualHelper.HitTestThickness * DPIRatio);
             VisualHelper.HitTestThickness = Math.Max(1, VisualHelper.HitTestThickness);
+            _clipBounds = new RectangleGeometry();
 
             _image = new WriteableBitmap((int)(width * DPIRatio), (int)(height * DPIRatio), dpiX, dpiY, PixelFormats.Bgra32, null);
             _bounds = new Int32Rect(0, 0, _image.PixelWidth, _image.PixelHeight);
@@ -54,15 +55,20 @@ namespace YDrawing2D
             #endregion
 
             BackColor = backColor;
+            _origin = origin;
         }
 
         public RenderMode RenderMode { get { return _renderMode; } }
-        private RenderMode _renderMode;
+        protected RenderMode _renderMode;
+
+        public Point Origin { get { return _origin; } }
+        protected Point _origin;
 
         internal readonly double DPIRatio;
 
+        private RectangleGeometry _clipBounds;
         public Int32Rect Bounds { get { return _bounds; } }
-        private Int32Rect _bounds;
+        protected Int32Rect _bounds;
 
         internal IntPtr Offset { get { return _offset; } }
         private IntPtr _offset;
@@ -92,7 +98,7 @@ namespace YDrawing2D
                 }
             }
         }
-        private Color _backColor;
+        protected Color _backColor;
 
         internal byte[] BackColorValue { get { return _backColorValue; } }
         private byte[] _backColorValue;
@@ -105,16 +111,16 @@ namespace YDrawing2D
         private WriteableBitmap _image;
 
         public IEnumerable<PresentationVisual> Visuals { get { return _visuals;} }
-        private List<PresentationVisual> _visuals;
+        protected List<PresentationVisual> _visuals;
 
         internal Matrix Transform { get { return _transform; } }
         private Matrix _transform;
 
         public double ScaleX { get { return _scaleX; } }
-        private double _scaleX = 1;
+        protected double _scaleX = 1;
 
         public double ScaleY { get { return _scaleY; } }
-        private double _scaleY = 1;
+        protected double _scaleY = 1;
 
         #region Async
         DispatcherTimer _timer;
@@ -263,7 +269,10 @@ namespace YDrawing2D
             foreach (var primitive in visual.Context.Primitives)
             {
                 if (!_bounds.IsIntersectWith(primitive)) continue;
-                if (optimizate && primitive.Property.Pen.Color[3] == byte.MaxValue) continue;
+                var canFilled = primitive is ICanFilledPrimitive;
+                if (optimizate && 
+                    (primitive.Property.Pen.Color == null || primitive.Property.Pen.Color[3] == byte.MaxValue) && 
+                    (!canFilled || (primitive as ICanFilledPrimitive).FillColor == null || (primitive as ICanFilledPrimitive).FillColor[3] == byte.MaxValue)) continue;
                 var bounds = GeometryHelper.RestrictBounds(_bounds, primitive.Property.Bounds);
                 _DrawPrimitive(primitive, bounds, true);
                 _UpdateBounds(bounds);
@@ -435,7 +444,7 @@ namespace YDrawing2D
 
             var visuals = _visuals.Where(other => other.Mode == Mode.Normal && other != visual && other.IsIntersectWith(visual));
             foreach (var _visual in visuals)
-                _ClearVisual(_visual, _visual != visual);
+                _ClearVisual(_visual, true);
             foreach (var _visual in visuals)
                 _UpdateSync(_visual);
 
@@ -595,6 +604,7 @@ namespace YDrawing2D
         protected override void OnRender(DrawingContext drawingContext)
         {
             base.OnRender(drawingContext);
+            _clipBounds.Rect = new Rect(RenderSize);
             OnRenderCustom(drawingContext);
             if (_image == null) return;
             drawingContext.DrawImage(_image, new Rect(new Point(), new Size(_image.Width, _image.Height)));
@@ -606,6 +616,7 @@ namespace YDrawing2D
                 _currentSource.Cancel();
             _currentSource?.Dispose();
 
+            _clipBounds = null;
             _timer.Stop();
             _timer = null;
 

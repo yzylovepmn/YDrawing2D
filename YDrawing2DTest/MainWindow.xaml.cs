@@ -30,7 +30,7 @@ namespace YDrawing2DTest
             Loaded += OnLoaded;
         }
         public static DrawingPen WhitePen = new DrawingPen(1, Colors.White);
-        public static DrawingPen ActivePen = new DrawingPen(1, Colors.Red);
+        public static DrawingPen ActivePen = new DrawingPen(1, Colors.Yellow);
         public static DrawingPen SelectedPen = new DrawingPen(1, Colors.Blue);
         private static PresentationPanel _panel;
         public static PresentationVisual ActiveVisual
@@ -73,7 +73,7 @@ namespace YDrawing2DTest
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            _panel = new PresentationPanel(ActualWidth, ActualHeight, 96, 96, Colors.Black, RenderMode.Async);
+            _panel = new PresentationPanel(ActualWidth, ActualHeight, 96, 96, Colors.Black, new Point(0, 0), RenderMode.Async);
             Content = _panel;
             var r = new Random(5);
             for (int i = 0; i < 10000; i++)
@@ -84,7 +84,7 @@ namespace YDrawing2DTest
                 //_panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
                 //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
             }
-            _panel.AddVisual(new Line(new Point(0, 0), new Point(800, 800)), true);
+            _panel.AddVisual(new Line(new Point(0, 0), new Point(500, 800)), true);
             _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
             _panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(600, 500))), true);
             _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);

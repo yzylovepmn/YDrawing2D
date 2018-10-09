@@ -150,11 +150,8 @@ namespace YDrawing2D
 
             var points = GeometryHelper.CalcHitTestPoints(_p.X, _p.Y, panel.Bounds);
 
-            //var color = default(byte[]);
             foreach (var point in points)
             {
-                //color = panel.GetColor(point.X, point.Y);
-                //if (color.SequenceEqual(panel.BackColorValue))
                     foreach (var visual in panel.Visuals)
                         if (visual.Contains(point))
                             return visual;
@@ -179,8 +176,15 @@ namespace YDrawing2D
         internal static Point ConvertWithTransform(Point p, PresentationContext context)
         {
             if (context.NeedFilpCoordinate)
+            {
+                p = new Point(p.X + context.Visual.Panel.Origin.X, p.Y + context.Visual.Panel.Origin.Y);
                 return context.Visual.Panel.Transform.Transform(context.Transform.Transform(new Point(p.X, context.Visual.Panel.ImageHeight - p.Y)));
-            else return context.Visual.Panel.Transform.Transform(context.Transform.Transform(p));
+            }
+            else
+            {
+                p = new Point(p.X + context.Visual.Panel.Origin.X, p.Y - context.Visual.Panel.Origin.Y);
+                return context.Visual.Panel.Transform.Transform(context.Transform.Transform(p));
+            }
         }
 
         internal static Int32Point ConvertToInt32Point(Point p, double dpiRatio)
@@ -659,7 +663,7 @@ namespace YDrawing2D
             if (isXdir)
             {
                 var e = -deltaX_abs;
-                for (int i = 0; i <= deltaX_abs; i++)
+                for (int i = 0; i < deltaX_abs; i++)
                 {
                     yield return new Int32Point(x, y);
                     x += stride;
@@ -674,7 +678,7 @@ namespace YDrawing2D
             else
             {
                 var e = -deltaY_abs;
-                for (int i = 0; i <= deltaY_abs; i++)
+                for (int i = 0; i < deltaY_abs; i++)
                 {
                     yield return new Int32Point(x, y);
                     y += stride;
