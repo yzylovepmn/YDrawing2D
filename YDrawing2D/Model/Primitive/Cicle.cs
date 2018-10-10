@@ -36,8 +36,8 @@ namespace YDrawing2D.Model
         {
             var len = (p - Center).Length;
             if (_fillColor == null)
-                return Math.Abs(len - Radius) <= _property.Pen.Thickness;
-            else return len < Radius + _property.Pen.Thickness;
+                return Math.Abs(len - Radius) <= _property.Pen.Thickness + VisualHelper.HitTestThickness;
+            else return len < Radius + _property.Pen.Thickness + VisualHelper.HitTestThickness;
         }
 
         public bool IsIntersect(IPrimitive other)

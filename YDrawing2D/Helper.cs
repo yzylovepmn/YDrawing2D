@@ -148,14 +148,16 @@ namespace YDrawing2D
         {
             var _p = GeometryHelper.ConvertToInt32Point(p, panel.DPIRatio);
 
-            var points = GeometryHelper.CalcHitTestPoints(_p.X, _p.Y, panel.Bounds);
+            //var points = GeometryHelper.CalcHitTestPoints(_p.X, _p.Y, panel.Bounds);
+            //
+            //foreach (var point in points)
+            //    foreach (var visual in panel.Visuals)
+            //        if (visual.HitTest(point))
+            //            return visual;
 
-            foreach (var point in points)
-            {
-                    foreach (var visual in panel.Visuals)
-                        if (visual.Contains(point))
-                            return visual;
-            }
+            foreach (var visual in panel.Visuals)
+                if (visual.HitTest(_p))
+                    return visual;
 
             return null;
         }
@@ -420,7 +422,7 @@ namespace YDrawing2D
             {
                 Int64 _a = p2.Y - p1.Y;
                 Int64 _b = p1.X - p2.X;
-                Int64 _c = (Int64)p1.Y * p2.X - p2.Y * p1.X;
+                Int64 _c = (Int64)p1.Y * p2.X - (Int64)p2.Y * p1.X;
                 var mcd = Helper.CalcMCD(_a, _b);
                 mcd = Helper.CalcMCD(mcd, _c);
                 _a /= mcd;
@@ -977,14 +979,14 @@ namespace YDrawing2D
                         // start 1 end 1
                         if (end.Y <= center.Y)
                         {
-                            if (start.X <= end.X)
-                                return true;
-                            else return points.Any(p => p.X <= end.X || p.Y >= start.Y);
+                            if (start.X >= end.X)
+                                return points.Any(p => p.X <= end.X || p.Y >= start.Y);
+                            else return points.Any(p => p.X >= start.X && p.Y <= end.Y);
                         }
                         else
                         {
                             // start 1 end 4
-                            return true;
+                            return points.Any(p => p.X >= center.X && p.Y <= end.Y && p.Y >= start.Y);
                         }
                     }
                     else
@@ -1010,7 +1012,7 @@ namespace YDrawing2D
                         {
                             // start 4 end 4
                             if (end.X <= start.X)
-                                return true;
+                                return points.Any(p => p.X >= end.X && p.Y >= start.Y);
                             else return points.Any(p => p.X <= start.X || p.Y <= end.Y);
                         }
                     }
@@ -1022,7 +1024,7 @@ namespace YDrawing2D
                         else
                         {
                             // start 4 end 3
-                            return true;
+                            return points.Any(p => p.Y >= center.Y && p.X <= start.X && p.X >= end.X);
                         }
                     }
                 }
@@ -1035,7 +1037,7 @@ namespace YDrawing2D
                     {
                         // start 2 end 1
                         if (end.Y <= center.Y)
-                            return true;
+                            return points.Any(p => p.Y <= center.Y && p.X >= start.X && p.X <= end.X);
                         // start 2 end 4
                         else return points.Any(p => !(p.X <= center.X && p.Y >= center.Y) && p.X >= start.X && p.Y <= end.Y);
                     }
@@ -1045,7 +1047,7 @@ namespace YDrawing2D
                         if (end.Y <= center.Y)
                         {
                             if (start.X <= end.X)
-                                return true;
+                                return points.Any(p => p.X <= end.X && p.Y <= start.Y);
                             else return points.Any(p => p.X >= start.X || p.Y >= end.Y);
                         }
                         // start 2 end 3
@@ -1066,12 +1068,12 @@ namespace YDrawing2D
                     {
                         // start 3 end 2
                         if (end.Y <= center.Y)
-                            return true;
+                            return points.Any(p => p.X <= center.X && p.Y >= end.Y && p.Y <= start.Y);
                         else
                         {
                             // start 3 end 3
                             if (end.X <= start.X)
-                                return true;
+                                return points.Any(p => p.X <= start.X && p.Y >= end.Y);
                             else return points.Any(p => p.X >= end.X || p.Y <= start.Y);
                         }
                     }
@@ -1135,7 +1137,7 @@ namespace YDrawing2D
                 var _s1 = Math.Abs(s1);
                 var _s2 = Math.Abs(s2);
                 var smaller = Math.Min(_s1, _s2);
-                if (smaller > line2.Len * line2.Property.Pen.Thickness)
+                if (smaller > line2.Arg * line2.Property.Pen.Thickness)
                     return false;
             }
 
@@ -1147,7 +1149,7 @@ namespace YDrawing2D
                 var _s1 = Math.Abs(s1);
                 var _s2 = Math.Abs(s2);
                 var smaller = Math.Min(_s1, _s2);
-                if (smaller > line1.Len * line1.Property.Pen.Thickness)
+                if (smaller > line1.Arg * line1.Property.Pen.Thickness)
                     return false;
             }
 
@@ -1289,8 +1291,8 @@ namespace YDrawing2D
 
         internal static bool IsIntersect(Line line, Cicle cicle)
         {
-            var len = line.A * cicle.Center.X + line.B * cicle.Center.Y + line.C;
-            if (len > cicle.Radius * line.Len)
+            var len = (long)line.A * cicle.Center.X + (long)line.B * cicle.Center.Y + line.C;
+            if (len > cicle.Radius * line.Arg)
                 return false;
             else if (cicle.FillColor == null)
             {
@@ -1306,8 +1308,8 @@ namespace YDrawing2D
         {
             if (!IsPossibleArcContains(arc.Center, arc.Start, arc.End, line.Start, line.End))
                 return false;
-            var len = line.A * arc.Center.X + line.B * arc.Center.Y + line.C;
-            if (len > arc.Radius * line.Len)
+            var len = (long)line.A * arc.Center.X + (long)line.B * arc.Center.Y + line.C;
+            if (len > arc.Radius * line.Arg)
                 return false;
             else
             {

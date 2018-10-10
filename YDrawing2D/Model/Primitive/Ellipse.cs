@@ -63,8 +63,8 @@ namespace YDrawing2D.Model
             var len1 = (p - FocusP1).Length;
             var len2 = (p - FocusP2).Length;
             if (_fillColor == null)
-                return Math.Abs(len1 + len2 - A_2) <= _property.Pen.Thickness + 1;
-            else return len1 + len2 <= A_2 + _property.Pen.Thickness + 1;
+                return Math.Abs(len1 + len2 - A_2) <= _property.Pen.Thickness + VisualHelper.HitTestThickness;
+            else return len1 + len2 <= A_2 + _property.Pen.Thickness + VisualHelper.HitTestThickness;
         }
 
         public bool IsIntersect(IPrimitive other)

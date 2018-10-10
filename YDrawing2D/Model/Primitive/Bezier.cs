@@ -48,7 +48,7 @@ namespace YDrawing2D.Model
         public bool HitTest(Int32Point p)
         {
             foreach (var innerLine in _innerLines)
-                if (innerLine.Property.Bounds.Contains(p) && innerLine.HitTest(p))
+                if (innerLine.HitTest(p))
                     return true;
             return false;
         }

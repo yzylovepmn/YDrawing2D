@@ -18,9 +18,9 @@ namespace YDrawing2D.Util
 
         public Int32 Y;
 
-        public Int64 LengthSquared { get { return X * X + Y * Y; } }
+        public Int64 LengthSquared { get { return (long)X * X + (long)Y * Y; } }
 
-        public Int32 Length { get { return (Int32)Math.Sqrt(X * X + Y * Y); } }
+        public Int32 Length { get { return (Int32)Math.Sqrt(LengthSquared); } }
 
         public static Int32Vector operator -(Int32Vector v1, Int32Vector v2)
         {

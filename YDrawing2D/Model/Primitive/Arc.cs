@@ -36,7 +36,7 @@ namespace YDrawing2D.Model
         public bool HitTest(Int32Point p)
         {
             if (GeometryHelper.IsPossibleArcContains(Center, Start, End, p))
-                return Math.Abs((p - Center).Length - Radius) <= _property.Pen.Thickness;
+                return Math.Abs((p - Center).Length - Radius) <= _property.Pen.Thickness + VisualHelper.HitTestThickness;
             return false;
         }
 

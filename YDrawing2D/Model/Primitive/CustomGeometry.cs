@@ -77,7 +77,7 @@ namespace YDrawing2D.Model
             if (_fillColor == null && _property.Pen.Thickness > 0)
             {
                 foreach (var primitive in _stream)
-                    if (primitive.Property.Bounds.Contains(p) && primitive.HitTest(p))
+                    if (primitive.HitTest(p))
                         return true;
             }
             else

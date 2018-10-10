@@ -53,11 +53,10 @@ namespace YDrawing2D.View
         /// <param name="context"></param>
         protected abstract void Draw(IContext context);
 
-        internal bool Contains(Int32Point p)
+        internal bool HitTest(Int32Point p)
         {
             foreach (var primitive in _context.Primitives)
-                if (primitive.Property.Bounds.Contains(p)
-                    && primitive.HitTest(p))
+                if (primitive.HitTest(p))
                     return true;
             return false;
         }
