@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
@@ -16,6 +17,7 @@ using System.Windows.Shapes;
 using YDrawing2D;
 using YDrawing2D.Util;
 using YDrawing2D.View;
+using YOpenGL;
 
 namespace YDrawing2DTest
 {
@@ -28,7 +30,12 @@ namespace YDrawing2DTest
         {
             InitializeComponent();
             Loaded += OnLoaded;
+            ele = new UIElement();
+            Content = ele;
         }
+        private static UIElement ele;
+        private static HwndSource elesource;
+
         public static DrawingPen WhitePen = new DrawingPen(1, Colors.White);
         public static DrawingPen ActivePen = new DrawingPen(1, Colors.Yellow);
         public static DrawingPen SelectedPen = new DrawingPen(1, Colors.Blue);
@@ -73,28 +80,36 @@ namespace YDrawing2DTest
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            _panel = new PresentationPanel(ActualWidth, ActualHeight, 96, 96, Colors.Black, new Point(0, 0), RenderMode.Async);
-            Content = _panel;
-            var r = new Random(5);
-            for (int i = 0; i < 10000; i++)
-            {
-                //_panel.AddVisual(new Line(new Point(0, i), new Point(800, i + 100)));
-                //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
-                //_panel.AddVisual(new Cicle(new Point(400, 400), i));
-                //_panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
-                //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
-            }
-            _panel.AddVisual(new Line(new Point(0, 0), new Point(500, 800)), true);
-            _panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
-            _panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(600, 500))), true);
-            _panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
-            _panel.AddVisual(new Cicle(new Point(100, 300), 300), true);
-            _panel.AddVisual(new CustomShape(), true);
-            _panel.AddVisual(new Text(), true);
-            //_panel.UpdateAll();
-            _panel.MouseMove += _panel_MouseMove;
-            _panel.MouseWheel += _panel_MouseWheel;
-            _panel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
+            elesource = (HwndSource)PresentationSource.FromVisual(ele);
+            GL.SetUp(elesource.Handle);
+            GLFunc.Init();
+            GLFunc.glViewport(0, 0, (int)ActualWidth, (int)ActualHeight);
+            GLFunc.glEnable(GLConst.GL_DEPTH_TEST);
+            GLFunc.glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+            GLFunc.glClear(GLConst.GL_COLOR_BUFFER_BIT | GLConst.GL_DEPTH_BUFFER_BIT | GLConst.GL_STENCIL_BUFFER_BIT);
+            GLFunc.glSwapBuffers();
+            //_panel = new PresentationPanel(ActualWidth, ActualHeight, 96, 96, Colors.Black, new Point(0, 0), RenderMode.Async);
+            //Content = _panel;
+            //var r = new Random(5);
+            //for (int i = 0; i < 10000; i++)
+            //{
+            //    //_panel.AddVisual(new Line(new Point(0, i), new Point(800, i + 100)));
+            //    //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
+            //    //_panel.AddVisual(new Cicle(new Point(400, 400), i));
+            //    //_panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
+            //    //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
+            //}
+            //_panel.AddVisual(new Line(new Point(0, 0), new Point(500, 800)), true);
+            //_panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
+            //_panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(600, 500))), true);
+            //_panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
+            //_panel.AddVisual(new Cicle(new Point(100, 300), 300), true);
+            //_panel.AddVisual(new CustomShape(), true);
+            //_panel.AddVisual(new Text(), true);
+            ////_panel.UpdateAll();
+            //_panel.MouseMove += _panel_MouseMove;
+            //_panel.MouseWheel += _panel_MouseWheel;
+            //_panel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
         }
 
         private void _panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

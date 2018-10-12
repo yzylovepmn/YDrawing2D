@@ -6,7 +6,4 @@
         xmlns:local="clr-namespace:YDrawing2DTest"
         mc:Ignorable="d" WindowState="Maximized"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        
-    </Grid>
 </Window>
