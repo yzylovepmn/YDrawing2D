@@ -8,8 +8,9 @@ using System.Threading.Tasks;
 
 namespace YOpenGL
 {
+    using GLchar = Byte;
     using GLenum = UInt32;
-    using GLboolean = SByte;
+    using GLboolean = Byte;
     using GLbitfield = UInt32;
     using GLbyte = Byte;
     using GLshort = Int16;
@@ -39,20 +40,735 @@ namespace YOpenGL
         private static IntPtr OpenGLHandle { get; set; }
         internal const string OpenGLName = "OPENGL32.DLL";
 
-        public static void Init()
+        /// <summary>
+        /// Must be initialized before calling any function
+        /// </summary>
+        /// <returns></returns>
+        public static bool Init()
         {
             OpenGLHandle = Win32Helper.LoadLibrary(OpenGLName);
             _Init();
+            _ParseVersion();
             Win32Helper.FreeLibrary(OpenGLHandle);
+            return GL.Version >= GLVersion.FromNumber(2, 0);
         }
 
-        public static void glSwapBuffers()
+        public static void Dispose()
         {
-            Win32Helper.SwapBuffers(GL.HDC);
+            GL.Version = new GLVersion();
+            glCullFace = null;
+            glFrontFace = null;
+            glHint = null;
+            glLineWidth = null;
+            glPointSize = null;
+            glPolygonMode = null;
+            glScissor = null;
+            glTexParameterf = null;
+            glTexParameterfv = null;
+            glTexParameteri = null;
+            glTexParameteriv = null;
+            glTexImage1D = null;
+            glTexImage2D = null;
+            glDrawBuffer = null;
+            glClear = null;
+            glClearColor = null;
+            glClearStencil = null;
+            glClearDepth = null;
+            glStencilMask = null;
+            glColorMask = null;
+            glDepthMask = null;
+            glDisable = null;
+            glEnable = null;
+            glFinish = null;
+            glFlush = null;
+            glBlendFunc = null;
+            glLogicOp = null;
+            glStencilFunc = null;
+            glStencilOp = null;
+            glDepthFunc = null;
+            glPixelStoref = null;
+            glPixelStorei = null;
+            glReadBuffer = null;
+            glReadPixels = null;
+            glGetBooleanv = null;
+            glGetDoublev = null;
+            glGetError = null;
+            glGetFloatv = null;
+            glGetIntegerv = null;
+            glGetString = null;
+            glGetTexImage = null;
+            glGetTexParameterfv = null;
+            glGetTexParameteriv = null;
+            glGetTexLevelParameterfv = null;
+            glGetTexLevelParameteriv = null;
+            glIsEnabled = null;
+            glDepthRange = null;
+            glViewport = null;
+            glDrawArrays = null;
+            glDrawElements = null;
+            glGetPointerv = null;
+            glPolygonOffset = null;
+            glCopyTexImage1D = null;
+            glCopyTexImage2D = null;
+            glCopyTexSubImage1D = null;
+            glCopyTexSubImage2D = null;
+            glTexSubImage1D = null;
+            glTexSubImage2D = null;
+            glBindTexture = null;
+            glDeleteTextures = null;
+            glGenTextures = null;
+            glIsTexture = null;
+            glDrawRangeElements = null;
+            glTexImage3D = null;
+            glTexSubImage3D = null;
+            glCopyTexSubImage3D = null;
+            glActiveTexture = null;
+            glSampleCoverage = null;
+            glCompressedTexImage3D = null;
+            glCompressedTexImage2D = null;
+            glCompressedTexImage1D = null;
+            glCompressedTexSubImage3D = null;
+            glCompressedTexSubImage2D = null;
+            glCompressedTexSubImage1D = null;
+            glGetCompressedTexImage = null;
+            glBlendFuncSeparate = null;
+            glMultiDrawArrays = null;
+            glMultiDrawElements = null;
+            glPointParameterf = null;
+            glPointParameterfv = null;
+            glPointParameteri = null;
+            glPointParameteriv = null;
+            glBlendColor = null;
+            glBlendEquation = null;
+            glGenQueries = null;
+            glDeleteQueries = null;
+            glIsQuery = null;
+            glBeginQuery = null;
+            glEndQuery = null;
+            glGetQueryiv = null;
+            glGetQueryObjectiv = null;
+            glGetQueryObjectuiv = null;
+            glBindBuffer = null;
+            glDeleteBuffers = null;
+            glGenBuffers = null;
+            glIsBuffer = null;
+            glBufferData = null;
+            glBufferSubData = null;
+            glGetBufferSubData = null;
+            glMapBuffer = null;
+            glUnmapBuffer = null;
+            glGetBufferParameteriv = null;
+            glGetBufferPointerv = null;
+            glBlendEquationSeparate = null;
+            glDrawBuffers = null;
+            glStencilOpSeparate = null;
+            glStencilFuncSeparate = null;
+            glStencilMaskSeparate = null;
+            glAttachShader = null;
+            glBindAttribLocation = null;
+            glCompileShader = null;
+            glCreateProgram = null;
+            glCreateShader = null;
+            glDeleteProgram = null;
+            glDeleteShader = null;
+            glDetachShader = null;
+            glDisableVertexAttribArray = null;
+            glEnableVertexAttribArray = null;
+            glGetActiveAttrib = null;
+            glGetActiveUniform = null;
+            glGetAttachedShaders = null;
+            glGetAttribLocation = null;
+            glGetProgramiv = null;
+            glGetProgramInfoLog = null;
+            glGetShaderiv = null;
+            glGetShaderInfoLog = null;
+            glGetShaderSource = null;
+            glGetUniformLocation = null;
+            glGetUniformfv = null;
+            glGetUniformiv = null;
+            glGetVertexAttribdv = null;
+            glGetVertexAttribfv = null;
+            glGetVertexAttribiv = null;
+            glGetVertexAttribPointerv = null;
+            glIsProgram = null;
+            glIsShader = null;
+            glLinkProgram = null;
+            glShaderSource = null;
+            glUseProgram = null;
+            glUniform1f = null;
+            glUniform2f = null;
+            glUniform3f = null;
+            glUniform4f = null;
+            glUniform1i = null;
+            glUniform2i = null;
+            glUniform3i = null;
+            glUniform4i = null;
+            glUniform1fv = null;
+            glUniform2fv = null;
+            glUniform3fv = null;
+            glUniform4fv = null;
+            glUniform1iv = null;
+            glUniform2iv = null;
+            glUniform3iv = null;
+            glUniform4iv = null;
+            glUniformMatrix2fv = null;
+            glUniformMatrix3fv = null;
+            glUniformMatrix4fv = null;
+            glValidateProgram = null;
+            glVertexAttrib1d = null;
+            glVertexAttrib1dv = null;
+            glVertexAttrib1f = null;
+            glVertexAttrib1fv = null;
+            glVertexAttrib1s = null;
+            glVertexAttrib1sv = null;
+            glVertexAttrib2d = null;
+            glVertexAttrib2dv = null;
+            glVertexAttrib2f = null;
+            glVertexAttrib2fv = null;
+            glVertexAttrib2s = null;
+            glVertexAttrib2sv = null;
+            glVertexAttrib3d = null;
+            glVertexAttrib3dv = null;
+            glVertexAttrib3f = null;
+            glVertexAttrib3fv = null;
+            glVertexAttrib3s = null;
+            glVertexAttrib3sv = null;
+            glVertexAttrib4Nbv = null;
+            glVertexAttrib4Niv = null;
+            glVertexAttrib4Nsv = null;
+            glVertexAttrib4Nub = null;
+            glVertexAttrib4Nubv = null;
+            glVertexAttrib4Nuiv = null;
+            glVertexAttrib4Nusv = null;
+            glVertexAttrib4bv = null;
+            glVertexAttrib4d = null;
+            glVertexAttrib4dv = null;
+            glVertexAttrib4f = null;
+            glVertexAttrib4fv = null;
+            glVertexAttrib4iv = null;
+            glVertexAttrib4s = null;
+            glVertexAttrib4sv = null;
+            glVertexAttrib4ubv = null;
+            glVertexAttrib4uiv = null;
+            glVertexAttrib4usv = null;
+            glVertexAttribPointer = null;
+            glUniformMatrix2x3fv = null;
+            glUniformMatrix3x2fv = null;
+            glUniformMatrix2x4fv = null;
+            glUniformMatrix4x2fv = null;
+            glUniformMatrix3x4fv = null;
+            glUniformMatrix4x3fv = null;
+            glColorMaski = null;
+            glGetBooleani_v = null;
+            glGetIntegeri_v = null;
+            glEnablei = null;
+            glDisablei = null;
+            glIsEnabledi = null;
+            glBeginTransformFeedback = null;
+            glEndTransformFeedback = null;
+            glBindBufferRange = null;
+            glBindBufferBase = null;
+            glTransformFeedbackVaryings = null;
+            glGetTransformFeedbackVarying = null;
+            glClampColor = null;
+            glBeginConditionalRender = null;
+            glEndConditionalRender = null;
+            glVertexAttribIPointer = null;
+            glGetVertexAttribIiv = null;
+            glGetVertexAttribIuiv = null;
+            glVertexAttribI1i = null;
+            glVertexAttribI2i = null;
+            glVertexAttribI3i = null;
+            glVertexAttribI4i = null;
+            glVertexAttribI1ui = null;
+            glVertexAttribI2ui = null;
+            glVertexAttribI3ui = null;
+            glVertexAttribI4ui = null;
+            glVertexAttribI1iv = null;
+            glVertexAttribI2iv = null;
+            glVertexAttribI3iv = null;
+            glVertexAttribI4iv = null;
+            glVertexAttribI1uiv = null;
+            glVertexAttribI2uiv = null;
+            glVertexAttribI3uiv = null;
+            glVertexAttribI4uiv = null;
+            glVertexAttribI4bv = null;
+            glVertexAttribI4sv = null;
+            glVertexAttribI4ubv = null;
+            glVertexAttribI4usv = null;
+            glGetUniformuiv = null;
+            glBindFragDataLocation = null;
+            glGetFragDataLocation = null;
+            glUniform1ui = null;
+            glUniform2ui = null;
+            glUniform3ui = null;
+            glUniform4ui = null;
+            glUniform1uiv = null;
+            glUniform2uiv = null;
+            glUniform3uiv = null;
+            glUniform4uiv = null;
+            glTexParameterIiv = null;
+            glTexParameterIuiv = null;
+            glGetTexParameterIiv = null;
+            glGetTexParameterIuiv = null;
+            glClearBufferiv = null;
+            glClearBufferuiv = null;
+            glClearBufferfv = null;
+            glClearBufferfi = null;
+            glGetStringi = null;
+            glIsRenderbuffer = null;
+            glBindRenderbuffer = null;
+            glDeleteRenderbuffers = null;
+            glGenRenderbuffers = null;
+            glRenderbufferStorage = null;
+            glGetRenderbufferParameteriv = null;
+            glIsFramebuffer = null;
+            glBindFramebuffer = null;
+            glDeleteFramebuffers = null;
+            glGenFramebuffers = null;
+            glCheckFramebufferStatus = null;
+            glFramebufferTexture1D = null;
+            glFramebufferTexture2D = null;
+            glFramebufferTexture3D = null;
+            glFramebufferRenderbuffer = null;
+            glGetFramebufferAttachmentParameteriv = null;
+            glGenerateMipmap = null;
+            glBlitFramebuffer = null;
+            glRenderbufferStorageMultisample = null;
+            glFramebufferTextureLayer = null;
+            glMapBufferRange = null;
+            glFlushMappedBufferRange = null;
+            glBindVertexArray = null;
+            glDeleteVertexArrays = null;
+            glGenVertexArrays = null;
+            glIsVertexArray = null;
+            glDrawArraysInstanced = null;
+            glDrawElementsInstanced = null;
+            glTexBuffer = null;
+            glPrimitiveRestartIndex = null;
+            glCopyBufferSubData = null;
+            glGetUniformIndices = null;
+            glGetActiveUniformsiv = null;
+            glGetActiveUniformName = null;
+            glGetUniformBlockIndex = null;
+            glGetActiveUniformBlockiv = null;
+            glGetActiveUniformBlockName = null;
+            glUniformBlockBinding = null;
+            glDrawElementsBaseVertex = null;
+            glDrawRangeElementsBaseVertex = null;
+            glDrawElementsInstancedBaseVertex = null;
+            glMultiDrawElementsBaseVertex = null;
+            glProvokingVertex = null;
+            glFenceSync = null;
+            glIsSync = null;
+            glDeleteSync = null;
+            glClientWaitSync = null;
+            glWaitSync = null;
+            glGetInteger64v = null;
+            glGetSynciv = null;
+            glGetInteger64i_v = null;
+            glGetBufferParameteri64v = null;
+            glFramebufferTexture = null;
+            glTexImage2DMultisample = null;
+            glTexImage3DMultisample = null;
+            glGetMultisamplefv = null;
+            glSampleMaski = null;
+            glBindFragDataLocationIndexed = null;
+            glGetFragDataIndex = null;
+            glGenSamplers = null;
+            glDeleteSamplers = null;
+            glIsSampler = null;
+            glBindSampler = null;
+            glSamplerParameteri = null;
+            glSamplerParameteriv = null;
+            glSamplerParameterf = null;
+            glSamplerParameterfv = null;
+            glSamplerParameterIiv = null;
+            glSamplerParameterIuiv = null;
+            glGetSamplerParameteriv = null;
+            glGetSamplerParameterIiv = null;
+            glGetSamplerParameterfv = null;
+            glGetSamplerParameterIuiv = null;
+            glQueryCounter = null;
+            glGetQueryObjecti64v = null;
+            glGetQueryObjectui64v = null;
+            glVertexAttribDivisor = null;
+            glVertexAttribP1ui = null;
+            glVertexAttribP1uiv = null;
+            glVertexAttribP2ui = null;
+            glVertexAttribP2uiv = null;
+            glVertexAttribP3ui = null;
+            glVertexAttribP3uiv = null;
+            glVertexAttribP4ui = null;
+            glVertexAttribP4uiv = null;
+            glMinSampleShading = null;
+            glBlendEquationi = null;
+            glBlendEquationSeparatei = null;
+            glBlendFunci = null;
+            glBlendFuncSeparatei = null;
+            glDrawArraysIndirect = null;
+            glDrawElementsIndirect = null;
+            glUniform1d = null;
+            glUniform2d = null;
+            glUniform3d = null;
+            glUniform4d = null;
+            glUniform1dv = null;
+            glUniform2dv = null;
+            glUniform3dv = null;
+            glUniform4dv = null;
+            glUniformMatrix2dv = null;
+            glUniformMatrix3dv = null;
+            glUniformMatrix4dv = null;
+            glUniformMatrix2x3dv = null;
+            glUniformMatrix2x4dv = null;
+            glUniformMatrix3x2dv = null;
+            glUniformMatrix3x4dv = null;
+            glUniformMatrix4x2dv = null;
+            glUniformMatrix4x3dv = null;
+            glGetUniformdv = null;
+            glGetSubroutineUniformLocation = null;
+            glGetSubroutineIndex = null;
+            glGetActiveSubroutineUniformiv = null;
+            glGetActiveSubroutineUniformName = null;
+            glGetActiveSubroutineName = null;
+            glUniformSubroutinesuiv = null;
+            glGetUniformSubroutineuiv = null;
+            glGetProgramStageiv = null;
+            glPatchParameteri = null;
+            glPatchParameterfv = null;
+            glBindTransformFeedback = null;
+            glDeleteTransformFeedbacks = null;
+            glGenTransformFeedbacks = null;
+            glIsTransformFeedback = null;
+            glPauseTransformFeedback = null;
+            glResumeTransformFeedback = null;
+            glDrawTransformFeedback = null;
+            glDrawTransformFeedbackStream = null;
+            glBeginQueryIndexed = null;
+            glEndQueryIndexed = null;
+            glGetQueryIndexediv = null;
+            glReleaseShaderCompiler = null;
+            glShaderBinary = null;
+            glGetShaderPrecisionFormat = null;
+            glDepthRangef = null;
+            glClearDepthf = null;
+            glGetProgramBinary = null;
+            glProgramBinary = null;
+            glProgramParameteri = null;
+            glUseProgramStages = null;
+            glActiveShaderProgram = null;
+            glCreateShaderProgramv = null;
+            glBindProgramPipeline = null;
+            glDeleteProgramPipelines = null;
+            glGenProgramPipelines = null;
+            glIsProgramPipeline = null;
+            glGetProgramPipelineiv = null;
+            glProgramUniform1i = null;
+            glProgramUniform1iv = null;
+            glProgramUniform1f = null;
+            glProgramUniform1fv = null;
+            glProgramUniform1d = null;
+            glProgramUniform1dv = null;
+            glProgramUniform1ui = null;
+            glProgramUniform1uiv = null;
+            glProgramUniform2i = null;
+            glProgramUniform2iv = null;
+            glProgramUniform2f = null;
+            glProgramUniform2fv = null;
+            glProgramUniform2d = null;
+            glProgramUniform2dv = null;
+            glProgramUniform2ui = null;
+            glProgramUniform2uiv = null;
+            glProgramUniform3i = null;
+            glProgramUniform3iv = null;
+            glProgramUniform3f = null;
+            glProgramUniform3fv = null;
+            glProgramUniform3d = null;
+            glProgramUniform3dv = null;
+            glProgramUniform3ui = null;
+            glProgramUniform3uiv = null;
+            glProgramUniform4i = null;
+            glProgramUniform4iv = null;
+            glProgramUniform4f = null;
+            glProgramUniform4fv = null;
+            glProgramUniform4d = null;
+            glProgramUniform4dv = null;
+            glProgramUniform4ui = null;
+            glProgramUniform4uiv = null;
+            glProgramUniformMatrix2fv = null;
+            glProgramUniformMatrix3fv = null;
+            glProgramUniformMatrix4fv = null;
+            glProgramUniformMatrix2dv = null;
+            glProgramUniformMatrix3dv = null;
+            glProgramUniformMatrix4dv = null;
+            glProgramUniformMatrix2x3fv = null;
+            glProgramUniformMatrix3x2fv = null;
+            glProgramUniformMatrix2x4fv = null;
+            glProgramUniformMatrix4x2fv = null;
+            glProgramUniformMatrix3x4fv = null;
+            glProgramUniformMatrix4x3fv = null;
+            glProgramUniformMatrix2x3dv = null;
+            glProgramUniformMatrix3x2dv = null;
+            glProgramUniformMatrix2x4dv = null;
+            glProgramUniformMatrix4x2dv = null;
+            glProgramUniformMatrix3x4dv = null;
+            glProgramUniformMatrix4x3dv = null;
+            glValidateProgramPipeline = null;
+            glGetProgramPipelineInfoLog = null;
+            glVertexAttribL1d = null;
+            glVertexAttribL2d = null;
+            glVertexAttribL3d = null;
+            glVertexAttribL4d = null;
+            glVertexAttribL1dv = null;
+            glVertexAttribL2dv = null;
+            glVertexAttribL3dv = null;
+            glVertexAttribL4dv = null;
+            glVertexAttribLPointer = null;
+            glGetVertexAttribLdv = null;
+            glViewportArrayv = null;
+            glViewportIndexedf = null;
+            glViewportIndexedfv = null;
+            glScissorArrayv = null;
+            glScissorIndexed = null;
+            glScissorIndexedv = null;
+            glDepthRangeArrayv = null;
+            glDepthRangeIndexed = null;
+            glGetFloati_v = null;
+            glGetDoublei_v = null;
+            glDrawArraysInstancedBaseInstance = null;
+            glDrawElementsInstancedBaseInstance = null;
+            glDrawElementsInstancedBaseVertexBaseInstance = null;
+            glGetInternalformativ = null;
+            glGetActiveAtomicCounterBufferiv = null;
+            glBindImageTexture = null;
+            glMemoryBarrier = null;
+            glTexStorage1D = null;
+            glTexStorage2D = null;
+            glTexStorage3D = null;
+            glDrawTransformFeedbackInstanced = null;
+            glDrawTransformFeedbackStreamInstanced = null;
+            glClearBufferData = null;
+            glClearBufferSubData = null;
+            glDispatchCompute = null;
+            glDispatchComputeIndirect = null;
+            glCopyImageSubData = null;
+            glFramebufferParameteri = null;
+            glGetFramebufferParameteriv = null;
+            glGetInternalformati64v = null;
+            glInvalidateTexSubImage = null;
+            glInvalidateTexImage = null;
+            glInvalidateBufferSubData = null;
+            glInvalidateBufferData = null;
+            glInvalidateFramebuffer = null;
+            glInvalidateSubFramebuffer = null;
+            glMultiDrawArraysIndirect = null;
+            glMultiDrawElementsIndirect = null;
+            glGetProgramInterfaceiv = null;
+            glGetProgramResourceIndex = null;
+            glGetProgramResourceName = null;
+            glGetProgramResourceiv = null;
+            glGetProgramResourceLocation = null;
+            glGetProgramResourceLocationIndex = null;
+            glShaderStorageBlockBinding = null;
+            glTexBufferRange = null;
+            glTexStorage2DMultisample = null;
+            glTexStorage3DMultisample = null;
+            glTextureView = null;
+            glBindVertexBuffer = null;
+            glVertexAttribFormat = null;
+            glVertexAttribIFormat = null;
+            glVertexAttribLFormat = null;
+            glVertexAttribBinding = null;
+            glVertexBindingDivisor = null;
+            glDebugMessageControl = null;
+            glDebugMessageInsert = null;
+            glDebugMessageCallback = null;
+            glGetDebugMessageLog = null;
+            glPushDebugGroup = null;
+            glPopDebugGroup = null;
+            glObjectLabel = null;
+            glGetObjectLabel = null;
+            glObjectPtrLabel = null;
+            glGetObjectPtrLabel = null;
+            glBufferStorage = null;
+            glClearTexImage = null;
+            glClearTexSubImage = null;
+            glBindBuffersBase = null;
+            glBindBuffersRange = null;
+            glBindTextures = null;
+            glBindSamplers = null;
+            glBindImageTextures = null;
+            glBindVertexBuffers = null;
+            glClipControl = null;
+            glCreateTransformFeedbacks = null;
+            glTransformFeedbackBufferBase = null;
+            glTransformFeedbackBufferRange = null;
+            glGetTransformFeedbackiv = null;
+            glGetTransformFeedbacki_v = null;
+            glGetTransformFeedbacki64_v = null;
+            glCreateBuffers = null;
+            glNamedBufferStorage = null;
+            glNamedBufferData = null;
+            glNamedBufferSubData = null;
+            glCopyNamedBufferSubData = null;
+            glClearNamedBufferData = null;
+            glClearNamedBufferSubData = null;
+            glMapNamedBuffer = null;
+            glMapNamedBufferRange = null;
+            glUnmapNamedBuffer = null;
+            glFlushMappedNamedBufferRange = null;
+            glGetNamedBufferParameteriv = null;
+            glGetNamedBufferParameteri64v = null;
+            glGetNamedBufferPointerv = null;
+            glGetNamedBufferSubData = null;
+            glCreateFramebuffers = null;
+            glNamedFramebufferRenderbuffer = null;
+            glNamedFramebufferParameteri = null;
+            glNamedFramebufferTexture = null;
+            glNamedFramebufferTextureLayer = null;
+            glNamedFramebufferDrawBuffer = null;
+            glNamedFramebufferDrawBuffers = null;
+            glNamedFramebufferReadBuffer = null;
+            glInvalidateNamedFramebufferData = null;
+            glInvalidateNamedFramebufferSubData = null;
+            glClearNamedFramebufferiv = null;
+            glClearNamedFramebufferuiv = null;
+            glClearNamedFramebufferfv = null;
+            glClearNamedFramebufferfi = null;
+            glBlitNamedFramebuffer = null;
+            glCheckNamedFramebufferStatus = null;
+            glGetNamedFramebufferParameteriv = null;
+            glGetNamedFramebufferAttachmentParameteriv = null;
+            glCreateRenderbuffers = null;
+            glNamedRenderbufferStorage = null;
+            glNamedRenderbufferStorageMultisample = null;
+            glGetNamedRenderbufferParameteriv = null;
+            glCreateTextures = null;
+            glTextureBuffer = null;
+            glTextureBufferRange = null;
+            glTextureStorage1D = null;
+            glTextureStorage2D = null;
+            glTextureStorage3D = null;
+            glTextureStorage2DMultisample = null;
+            glTextureStorage3DMultisample = null;
+            glTextureSubImage1D = null;
+            glTextureSubImage2D = null;
+            glTextureSubImage3D = null;
+            glCompressedTextureSubImage1D = null;
+            glCompressedTextureSubImage2D = null;
+            glCompressedTextureSubImage3D = null;
+            glCopyTextureSubImage1D = null;
+            glCopyTextureSubImage2D = null;
+            glCopyTextureSubImage3D = null;
+            glTextureParameterf = null;
+            glTextureParameterfv = null;
+            glTextureParameteri = null;
+            glTextureParameterIiv = null;
+            glTextureParameterIuiv = null;
+            glTextureParameteriv = null;
+            glGenerateTextureMipmap = null;
+            glBindTextureUnit = null;
+            glGetTextureImage = null;
+            glGetCompressedTextureImage = null;
+            glGetTextureLevelParameterfv = null;
+            glGetTextureLevelParameteriv = null;
+            glGetTextureParameterfv = null;
+            glGetTextureParameterIiv = null;
+            glGetTextureParameterIuiv = null;
+            glGetTextureParameteriv = null;
+            glCreateVertexArrays = null;
+            glDisableVertexArrayAttrib = null;
+            glEnableVertexArrayAttrib = null;
+            glVertexArrayElementBuffer = null;
+            glVertexArrayVertexBuffer = null;
+            glVertexArrayVertexBuffers = null;
+            glVertexArrayAttribBinding = null;
+            glVertexArrayAttribFormat = null;
+            glVertexArrayAttribIFormat = null;
+            glVertexArrayAttribLFormat = null;
+            glVertexArrayBindingDivisor = null;
+            glGetVertexArrayiv = null;
+            glGetVertexArrayIndexediv = null;
+            glGetVertexArrayIndexed64iv = null;
+            glCreateSamplers = null;
+            glCreateProgramPipelines = null;
+            glCreateQueries = null;
+            glGetQueryBufferObjecti64v = null;
+            glGetQueryBufferObjectiv = null;
+            glGetQueryBufferObjectui64v = null;
+            glGetQueryBufferObjectuiv = null;
+            glMemoryBarrierByRegion = null;
+            glGetTextureSubImage = null;
+            glGetCompressedTextureSubImage = null;
+            glGetGraphicsResetStatus = null;
+            glGetnCompressedTexImage = null;
+            glGetnTexImage = null;
+            glGetnUniformdv = null;
+            glGetnUniformfv = null;
+            glGetnUniformiv = null;
+            glGetnUniformuiv = null;
+            glReadnPixels = null;
+            glTextureBarrier = null;
+            glGetTextureHandleARB = null;
+            glGetTextureSamplerHandleARB = null;
+            glMakeTextureHandleResidentARB = null;
+            glMakeTextureHandleNonResidentARB = null;
+            glGetImageHandleARB = null;
+            glMakeImageHandleResidentARB = null;
+            glMakeImageHandleNonResidentARB = null;
+            glUniformHandleui64ARB = null;
+            glUniformHandleui64vARB = null;
+            glProgramUniformHandleui64ARB = null;
+            glProgramUniformHandleui64vARB = null;
+            glIsTextureHandleResidentARB = null;
+            glIsImageHandleResidentARB = null;
+            glVertexAttribL1ui64ARB = null;
+            glVertexAttribL1ui64vARB = null;
+            glGetVertexAttribLui64vARB = null;
+            glCreateSyncFromCLeventARB = null;
+            glDispatchComputeGroupSizeARB = null;
+            glDebugMessageControlARB = null;
+            glDebugMessageInsertARB = null;
+            glDebugMessageCallbackARB = null;
+            glGetDebugMessageLogARB = null;
+            glBlendEquationiARB = null;
+            glBlendEquationSeparateiARB = null;
+            glBlendFunciARB = null;
+            glBlendFuncSeparateiARB = null;
+            glMultiDrawArraysIndirectCountARB = null;
+            glMultiDrawElementsIndirectCountARB = null;
+            glGetGraphicsResetStatusARB = null;
+            glGetnTexImageARB = null;
+            glReadnPixelsARB = null;
+            glGetnCompressedTexImageARB = null;
+            glGetnUniformfvARB = null;
+            glGetnUniformivARB = null;
+            glGetnUniformuivARB = null;
+            glGetnUniformdvARB = null;
+            glMinSampleShadingARB = null;
+            glNamedStringARB = null;
+            glDeleteNamedStringARB = null;
+            glCompileShaderIncludeARB = null;
+            glIsNamedStringARB = null;
+            glGetNamedStringARB = null;
+            glGetNamedStringivARB = null;
+            glBufferPageCommitmentARB = null;
+            glNamedBufferPageCommitmentEXT = null;
+            glNamedBufferPageCommitmentARB = null;
+            glTexPageCommitmentARB = null;
+        }
+
+        private static void _ParseVersion()
+        {
+            GL.Version = new GLVersion();
+
+            GetIntegerv(GLConst.GL_MAJOR_VERSION, ref GL.Version._major);
+            GetIntegerv(GLConst.GL_MINOR_VERSION, ref GL.Version._minor);
         }
 
         private static void _Init()
         {
+            glCullFace = GetDelegate("glCullFace", typeof(PFNGLCULLFACEPROC)) as PFNGLCULLFACEPROC;
             glFrontFace = GetDelegate("glFrontFace", typeof(PFNGLFRONTFACEPROC)) as PFNGLFRONTFACEPROC;
             glHint = GetDelegate("glHint", typeof(PFNGLHINTPROC)) as PFNGLHINTPROC;
             glLineWidth = GetDelegate("glLineWidth", typeof(PFNGLLINEWIDTHPROC)) as PFNGLLINEWIDTHPROC;
@@ -779,6 +1495,276 @@ namespace YOpenGL
         }
 
         #region Func
+        public static void SwapBuffers()
+        {
+            Win32Helper.SwapBuffers(GL.HDC);
+        }
+
+        public static void UseProgram(GLuint program)
+        {
+            glUseProgram?.Invoke(program);
+        }
+
+        public static void Uniform1i(GLint location, GLint v0)
+        {
+            glUniform1i?.Invoke(location, v0);
+        }
+
+        public static void Uniform1f(GLint location, GLfloat v0)
+        {
+            glUniform1f?.Invoke(location, v0);
+        }
+
+        public static void Uniform3fv(GLint location, GLsizei count, GLfloat[] value)
+        {
+            glUniform3fv?.Invoke(location, count, value);
+        }
+
+        public static void UniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, GLfloat[] value)
+        {
+            glUniformMatrix3fv?.Invoke(location, count, transpose, value);
+        }
+
+        public static void GetIntegerv(GLenum pname, ref GLint param)
+        {
+            if (glGetIntegerv != null)
+            {
+                unsafe
+                {
+                    fixed(GLint* p = &param)
+                        glGetIntegerv(pname, (GLvoid)p);
+                }
+            }
+        }
+
+        public static void Viewport(GLint x, GLint y, GLsizei width, GLsizei height)
+        {
+            glViewport?.Invoke(x, y, width, height);
+        }
+
+        public static void Enable(GLenum cap)
+        {
+            glEnable?.Invoke(cap);
+        }
+
+        public static void GenVertexArrays(GLsizei n, GLuint[] arrays)
+        {
+            glGenVertexArrays?.Invoke(n, arrays);
+        }
+
+        public static void DeleteVertexArrays(GLsizei n, GLuint[] arrays)
+        {
+            glDeleteVertexArrays?.Invoke(n, arrays);
+        }
+
+        public static void BindVertexArray(GLuint array)
+        {
+            glBindVertexArray?.Invoke(array);
+        }
+
+        public static void GenBuffers(GLsizei n, GLuint[] buffers)
+        {
+            glGenBuffers?.Invoke(n, buffers);
+        }
+
+        public static void DeleteBuffers(GLsizei n, GLuint[] buffers)
+        {
+            glDeleteBuffers?.Invoke(n, buffers);
+        }
+
+        public static void BindBuffer(GLenum target, GLuint buffer)
+        {
+            glBindBuffer?.Invoke(target, buffer);
+        }
+
+        public static void BufferData(GLenum target, GLsizeiptr size, byte[] data, GLenum usage)
+        {
+            if (glBufferData != null)
+            {
+                unsafe
+                {
+                    fixed (byte* ptr = data)
+                        glBufferData(target, size, (GLvoid)ptr, usage);
+                }
+            }
+        }
+
+        public static void BufferData(GLenum target, GLsizeiptr size, sbyte[] data, GLenum usage)
+        {
+            if (glBufferData != null)
+            {
+                unsafe
+                {
+                    fixed (sbyte* ptr = data)
+                        glBufferData(target, size, (GLvoid)ptr, usage);
+                }
+            }
+        }
+
+        public static void BufferData(GLenum target, GLsizeiptr size, Int16[] data, GLenum usage)
+        {
+            if (glBufferData != null)
+            {
+                unsafe
+                {
+                    fixed (Int16* ptr = data)
+                        glBufferData(target, size, (GLvoid)ptr, usage);
+                }
+            }
+        }
+
+        public static void BufferData(GLenum target, GLsizeiptr size, UInt16[] data, GLenum usage)
+        {
+            if (glBufferData != null)
+            {
+                unsafe
+                {
+                    fixed (UInt16* ptr = data)
+                        glBufferData(target, size, (GLvoid)ptr, usage);
+                }
+            }
+        }
+
+        public static void BufferData(GLenum target, GLsizeiptr size, float[] data, GLenum usage)
+        {
+            if (glBufferData != null)
+            {
+                unsafe
+                {
+                    fixed (float* ptr = data)
+                        glBufferData(target, size, (GLvoid)ptr, usage);
+                }
+            }
+        }
+
+        public static void BufferData(GLenum target, GLsizeiptr size, double[] data, GLenum usage)
+        {
+            if (glBufferData != null)
+            {
+                unsafe
+                {
+                    fixed (double* ptr = data)
+                        glBufferData(target, size, (GLvoid)ptr, usage);
+                }
+            }
+        }
+
+        public static void BufferData(GLenum target, GLsizeiptr size, int[] data, GLenum usage)
+        {
+            if (glBufferData != null)
+            {
+                unsafe
+                {
+                    fixed (int* ptr = data)
+                        glBufferData(target, size, (GLvoid)ptr, usage);
+                }
+            }
+        }
+
+        public static void BufferData(GLenum target, GLsizeiptr size, uint[] data, GLenum usage)
+        {
+            if (glBufferData != null)
+            {
+                unsafe
+                {
+                    fixed (uint* ptr = data)
+                        glBufferData(target, size, (GLvoid)ptr, usage);
+                }
+            }
+        }
+
+        public static void BufferData(GLenum target, GLsizeiptr size, Int64[] data, GLenum usage)
+        {
+            if (glBufferData != null)
+            {
+                unsafe
+                {
+                    fixed (Int64* ptr = data)
+                        glBufferData(target, size, (GLvoid)ptr, usage);
+                }
+            }
+        }
+
+        public static void BufferData(GLenum target, GLsizeiptr size, UInt64[] data, GLenum usage)
+        {
+            if (glBufferData != null)
+            {
+                unsafe
+                {
+                    fixed (UInt64* ptr = data)
+                        glBufferData(target, size, (GLvoid)ptr, usage);
+                }
+            }
+        }
+
+        public static void EnableVertexAttribArray(GLuint index)
+        {
+            glEnableVertexAttribArray?.Invoke(index);
+        }
+
+        public static void VertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, int pointer)
+        {
+            glVertexAttribPointer?.Invoke(index, size, type, normalized, stride, (GLvoid)pointer);
+        }
+
+        public static void ClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
+        {
+            glClearColor?.Invoke(red, green, blue, alpha);
+        }
+
+        public static void Clear(GLbitfield mask)
+        {
+            glClear?.Invoke(mask);
+        }
+
+        public static void LineWidth(GLfloat width)
+        {
+            glLineWidth?.Invoke(width);
+        }
+
+        public static void PointSize(GLfloat size)
+        {
+            glPointSize?.Invoke(size);
+        }
+
+        public static void DrawArrays(GLenum mode, GLint first, GLsizei count)
+        {
+            glDrawArrays?.Invoke(mode, first, count);
+        }
+
+        public static void DrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei primcount)
+        {
+            glDrawArraysInstanced?.Invoke(mode, first, count, primcount);
+        }
+
+        public static void DrawElements(GLenum mode, GLsizei count, GLenum type, GLvoid indices)
+        {
+            glDrawElements?.Invoke(mode, count, type, indices);
+        }
+
+        public static void PolygonMode(GLenum face, GLenum mode)
+        {
+            glPolygonMode?.Invoke(face, mode);
+        }
+
+        public static void CullFace(GLenum mode)
+        {
+            glCullFace?.Invoke(mode);
+        }
+
+        public static void FrontFace(GLenum mode)
+        {
+            glFrontFace?.Invoke(mode);
+        }
+
+        public static void Hint(GLenum target, GLenum mode)
+        {
+            glHint?.Invoke(target, mode);
+        }
+        #endregion
+
+        #region Delegate
+        public static PFNGLCULLFACEPROC glCullFace;
         public static PFNGLFRONTFACEPROC glFrontFace;
         public static PFNGLHINTPROC glHint;
         public static PFNGLLINEWIDTHPROC glLineWidth;
@@ -1519,7 +2505,7 @@ namespace YOpenGL
     public delegate void PFNGLGETDOUBLEVPROC(GLenum pname, GLdouble[] _params);
     public delegate GLenum PFNGLGETERRORPROC();
     public delegate void PFNGLGETFLOATVPROC(GLenum pname, GLfloat[] _params);
-    public delegate void PFNGLGETINTEGERVPROC(GLenum pname, GLint[] _params);
+    public delegate void PFNGLGETINTEGERVPROC(GLenum pname, GLvoid _params);
     public delegate void PFNGLGETTEXIMAGEPROC(GLenum target, GLint level, GLenum format, GLenum type, GLvoid pixels);
     public delegate void PFNGLGETTEXPARAMETERFVPROC(GLenum target, GLenum pname, GLfloat[] _params);
     public delegate void PFNGLGETTEXPARAMETERIVPROC(GLenum target, GLenum pname, GLint[] _params);
@@ -1602,9 +2588,9 @@ namespace YOpenGL
     public delegate void PFNGLGETATTACHEDSHADERSPROC(GLuint program, GLsizei maxCount, GLsizei[] count, GLuint[] obj);
     public delegate GLint PFNGLGETATTRIBLOCATIONPROC(GLuint program, [MarshalAs(UnmanagedType.LPStr)]string name);
     public delegate void PFNGLGETPROGRAMIVPROC(GLuint program, GLenum pname, GLint[] _params);
-    public delegate void PFNGLGETPROGRAMINFOLOGPROC(GLuint program, GLsizei bufSize, GLsizei[] length, [MarshalAs(UnmanagedType.LPStr)]string infoLog);
+    public delegate void PFNGLGETPROGRAMINFOLOGPROC(GLuint program, GLsizei bufSize, GLsizei[] length, GLchar[] infoLog);
     public delegate void PFNGLGETSHADERIVPROC(GLuint shader, GLenum pname, GLint[] _params);
-    public delegate void PFNGLGETSHADERINFOLOGPROC(GLuint shader, GLsizei bufSize, GLsizei[] length, [MarshalAs(UnmanagedType.LPStr)]string infoLog);
+    public delegate void PFNGLGETSHADERINFOLOGPROC(GLuint shader, GLsizei bufSize, GLsizei[] length, GLchar[] infoLog);
     public delegate void PFNGLGETSHADERSOURCEPROC(GLuint shader, GLsizei bufSize, GLsizei[] length, [MarshalAs(UnmanagedType.LPStr)]string source);
     public delegate GLint PFNGLGETUNIFORMLOCATIONPROC(GLuint program, [MarshalAs(UnmanagedType.LPStr)]string name);
     public delegate void PFNGLGETUNIFORMFVPROC(GLuint program, GLint location, GLfloat[] _params);
@@ -1616,7 +2602,7 @@ namespace YOpenGL
     public delegate GLboolean PFNGLISPROGRAMPROC(GLuint program);
     public delegate GLboolean PFNGLISSHADERPROC(GLuint shader);
     public delegate void PFNGLLINKPROGRAMPROC(GLuint program);
-    public delegate void PFNGLSHADERSOURCEPROC(GLuint shader, GLsizei count, [MarshalAs(UnmanagedType.LPStr)]ref string program, GLint[] length);
+    public delegate void PFNGLSHADERSOURCEPROC(GLuint shader, GLsizei count, [MarshalAs(UnmanagedType.LPArray)]string[] program, GLint[] length);
     public delegate void PFNGLUSEPROGRAMPROC(GLuint program);
     public delegate void PFNGLUNIFORM1FPROC(GLint location, GLfloat v0);
     public delegate void PFNGLUNIFORM2FPROC(GLint location, GLfloat v0, GLfloat v1);

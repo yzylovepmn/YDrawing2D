@@ -12,8 +12,8 @@ namespace YOpenGL
         public const uint GL_DEPTH_BUFFER_BIT = 0x00000100;
         public const uint GL_STENCIL_BUFFER_BIT = 0x00000400;
         public const uint GL_COLOR_BUFFER_BIT = 0x00004000;
-        public const uint GL_FALSE = 0;
-        public const uint GL_TRUE = 1;
+        public const byte GL_FALSE = 0;
+        public const byte GL_TRUE = 1;
         public const uint GL_POINTS = 0x0000;
         public const uint GL_LINES = 0x0001;
         public const uint GL_LINE_LOOP = 0x0002;
