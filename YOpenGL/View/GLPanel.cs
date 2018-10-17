@@ -100,6 +100,8 @@ namespace YOpenGL
 
         public void ScaleAt(float scaleX, float scaleY, float centerX, float centerY)
         {
+            centerX -= _origin.X;
+            centerY -= _origin.Y;
             _view.ScaleAt(scaleX, scaleY, centerX, centerY);
             _SaveViewResverse();
         }
@@ -130,7 +132,7 @@ namespace YOpenGL
         #endregion
 
         #region Visual
-        public GLVisual HitTest(PointF point, float sensitive = 3)
+        public GLVisual HitTest(PointF point, float sensitive = 5)
         {
             point = ViewToWorld(point);
             foreach (var visual in _visuals)
@@ -311,7 +313,7 @@ namespace YOpenGL
 
             foreach (var pair in _lineModels)
                 foreach (var model in pair.Value)
-                    model.Draw(_shader, pair.Key);
+                    model.Draw(_shader, pair.Key, _transformToDevice.M11);
         }
 
         private static Shader GenShader()

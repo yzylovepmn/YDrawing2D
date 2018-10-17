@@ -13,7 +13,7 @@ namespace YOpenGL
             var pen = param[0] as PenF;
             shader.SetVec3("color", pen.Color.GetData());
             //Set line width
-            GLFunc.LineWidth(pen.Thickness);
+            GLFunc.LineWidth(pen.Thickness / (float)param[1]);
             GLFunc.BindVertexArray(_vao[0]);
             GLFunc.DrawArrays(GLConst.GL_LINES, 0, _points.Count);
         }

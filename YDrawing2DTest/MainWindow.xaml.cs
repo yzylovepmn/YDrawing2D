@@ -120,7 +120,7 @@ namespace YDrawing2DTest
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            for (int i = 0; i < 40000; i++)
+            for (int i = 0; i < 10000; i++)
             {
                 _glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i)));
             }

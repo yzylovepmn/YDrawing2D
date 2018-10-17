@@ -66,8 +66,7 @@ namespace YOpenGL
 
         public void SetMat3(string name, MatrixF matrix)
         {
-            var data = matrix.GetData();
-            GLFunc.UniformMatrix3fv(GLFunc.glGetUniformLocation(ID, name), 1, GLConst.GL_FALSE, data);
+            GLFunc.UniformMatrix3fv(GLFunc.glGetUniformLocation(ID, name), 1, GLConst.GL_FALSE, matrix.GetData());
         }
 
         #region Static
