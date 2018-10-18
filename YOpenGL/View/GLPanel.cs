@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -27,6 +28,7 @@ namespace YOpenGL
             _visuals = new List<GLVisual>();
             _fillModels = new Dictionary<Color, List<MeshModel>>();
             _lineModels = new Dictionary<PenF, List<MeshModel>>();
+            _timer = new Timer(_AfterPainted);
         }
 
         #region Private Field
@@ -44,6 +46,8 @@ namespace YOpenGL
         private float _green;
         private float _blue;
 
+        private Timer _timer;
+
         #region MSAA
         private uint[] _fbo;
         private uint[] _texture;
@@ -51,7 +55,6 @@ namespace YOpenGL
         private int _viewWidth;
         private int _viewHeight;
         #endregion
-
         #endregion
 
         #region Property
@@ -99,7 +102,7 @@ namespace YOpenGL
         public void Scale(float scaleX, float scaleY)
         {
             _view.Scale(scaleX, scaleY);
-            _SaveViewResverse();
+            _AfterTransform();
         }
 
         public void ScaleAt(float scaleX, float scaleY, float centerX, float centerY)
@@ -107,7 +110,7 @@ namespace YOpenGL
             centerX -= _origin.X;
             centerY -= _origin.Y;
             _view.ScaleAt(scaleX, scaleY, centerX, centerY);
-            _SaveViewResverse();
+            _AfterTransform();
         }
 
         public void ScaleAt(PointF p, float scaleX, float scaleY)
@@ -123,15 +126,17 @@ namespace YOpenGL
         public void Translate(float offsetX, float offsetY)
         {
             _view.Translate(offsetX, offsetY);
-            _SaveViewResverse();
+            _AfterTransform();
         }
 
-        private void _SaveViewResverse()
+        private void _AfterTransform()
         {
             var view = _view;
             _view.Invert();
             _viewResverse = _view;
             _view = view;
+
+            _DispatchFrame();
         }
         #endregion
 
@@ -145,43 +150,69 @@ namespace YOpenGL
             return null;
         }
 
-        public void AddVisual(GLVisual visual, bool isUpdate = false)
+        /// <summary>
+        /// Add a visual
+        /// </summary>
+        /// <param name="visual">The visual to add</param>
+        /// <param name="refresh">Whether to update the frame buffer immediately</param>
+        public void AddVisual(GLVisual visual, bool refresh = false)
         {
             _visuals.Add(visual);
-            if (isUpdate)
-                Update(visual);
+            _Update(visual);
+            if (refresh)
+                _DispatchFrame();
         }
 
         public void RemoveVisual(GLVisual visual)
         {
             _visuals.Remove(visual);
             _needUpdate = true;
+            _DispatchFrame();
         }
 
-        public void Update(GLVisual visual)
+        /// <summary>
+        /// Update viausl
+        /// </summary>
+        /// <param name="visual">The visual to update</param>
+        /// <param name="refresh">Whether to update the frame buffer immediately</param>
+        public void Update(GLVisual visual, bool refresh = false)
         {
             _Update(visual);
-            _needUpdate = true;
+            if (refresh)
+                _DispatchFrame();
         }
 
         private void _Update(GLVisual visual)
         {
             visual.Update();
+            _needUpdate = true;
         }
 
+        /// <summary>
+        /// Update all visuals and update frame buffer
+        /// </summary>
         public void UpdateAll()
         {
             foreach (var visual in _visuals)
                 _Update(visual);
-            _needUpdate = true;
+            _DispatchFrame();
+        }
+
+        /// <summary>
+        /// Force update frame buffer (This function may consume some GPU resources)
+        /// </summary>
+        public void Refresh()
+        {
+            _DispatchFrame();
         }
         #endregion
 
         #region RenderFrame
-        private void OnDispatchFrame(object sender, EventArgs e)
+        private void _DispatchFrame(bool flag = false)
         {
             GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
-            GLFunc.TexImage2DMultisample(GLConst.GL_TEXTURE_2D_MULTISAMPLE, 4, GLConst.GL_RGB, _viewWidth, _viewHeight, GLConst.GL_TRUE);
+            if (flag)
+                GLFunc.TexImage2DMultisample(GLConst.GL_TEXTURE_2D_MULTISAMPLE, 4, GLConst.GL_RGB, _viewWidth, _viewHeight, GLConst.GL_TRUE);
             GLFunc.ClearColor(_red, _green, _blue, 1.0f);
             GLFunc.Clear(GLConst.GL_COLOR_BUFFER_BIT | GLConst.GL_DEPTH_BUFFER_BIT | GLConst.GL_STENCIL_BUFFER_BIT);
 
@@ -223,9 +254,6 @@ namespace YOpenGL
             GLFunc.Enable(GLConst.GL_CULL_FACE);
             GLFunc.Enable(GLConst.GL_LINE_WIDTH);
             _shader.Use();
-
-            GL.DispatchFrame += OnDispatchFrame;
-            GL.Start(60);
         }
 
         private void _CreateFrameBuffer()
@@ -249,8 +277,6 @@ namespace YOpenGL
         private void _Destroy()
         {
             if (_isDisposed) return;
-            GL.DispatchFrame -= OnDispatchFrame;
-            GL.Stop();
 
             _shader.Dispose();
             _DeleteFrameBuffer();
@@ -261,6 +287,11 @@ namespace YOpenGL
         #endregion
 
         #region Private
+        private void _AfterPainted(object state)
+        {
+            Dispatcher.Invoke(() => { _DispatchFrame(true); });
+        }
+
         private void _InvalidateModel()
         {
             if (_needUpdate)
@@ -352,6 +383,20 @@ namespace YOpenGL
         #endregion
 
         #region Override
+        protected override IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (!_isDisposed)
+            {
+                switch ((WindowMessage)msg)
+                {
+                    case WindowMessage.PAINT:
+                        _timer.Change(0, Timeout.Infinite);
+                        break;
+                }
+            }
+            return base.WndProc(hwnd, msg, wParam, lParam, ref handled);
+        }
+
         protected override HandleRef BuildWindowCore(HandleRef hwndParent)
         {
             var _hwndHost = Win32Helper.CreateWindowEx(0, "static", "",
@@ -425,14 +470,13 @@ namespace YOpenGL
         {
             base.Dispose(disposing);
             if (_isDisposed) return;
-            _isDisposed = true;
-            GL.DispatchFrame -= OnDispatchFrame;
-            GL.Stop();
 
             _Dispose();
+            _Destroy();
 
-            GL.DeleteContext();
-            GLFunc.Dispose();
+            _timer.Dispose();
+            _timer = null;
+            _isDisposed = true;
         }
         #endregion
     }

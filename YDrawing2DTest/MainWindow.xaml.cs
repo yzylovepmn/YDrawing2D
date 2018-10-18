@@ -76,6 +76,7 @@ namespace YDrawing2DTest
                         _glPanel.Update(old);
                     if (_glvisual != null)
                         _glPanel.Update(_glvisual);
+                    _glPanel.Refresh();
                 }
             }
         }
@@ -113,6 +114,7 @@ namespace YDrawing2DTest
                         _glPanel.Update(old);
                     if (_glselectedVisual != null)
                         _glPanel.Update(_glselectedVisual);
+                    _glPanel.Refresh();
                 }
             }
         }

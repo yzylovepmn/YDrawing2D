@@ -57,7 +57,7 @@ namespace YOpenGL
                 Win32Helper.DeleteContext(_hdcHandle.Handle);
         }
 
-        #region Render
+        #region For Game Render
         public static void Start(int frameRate)
         {
             _frameSpan = Math.Max(1, 1000 / frameRate);
