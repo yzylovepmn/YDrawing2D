@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -84,6 +85,21 @@ namespace YOpenGL
         internal static extern Int32 GetMessage(ref MSG msg,
             IntPtr windowHandle, int messageFilterMin, int messageFilterMax);
 
+        [DllImport("user32.dll", EntryPoint = "CreateWindowEx", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern IntPtr CreateWindowEx(int dwExStyle,
+                                              string lpszClassName,
+                                              string lpszWindowName,
+                                              int style,
+                                              int x, int y,
+                                              int width, int height,
+                                              IntPtr hwndParent,
+                                              IntPtr hMenu,
+                                              IntPtr hInst,
+                                              [MarshalAs(UnmanagedType.AsAny)] object pvParam);
+
+        [DllImport("user32.dll", EntryPoint = "DestroyWindow", CharSet = CharSet.Unicode)]
+        public static extern bool DestroyWindow(IntPtr hwnd);
+
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool BringWindowToTop(IntPtr hWnd);
@@ -105,6 +121,28 @@ namespace YOpenGL
         {
             return SetWindowLong(handle, GetWindowLongOffsets.WNDPROC, Marshal.GetFunctionPointerForDelegate(newValue));
         }
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        internal static extern ushort RegisterClassEx(ref ExtendedWindowClass window_class);
+
+        [DllImport("gdi32.dll", SetLastError = true)]
+        internal static extern IntPtr GetStockObject(StockObjects fnObject);
+
+        [DllImport("user32.dll")]
+        internal static extern IntPtr LoadCursor(IntPtr hInstance, IntPtr lpCursorName);
+
+        internal static IntPtr LoadCursor(CursorName lpCursorName)
+        {
+            return LoadCursor(IntPtr.Zero, new IntPtr((int)lpCursorName));
+        }
+
+        [DllImport("user32.dll", EntryPoint = "AdjustWindowRectEx", CallingConvention = CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AdjustWindowRectEx(
+            ref Win32Rectangle lpRect,
+            WindowStyle dwStyle,
+            [MarshalAs(UnmanagedType.Bool)] bool bMenu,
+            ExtendedWindowStyle dwExStyle);
 
         internal static IntPtr SetWindowLong(IntPtr handle, GetWindowLongOffsets item, IntPtr newValue)
         {
@@ -139,10 +177,12 @@ namespace YOpenGL
               WS_CHILD = 0x40000000,
               WS_VISIBLE = 0x10000000,
               WS_VSCROLL = 0x00200000,
+              HOST_ID = 0x00000002,
               WS_BORDER = 0x00800000,
               WS_CLIPSIBLINGS = 0x04000000,
               WS_CLIPCHILDREN = 0x02000000,
               WS_TABSTOP = 0x00010000,
+              LBS_NOTIFY = 0x00000001,
               WS_GROUP = 0x00020000;
 
         public const int WM_WINDOWPOSCHANGED = 0x0047;
@@ -172,6 +212,194 @@ namespace YOpenGL
         // These are the wParam of WM_SYSCOMMAND
         public const int SC_MAXIMIZE = 0xF030;
         public const int SC_RESTORE = 0xF120;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct Win32Rectangle
+    {
+        /// <summary>
+        /// Specifies the x-coordinate of the upper-left corner of the rectangle.
+        /// </summary>
+        internal Int32 left;
+        /// <summary>
+        /// Specifies the y-coordinate of the upper-left corner of the rectangle.
+        /// </summary>
+        internal Int32 top;
+        /// <summary>
+        /// Specifies the x-coordinate of the lower-right corner of the rectangle.
+        /// </summary>
+        internal Int32 right;
+        /// <summary>
+        /// Specifies the y-coordinate of the lower-right corner of the rectangle.
+        /// </summary>
+        internal Int32 bottom;
+
+        internal int Width { get { return right - left; } }
+        internal int Height { get { return bottom - top; } }
+
+        public override string ToString()
+        {
+            return String.Format("({0},{1})-({2},{3})", left, top, right, bottom);
+        }
+
+        internal Rectangle ToRectangle()
+        {
+            return Rectangle.FromLTRB(left, top, right, bottom);
+        }
+
+        internal static Win32Rectangle From(Rectangle value)
+        {
+            Win32Rectangle rect = new Win32Rectangle();
+            rect.left = value.Left;
+            rect.right = value.Right;
+            rect.top = value.Top;
+            rect.bottom = value.Bottom;
+            return rect;
+        }
+
+        internal static Win32Rectangle From(Size value)
+        {
+            Win32Rectangle rect = new Win32Rectangle();
+            rect.left = 0;
+            rect.right = value.Width;
+            rect.top = 0;
+            rect.bottom = value.Height;
+            return rect;
+        }
+    }
+
+    internal enum StockObjects
+    {
+        WHITE_BRUSH = 0,
+        LTGRAY_BRUSH = 1,
+        GRAY_BRUSH = 2,
+        DKGRAY_BRUSH = 3,
+        BLACK_BRUSH = 4,
+        NULL_BRUSH = 5,
+        HOLLOW_BRUSH = NULL_BRUSH,
+        WHITE_PEN = 6,
+        BLACK_PEN = 7,
+        NULL_PEN = 8,
+        OEM_FIXED_FONT = 10,
+        ANSI_FIXED_FONT = 11,
+        ANSI_VAR_FONT = 12,
+        SYSTEM_FONT = 13,
+        DEVICE_DEFAULT_FONT = 14,
+        DEFAULT_PALETTE = 15,
+        SYSTEM_FIXED_FONT = 16,
+        DEFAULT_GUI_FONT = 17,
+        DC_BRUSH = 18,
+        DC_PEN = 19,
+    }
+
+    [Flags]
+    internal enum ClassStyle
+    {
+        //None            = 0x0000,
+        VRedraw = 0x0001,
+        HRedraw = 0x0002,
+        DoubleClicks = 0x0008,
+        OwnDC = 0x0020,
+        ClassDC = 0x0040,
+        ParentDC = 0x0080,
+        NoClose = 0x0200,
+        SaveBits = 0x0800,
+        ByteAlignClient = 0x1000,
+        ByteAlignWindow = 0x2000,
+        GlobalClass = 0x4000,
+
+        Ime = 0x00010000,
+
+        // #if(_WIN32_WINNT >= 0x0501)
+        DropShadow = 0x00020000
+        // #endif /* _WIN32_WINNT >= 0x0501 */
+    }
+
+    [Flags]
+    internal enum ExtendedWindowStyle : uint
+    {
+        DialogModalFrame = 0x00000001,
+        NoParentNotify = 0x00000004,
+        Topmost = 0x00000008,
+        AcceptFiles = 0x00000010,
+        Transparent = 0x00000020,
+
+        // #if(WINVER >= 0x0400)
+        MdiChild = 0x00000040,
+        ToolWindow = 0x00000080,
+        WindowEdge = 0x00000100,
+        ClientEdge = 0x00000200,
+        ContextHelp = 0x00000400,
+        // #endif
+
+        // #if(WINVER >= 0x0400)
+        Right = 0x00001000,
+        Left = 0x00000000,
+        RightToLeftReading = 0x00002000,
+        LeftToRightReading = 0x00000000,
+        LeftScrollbar = 0x00004000,
+        RightScrollbar = 0x00000000,
+
+        ControlParent = 0x00010000,
+        StaticEdge = 0x00020000,
+        ApplicationWindow = 0x00040000,
+
+        OverlappedWindow = WindowEdge | ClientEdge,
+        PaletteWindow = WindowEdge | ToolWindow | Topmost,
+        // #endif
+
+        // #if(_WIN32_WINNT >= 0x0500)
+        Layered = 0x00080000,
+        // #endif
+
+        // #if(WINVER >= 0x0500)
+        NoInheritLayout = 0x00100000, // Disable inheritence of mirroring by children
+        RightToLeftLayout = 0x00400000, // Right to left mirroring
+        // #endif /* WINVER >= 0x0500 */
+
+        // #if(_WIN32_WINNT >= 0x0501)
+        Composited = 0x02000000,
+        // #endif /* _WIN32_WINNT >= 0x0501 */
+
+        // #if(_WIN32_WINNT >= 0x0500)
+        NoActivate = 0x08000000
+        // #endif /* _WIN32_WINNT >= 0x0500 */
+    }
+
+    [Flags]
+    internal enum WindowStyle : uint
+    {
+        Overlapped = 0x00000000,
+        Popup = 0x80000000,
+        Child = 0x40000000,
+        Minimize = 0x20000000,
+        Visible = 0x10000000,
+        Disabled = 0x08000000,
+        ClipSiblings = 0x04000000,
+        ClipChildren = 0x02000000,
+        Maximize = 0x01000000,
+        Caption = 0x00C00000,    // Border | DialogFrame
+        Border = 0x00800000,
+        DialogFrame = 0x00400000,
+        VScroll = 0x00200000,
+        HScreen = 0x00100000,
+        SystemMenu = 0x00080000,
+        ThickFrame = 0x00040000,
+        Group = 0x00020000,
+        TabStop = 0x00010000,
+
+        MinimizeBox = 0x00020000,
+        MaximizeBox = 0x00010000,
+
+        Tiled = Overlapped,
+        Iconic = Minimize,
+        SizeBox = ThickFrame,
+        TiledWindow = OverlappedWindow,
+
+        // Common window styles:
+        OverlappedWindow = Overlapped | Caption | SystemMenu | ThickFrame | MinimizeBox | MaximizeBox,
+        PopupWindow = Popup | Border | SystemMenu,
+        ChildWindow = Child
     }
 
     [Flags]
@@ -248,6 +476,32 @@ namespace YOpenGL
         EXSTYLE = (-20),
         USERDATA = (-21),
         ID = (-12),
+    }
+
+    internal enum CursorName : int
+    {
+        Arrow = 32512
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    internal struct ExtendedWindowClass
+    {
+        public UInt32 Size;
+        public ClassStyle Style;
+        //public WNDPROC WndProc;
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        public WindowProcedure WndProc;
+        public int cbClsExtra;
+        public int cbWndExtra;
+        public IntPtr Instance;
+        public IntPtr Icon;
+        public IntPtr Cursor;
+        public IntPtr Background;
+        public IntPtr MenuName;
+        public IntPtr ClassName;
+        public IntPtr IconSm;
+
+        public static uint SizeInBytes = (uint)Marshal.SizeOf(default(ExtendedWindowClass));
     }
 
     [StructLayout(LayoutKind.Sequential)]

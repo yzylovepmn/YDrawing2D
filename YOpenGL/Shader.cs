@@ -29,7 +29,7 @@ namespace YOpenGL
         private string _code;
     }
 
-    public class Shader
+    public class Shader : IDisposable
     {
         public Shader(uint id)
         {
@@ -123,5 +123,10 @@ namespace YOpenGL
             return success[0] != 0;
         }
         #endregion
+
+        public void Dispose()
+        {
+            GLFunc.DeleteShader(_id);
+        }
     }
 }

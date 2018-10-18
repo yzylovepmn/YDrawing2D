@@ -120,10 +120,7 @@ namespace YDrawing2DTest
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            for (int i = 0; i < 10000; i++)
-            {
-                _glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i)));
-            }
+            _glPanel.AddVisual(new Line(new PointF(0, 0), new PointF(10, 800)));
             _glPanel.MouseMove += _panel_MouseMove;
             _glPanel.MouseWheel += _panel_MouseWheel;
             _glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;

@@ -8,7 +8,7 @@ namespace YOpenGL
 {
     internal class LinesModel : MeshModel
     {
-        public override void Draw(Shader shader, params object[] param)
+        internal override void Draw(Shader shader, params object[] param)
         {
             var pen = param[0] as PenF;
             shader.SetVec3("color", pen.Color.GetData());
@@ -18,7 +18,7 @@ namespace YOpenGL
             GLFunc.DrawArrays(GLConst.GL_LINES, 0, _points.Count);
         }
 
-        public override bool TryAttachPrimitive(IPrimitive primitive)
+        internal override bool TryAttachPrimitive(IPrimitive primitive)
         {
             switch (primitive.Type)
             {

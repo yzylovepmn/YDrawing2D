@@ -19,9 +19,9 @@ namespace YOpenGL
         protected uint[] _vbo;
         private bool _hasInit;
 
-        public abstract void Draw(Shader shader, params object[] param);
+        internal abstract void Draw(Shader shader, params object[] param);
 
-        public abstract bool TryAttachPrimitive(IPrimitive primitive);
+        internal abstract bool TryAttachPrimitive(IPrimitive primitive);
 
         internal void BeginInit()
         {

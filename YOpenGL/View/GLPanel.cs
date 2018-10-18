@@ -3,11 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 
@@ -16,7 +12,7 @@ namespace YOpenGL
     /// <summary>
     /// The positive direction of the X axis is right(→) and the positive direction of the Y axis is up(↑);
     /// </summary>
-    public class GLPanel : UIElement, IDisposable
+    public class GLPanel : HwndHost, IDisposable
     {
         private static readonly string[] _shaders = new string[] { "Internal.vert", "Internal.frag" };
 
@@ -37,7 +33,6 @@ namespace YOpenGL
         private bool _isDisposed;
         private bool _isInit;
         private bool _needUpdate;
-        private HwndSource _source;
         private Shader _shader;
 
         private MatrixF _transformToDevice;
@@ -136,7 +131,7 @@ namespace YOpenGL
         {
             point = ViewToWorld(point);
             foreach (var visual in _visuals)
-                if (visual.HitTest(point, sensitive * _viewResverse.M11))
+                if (visual.HitTest(point, sensitive * _viewResverse.M11 * _transformToDevice.M11))
                     return visual;
             return null;
         }
@@ -173,23 +168,6 @@ namespace YOpenGL
         }
         #endregion
 
-        #region Override
-        protected override void OnRenderSizeChanged(SizeChangedInfo info)
-        {
-            base.OnRenderSizeChanged(info);
-            if (!_isInit)
-                Init();
-
-            var width = Math.Max(1, (float)RenderSize.Width);
-            var height = Math.Max(1, (float)RenderSize.Height);
-            _worldToNDC = new MatrixF();
-            _worldToNDC.Translate(_origin.X, _origin.Y);
-            _worldToNDC.Scale(2 / width, 2 / height);
-            _worldToNDC.Translate(-1, -1);
-            GLFunc.Viewport(0, 0, (int)(width * _transformToDevice.M11), (int)(height * _transformToDevice.M22));
-        }
-        #endregion
-
         #region RenderFrame
         private void OnDispatchFrame(object sender, EventArgs e)
         {
@@ -215,15 +193,14 @@ namespace YOpenGL
         }
         #endregion
 
-        #region Internel
-        internal void Init()
+        #region Init & Destroy
+        private void _Init()
         {
             if (_isInit) return;
             _isInit = true;
-            _source = (HwndSource)PresentationSource.FromVisual(this);
-            _transformToDevice = (MatrixF)_source.CompositionTarget.TransformToDevice;
+            _transformToDevice = (MatrixF)PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
 
-            GL.MakeContextCurrent(_source.Handle);
+            GL.MakeContextCurrent(Handle);
             GLFunc.Init();
             _shader = GenShader();
 
@@ -236,6 +213,18 @@ namespace YOpenGL
 
             GL.DispatchFrame += OnDispatchFrame;
             GL.Start(60);
+        }
+
+        private void _Destroy()
+        {
+            if (_isDisposed) return;
+            GL.DispatchFrame -= OnDispatchFrame;
+            GL.Stop();
+
+            _shader.Dispose();
+            GL.DeleteContext();
+            GLFunc.Dispose();
+            _isInit = false;
         }
         #endregion
 
@@ -251,23 +240,8 @@ namespace YOpenGL
                     foreach (var primitive in visual.Context.Primitives)
                     {
                         _AttachLinesModel(primitive);
-                        switch (primitive.Type)
-                        {
-                            case PrimitiveType.Line:
-                                break;
-                            case PrimitiveType.Cicle:
-                                break;
-                            case PrimitiveType.Arc:
-                                break;
-                            case PrimitiveType.Ellipse:
-                                break;
-                            case PrimitiveType.Spline:
-                                break;
-                            case PrimitiveType.Bezier:
-                                break;
-                            case PrimitiveType.Geometry:
-                                break;
-                        }
+                        if (primitive.Filled)
+                            _AttachFillModels(primitive);
                     }
                 }
                 _EndInitModels();
@@ -292,6 +266,11 @@ namespace YOpenGL
                 _lineModels[primitive.Pen].Add(model);
                 model.TryAttachPrimitive(primitive);
             }
+        }
+
+        private void _AttachFillModels(IPrimitive primitive)
+        {
+
         }
 
         private void _EndInitModels()
@@ -323,7 +302,7 @@ namespace YOpenGL
             string code;
             foreach (var shader in _shaders)
             {
-                using (var stream = new StreamReader(Resources.OpenStream(shader)))
+                using (var stream = new StreamReader(YOpenGL.Resources.OpenStream(shader)))
                 {
                     code = stream.ReadToEnd();
                     var type = default(ShaderType);
@@ -340,6 +319,47 @@ namespace YOpenGL
         }
         #endregion
 
+        #region Override
+        protected override HandleRef BuildWindowCore(HandleRef hwndParent)
+        {
+            var _hwndHost = Win32Helper.CreateWindowEx(0, "static", "",
+                                      Win32Helper.WS_CHILD | Win32Helper.WS_VISIBLE,
+                                      0, 0,
+                                      0, 0,
+                                      hwndParent.Handle,
+                                      (IntPtr)Win32Helper.HOST_ID,
+                                      IntPtr.Zero,
+                                      0);
+
+            return new HandleRef(this, _hwndHost);
+        }
+
+        protected override void DestroyWindowCore(HandleRef hwnd)
+        {
+            _Destroy();
+            Win32Helper.DestroyWindow(hwnd.Handle);
+        }
+
+        protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+        {
+            base.OnRenderSizeChanged(sizeInfo);
+            _Init();
+            _OnRenderSizeChanged((float)sizeInfo.NewSize.Width, (float)sizeInfo.NewSize.Height);
+        }
+
+        private void _OnRenderSizeChanged(float width, float height)
+        {
+            width = Math.Max(1, width);
+            height = Math.Max(1, height);
+            _worldToNDC = new MatrixF();
+            _worldToNDC.Translate(_origin.X, _origin.Y);
+            _worldToNDC.Scale(2 / width, 2 / height);
+            _worldToNDC.Translate(-1, -1);
+            GLFunc.Viewport(0, 0, (int)(width * _transformToDevice.M11), (int)(height * _transformToDevice.M22));
+        }
+        #endregion
+
+        #region Dispose
         private void _Dispose()
         {
             _DisposeVisuals();
@@ -367,8 +387,9 @@ namespace YOpenGL
             _lineModels.Clear();
         }
 
-        public virtual void Dispose()
+        protected override void Dispose(bool disposing)
         {
+            base.Dispose(disposing);
             if (_isDisposed) return;
             _isDisposed = true;
             GL.DispatchFrame -= OnDispatchFrame;
@@ -378,7 +399,7 @@ namespace YOpenGL
 
             GL.DeleteContext();
             GLFunc.Dispose();
-            _source.Dispose();
         }
+        #endregion
     }
 }

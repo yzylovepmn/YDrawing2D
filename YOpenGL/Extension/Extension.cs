@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 
 namespace YOpenGL
@@ -61,5 +62,24 @@ namespace YOpenGL
                 return false;
             return true;
         }
+
+        #region View
+        public static PointF PointToScreenDPIWithoutFlowDirection(this Visual element, PointF point)
+        {
+            return element.PointToScreenDPI(point);
+        }
+
+        public static PointF PointToScreenDPI(this Visual visual, PointF pt)
+        {
+            PointF resultPt = (PointF)visual.PointToScreen(pt);
+            return TransformToDeviceDPI(visual, resultPt);
+        }
+
+        public static PointF TransformToDeviceDPI(this Visual visual, PointF pt)
+        {
+            MatrixF m = (MatrixF)PresentationSource.FromVisual(visual).CompositionTarget.TransformToDevice;
+            return new PointF(pt.X / m.M11, pt.Y / m.M22);
+        }
+        #endregion
     }
 }

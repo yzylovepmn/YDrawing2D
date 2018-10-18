@@ -1761,6 +1761,11 @@ namespace YOpenGL
         {
             glHint?.Invoke(target, mode);
         }
+
+        public static void DeleteShader(GLuint shader)
+        {
+            glDeleteShader?.Invoke(shader);
+        }
         #endregion
 
         #region Delegate
