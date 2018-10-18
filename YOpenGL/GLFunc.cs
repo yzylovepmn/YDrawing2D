@@ -1537,6 +1537,50 @@ namespace YOpenGL
             }
         }
 
+        public static GLuint CreateProgram()
+        {
+            if (glCreateProgram != null)
+                return glCreateProgram();
+            return 0;
+        }
+
+        public static GLuint CreateShader(GLenum type)
+        {
+            if (glCreateShader != null)
+                return glCreateShader(type);
+            return 0;
+        }
+
+        public static void ShaderSource(GLuint shader, GLsizei count, [MarshalAs(UnmanagedType.LPArray)]string[] program, GLint[] length)
+        {
+            glShaderSource?.Invoke(shader, count, program, length);
+        }
+
+        public static void CompileShader(GLuint shader)
+        {
+            glCompileShader?.Invoke(shader);
+        }
+
+        public static void AttachShader(GLuint program, GLuint shader)
+        {
+            glAttachShader?.Invoke(program, shader);
+        }
+
+        public static void DeleteShader(GLuint shader)
+        {
+            glDeleteShader?.Invoke(shader);
+        }
+
+        public static void LinkProgram(GLuint program)
+        {
+            glLinkProgram?.Invoke(program);
+        }
+
+        public static void DeleteProgram(GLuint program)
+        {
+            glDeleteProgram?.Invoke(program);
+        }
+
         public static void Viewport(GLint x, GLint y, GLsizei width, GLsizei height)
         {
             glViewport?.Invoke(x, y, width, height);
@@ -1762,9 +1806,49 @@ namespace YOpenGL
             glHint?.Invoke(target, mode);
         }
 
-        public static void DeleteShader(GLuint shader)
+        public static void GenFramebuffers(GLsizei n, GLuint[] framebuffers)
         {
-            glDeleteShader?.Invoke(shader);
+            glGenFramebuffers?.Invoke(n, framebuffers);
+        }
+
+        public static void BindFramebuffer(GLenum target, GLuint framebuffer)
+        {
+            glBindFramebuffer?.Invoke(target, framebuffer);
+        }
+
+        public static void GenTextures(GLsizei n, GLuint[] textures)
+        {
+            glGenTextures?.Invoke(n, textures);
+        }
+
+        public static void BindTexture(GLenum target, GLuint texture)
+        {
+            glBindTexture?.Invoke(target, texture);
+        }
+
+        public static void DeleteTextures(GLsizei n, GLuint[] textures)
+        {
+            glDeleteTextures?.Invoke(n, textures);
+        }
+
+        public static void DeleteFramebuffers(GLsizei n, GLuint[] framebuffers)
+        {
+            glDeleteFramebuffers?.Invoke(n, framebuffers);
+        }
+
+        public static void TexImage2DMultisample(GLenum target, GLsizei samples, GLint internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations)
+        {
+            glTexImage2DMultisample?.Invoke(target, samples, internalformat, width, height, fixedsamplelocations);
+        }
+
+        public static void FramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
+        {
+            glFramebufferTexture2D?.Invoke(target, attachment, textarget, texture, level);
+        }
+
+        public static void BlitFramebuffer(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter)
+        {
+            glBlitFramebuffer?.Invoke(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
         }
         #endregion
 

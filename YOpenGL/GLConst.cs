@@ -168,7 +168,7 @@ namespace YOpenGL
         public const uint GL_GREEN = 0x1904;
         public const uint GL_BLUE = 0x1905;
         public const uint GL_ALPHA = 0x1906;
-        public const uint GL_RGB = 0x1907;
+        public const int GL_RGB = 0x1907;
         public const uint GL_RGBA = 0x1908;
         public const uint GL_POINT = 0x1B00;
         public const uint GL_LINE = 0x1B01;

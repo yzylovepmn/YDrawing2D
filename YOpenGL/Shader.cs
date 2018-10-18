@@ -72,32 +72,32 @@ namespace YOpenGL
         #region Static
         public static Shader CreateShader(IEnumerable<ShaderSource> source)
         {
-            var id = GLFunc.glCreateProgram();
+            var id = GLFunc.CreateProgram();
             foreach (var file in source)
             {
                 uint shader = 0;
                 switch (file.Type)
                 {
                     case ShaderType.Vert:
-                        shader = GLFunc.glCreateShader(GLConst.GL_VERTEX_SHADER);
+                        shader = GLFunc.CreateShader(GLConst.GL_VERTEX_SHADER);
                         break;
                     case ShaderType.Geo:
-                        shader = GLFunc.glCreateShader(GLConst.GL_GEOMETRY_SHADER);
+                        shader = GLFunc.CreateShader(GLConst.GL_GEOMETRY_SHADER);
                         break;
                     case ShaderType.Frag:
-                        shader = GLFunc.glCreateShader(GLConst.GL_FRAGMENT_SHADER);
+                        shader = GLFunc.CreateShader(GLConst.GL_FRAGMENT_SHADER);
                         break;
                 }
                 var code = file.Code;
-                GLFunc.glShaderSource(shader, 1, new string[] { code }, null);
-                GLFunc.glCompileShader(shader);
+                GLFunc.ShaderSource(shader, 1, new string[] { code }, null);
+                GLFunc.CompileShader(shader);
                 if (!CheckCompileErrors(shader, file.Type.ToString()))
                     return null;
 
-                GLFunc.glAttachShader(id, shader);
-                GLFunc.glDeleteShader(shader);
+                GLFunc.AttachShader(id, shader);
+                GLFunc.DeleteShader(shader);
             }
-            GLFunc.glLinkProgram(id);
+            GLFunc.LinkProgram(id);
             if (!CheckCompileErrors(id, "PROGRAM"))
                 return null;
 
@@ -126,7 +126,7 @@ namespace YOpenGL
 
         public void Dispose()
         {
-            GLFunc.DeleteShader(_id);
+            GLFunc.DeleteProgram(_id);
         }
     }
 }

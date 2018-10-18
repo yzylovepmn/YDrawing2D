@@ -43,6 +43,15 @@ namespace YOpenGL
         private float _red;
         private float _green;
         private float _blue;
+
+        #region MSAA
+        private uint[] _fbo;
+        private uint[] _texture;
+
+        private int _viewWidth;
+        private int _viewHeight;
+        #endregion
+
         #endregion
 
         #region Property
@@ -171,6 +180,8 @@ namespace YOpenGL
         #region RenderFrame
         private void OnDispatchFrame(object sender, EventArgs e)
         {
+            GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
+            GLFunc.TexImage2DMultisample(GLConst.GL_TEXTURE_2D_MULTISAMPLE, 4, GLConst.GL_RGB, _viewWidth, _viewHeight, GLConst.GL_TRUE);
             GLFunc.ClearColor(_red, _green, _blue, 1.0f);
             GLFunc.Clear(GLConst.GL_COLOR_BUFFER_BIT | GLConst.GL_DEPTH_BUFFER_BIT | GLConst.GL_STENCIL_BUFFER_BIT);
 
@@ -178,6 +189,10 @@ namespace YOpenGL
             _shader.SetMat3("view", _view);
             _InvalidateModel();
             _DrawModels();
+
+            GLFunc.BindFramebuffer(GLConst.GL_READ_FRAMEBUFFER, _fbo[0]);
+            GLFunc.BindFramebuffer(GLConst.GL_DRAW_FRAMEBUFFER, 0);
+            GLFunc.BlitFramebuffer(0, 0, _viewWidth, _viewHeight, 0, 0, _viewWidth, _viewHeight, GLConst.GL_COLOR_BUFFER_BIT, GLConst.GL_NEAREST);
 
             GLFunc.SwapBuffers();
         }
@@ -203,16 +218,32 @@ namespace YOpenGL
             GL.MakeContextCurrent(Handle);
             GLFunc.Init();
             _shader = GenShader();
+            _CreateFrameBuffer();
 
-            GLFunc.Enable(GLConst.GL_DEPTH_TEST);
             GLFunc.Enable(GLConst.GL_CULL_FACE);
-            GLFunc.Enable(GLConst.GL_LINE_SMOOTH);
             GLFunc.Enable(GLConst.GL_LINE_WIDTH);
-            GLFunc.Hint(GLConst.GL_LINE_SMOOTH_HINT, GLConst.GL_FASTEST);
             _shader.Use();
 
             GL.DispatchFrame += OnDispatchFrame;
             GL.Start(60);
+        }
+
+        private void _CreateFrameBuffer()
+        {
+            _fbo = new uint[1];
+            _texture = new uint[1];
+            GLFunc.GenFramebuffers(1, _fbo);
+            GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
+
+            GLFunc.GenTextures(1, _texture);
+            GLFunc.BindTexture(GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture[0]);
+            GLFunc.FramebufferTexture2D(GLConst.GL_FRAMEBUFFER, GLConst.GL_COLOR_ATTACHMENT0, GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture[0], 0);
+        }
+
+        private void _DeleteFrameBuffer()
+        {
+            GLFunc.DeleteFramebuffers(1, _fbo);
+            GLFunc.DeleteTextures(1, _texture);
         }
 
         private void _Destroy()
@@ -222,6 +253,7 @@ namespace YOpenGL
             GL.Stop();
 
             _shader.Dispose();
+            _DeleteFrameBuffer();
             GL.DeleteContext();
             GLFunc.Dispose();
             _isInit = false;
@@ -355,6 +387,8 @@ namespace YOpenGL
             _worldToNDC.Translate(_origin.X, _origin.Y);
             _worldToNDC.Scale(2 / width, 2 / height);
             _worldToNDC.Translate(-1, -1);
+            _viewWidth = (int)(width * _transformToDevice.M11);
+            _viewHeight = (int)(height * _transformToDevice.M22);
             GLFunc.Viewport(0, 0, (int)(width * _transformToDevice.M11), (int)(height * _transformToDevice.M22));
         }
         #endregion
