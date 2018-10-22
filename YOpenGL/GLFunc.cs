@@ -1520,6 +1520,11 @@ namespace YOpenGL
             glUniform3fv?.Invoke(location, count, value);
         }
 
+        public static void Uniform4fv(GLint location, GLsizei count, GLfloat[] value)
+        {
+            glUniform4fv?.Invoke(location, count, value);
+        }
+
         public static void UniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, GLfloat[] value)
         {
             glUniformMatrix3fv?.Invoke(location, count, transpose, value);
@@ -1849,6 +1854,11 @@ namespace YOpenGL
         public static void BlitFramebuffer(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter)
         {
             glBlitFramebuffer?.Invoke(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+        }
+
+        public static void BlendFunc(GLenum sfactor, GLenum dfactor)
+        {
+            glBlendFunc?.Invoke(sfactor, dfactor);
         }
         #endregion
 

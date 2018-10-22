@@ -58,19 +58,20 @@ namespace YOpenGL
         }
 
         #region For Game Render
-        public static void Start(int frameRate)
+        public static void Start(int frameRate = 60)
         {
             _frameSpan = Math.Max(1, 1000 / frameRate);
 
-            _stopwatch = new Stopwatch();
-            _stopwatch.Start();
+            if (_stopwatch == null)
+                _stopwatch = new Stopwatch();
+            _stopwatch.Restart();
             CompositionTarget.Rendering += OnRendering;
         }
 
         private static void OnRendering(object sender, EventArgs e)
         {
             var tick = _stopwatch.ElapsedMilliseconds;
-            if (tick - _lastFrameTime < _frameSpan)
+            if (tick - _lastFrameTime < _frameSpan && _lastFrameTime != 0)
                 return;
             _lastFrameTime = tick;
             DispatchFrame(null, new EventArgs());

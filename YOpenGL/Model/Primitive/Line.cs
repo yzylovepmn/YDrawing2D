@@ -11,11 +11,17 @@ namespace YOpenGL
     {
         public Line(PointF start, PointF end, PenF pen)
         {
-            Start = start;
-            End = end;
             _pen = pen;
             _bounds = new RectF(start, end);
+            _points = new List<PointF>();
             _fillColor = null;
+
+            if (_pen.Dashes == null)
+            {
+                _points.Add(start);
+                _points.Add(end);
+            }
+            else _points.AddRange(GeometryHelper.GetDashPoints(this, start, end));
         }
 
         public RectF Bounds { get { return _bounds; } }
@@ -29,10 +35,14 @@ namespace YOpenGL
         public bool Filled { get { return _fillColor.HasValue; } }
 
         public Color? FillColor { get { return _fillColor; } }
+
+        public IList<PointF> Points { get { return _points; } }
+        private List<PointF> _points;
+
         private Color? _fillColor;
 
-        internal PointF Start;
-        internal PointF End;
+        internal PointF Start { get { return _points.First(); } }
+        internal PointF End { get { return _points.Last(); } }
 
         public bool HitTest(PointF p, float sensitive)
         {

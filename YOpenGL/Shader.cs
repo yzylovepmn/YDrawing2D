@@ -64,6 +64,11 @@ namespace YOpenGL
             GLFunc.Uniform3fv(GLFunc.glGetUniformLocation(ID, name), 1, value);
         }
 
+        public void SetVec4(string name, float[] value)
+        {
+            GLFunc.Uniform4fv(GLFunc.glGetUniformLocation(ID, name), 1, value);
+        }
+
         public void SetMat3(string name, MatrixF matrix)
         {
             GLFunc.UniformMatrix3fv(GLFunc.glGetUniformLocation(ID, name), 1, GLConst.GL_FALSE, matrix.GetData());

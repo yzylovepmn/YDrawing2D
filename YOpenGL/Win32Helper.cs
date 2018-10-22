@@ -125,11 +125,32 @@ namespace YOpenGL
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         internal static extern ushort RegisterClassEx(ref ExtendedWindowClass window_class);
 
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        internal static extern bool GetClassInfoEx(IntPtr instance, string lpszClassName, ref ExtendedWindowClass window_class);
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        internal static extern IntPtr SetClassLongPtr(IntPtr hwnd, int index, IntPtr value);
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        internal static extern int GetClassName(IntPtr hwnd, [MarshalAs(UnmanagedType.LPArray)]byte[] name, int maxCount);
+
         [DllImport("gdi32.dll", SetLastError = true)]
         internal static extern IntPtr GetStockObject(StockObjects fnObject);
 
         [DllImport("user32.dll")]
         internal static extern IntPtr LoadCursor(IntPtr hInstance, IntPtr lpCursorName);
+
+        [DllImport("user32.dll")]
+        internal static extern bool ValidateRect(IntPtr Hwnd, IntPtr rect);
+
+        [DllImport("gdi32.dll")]
+        internal static extern Int32 SetDCBrushColor(IntPtr hdc, Int32 Color);
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        internal static extern IntPtr BeginPaint(IntPtr hwnd, ref PAINTSTRUCT lpPaint);
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        internal static extern bool EndPaint(IntPtr hwnd, ref PAINTSTRUCT lpPaint);
 
         internal static IntPtr LoadCursor(CursorName lpCursorName)
         {
@@ -182,8 +203,11 @@ namespace YOpenGL
               WS_CLIPSIBLINGS = 0x04000000,
               WS_CLIPCHILDREN = 0x02000000,
               WS_TABSTOP = 0x00010000,
+              WS_DISABLED = 0x08000000,
               LBS_NOTIFY = 0x00000001,
               WS_GROUP = 0x00020000;
+
+        public const int GCLP_HBRBACKGROUND = -10;
 
         public const int WM_WINDOWPOSCHANGED = 0x0047;
         public const int WM_WINDOWPOSCHANGING = 0x0046;
@@ -266,6 +290,26 @@ namespace YOpenGL
             rect.bottom = value.Height;
             return rect;
         }
+    }
+
+    internal struct PAINTSTRUCT
+    {
+        public PAINTSTRUCT(int size = 32)
+        {
+            HDC = IntPtr.Zero;
+            fErase = false;
+            rcPaint = new Win32Rectangle();
+            fRestore = false;
+            fIncUpdate = false;
+            rgbReserved = new byte[size];
+        }
+
+        IntPtr HDC;
+        bool fErase;
+        Win32Rectangle rcPaint;
+        bool fRestore;
+        bool fIncUpdate;
+        byte[] rgbReserved;
     }
 
     internal enum StockObjects

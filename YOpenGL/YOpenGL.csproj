@@ -54,6 +54,7 @@
     <Compile Include="GLConst.cs" />
     <Compile Include="GL.cs" />
     <Compile Include="GLVersion.cs" />
+    <Compile Include="Internel\Timer.cs" />
     <Compile Include="Math\MathUtil.cs" />
     <Compile Include="Math\MatrixF.cs" />
     <Compile Include="Math\PenF.cs" />
