@@ -46,32 +46,37 @@ namespace YOpenGL
 
         public void SetBool(string name, bool value)
         {
-            GLFunc.Uniform1i(GLFunc.glGetUniformLocation(ID, name), value ? 1 : 0);
+            GLFunc.Uniform1i(GLFunc.GetUniformLocation(ID, name), value ? 1 : 0);
         }
 
         public void SetInt(string name, int value)
         {
-            GLFunc.Uniform1i(GLFunc.glGetUniformLocation(ID, name), value);
+            GLFunc.Uniform1i(GLFunc.GetUniformLocation(ID, name), value);
         }
 
         public void SetFloat(string name, float value)
         {
-            GLFunc.Uniform1f(GLFunc.glGetUniformLocation(ID, name), value);
+            GLFunc.Uniform1f(GLFunc.GetUniformLocation(ID, name), value);
+        }
+
+        public void SetVec2(string name, float[] value)
+        {
+            GLFunc.Uniform2fv(GLFunc.GetUniformLocation(ID, name), 1, value);
         }
 
         public void SetVec3(string name, float[] value)
         {
-            GLFunc.Uniform3fv(GLFunc.glGetUniformLocation(ID, name), 1, value);
+            GLFunc.Uniform3fv(GLFunc.GetUniformLocation(ID, name), 1, value);
         }
 
         public void SetVec4(string name, float[] value)
         {
-            GLFunc.Uniform4fv(GLFunc.glGetUniformLocation(ID, name), 1, value);
+            GLFunc.Uniform4fv(GLFunc.GetUniformLocation(ID, name), 1, value);
         }
 
         public void SetMat3(string name, MatrixF matrix)
         {
-            GLFunc.UniformMatrix3fv(GLFunc.glGetUniformLocation(ID, name), 1, GLConst.GL_FALSE, matrix.GetData());
+            GLFunc.UniformMatrix3fv(GLFunc.GetUniformLocation(ID, name), 1, GLConst.GL_FALSE, matrix.GetData());
         }
 
         #region Static
@@ -109,21 +114,21 @@ namespace YOpenGL
             return new Shader(id);
         }
 
-        private static bool CheckCompileErrors(uint shader, string type)
+        private static bool CheckCompileErrors(uint id, string type)
         {
             var success = new int[1];
             byte[] infoLog = new byte[1024];
             if (type != "PROGRAM")
             {
-                GLFunc.glGetShaderiv(shader, GLConst.GL_COMPILE_STATUS, success);
+                GLFunc.GetShaderiv(id, GLConst.GL_COMPILE_STATUS, success);
                 if (success[0] == 0)
-                    GLFunc.glGetShaderInfoLog(shader, 1024, null, infoLog);
+                    GLFunc.GetShaderInfoLog(id, 1024, null, infoLog);
             }
             else
             {
-                GLFunc.glGetProgramiv(shader, GLConst.GL_LINK_STATUS, success);
+                GLFunc.GetProgramiv(id, GLConst.GL_LINK_STATUS, success);
                 if (success[0] == 0)
-                    GLFunc.glGetProgramInfoLog(shader, 1024, null, infoLog);
+                    GLFunc.GetProgramInfoLog(id, 1024, null, infoLog);
             }
             return success[0] != 0;
         }

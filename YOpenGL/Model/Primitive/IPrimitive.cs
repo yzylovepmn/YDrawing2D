@@ -16,7 +16,7 @@ namespace YOpenGL
         PrimitiveType Type { get; }
         bool HitTest(PointF p, float sensitive);
         bool IsIntersect(IPrimitive other);
-        IList<PointF> Points { get; }
+        IEnumerable<PointF> Points { get; }
     }
 
     public enum PrimitiveType

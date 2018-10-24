@@ -164,10 +164,10 @@ namespace YOpenGL
         public const uint GL_STENCIL = 0x1802;
         public const uint GL_STENCIL_INDEX = 0x1901;
         public const uint GL_DEPTH_COMPONENT = 0x1902;
-        public const uint GL_RED = 0x1903;
-        public const uint GL_GREEN = 0x1904;
-        public const uint GL_BLUE = 0x1905;
-        public const uint GL_ALPHA = 0x1906;
+        public const int GL_RED = 0x1903;
+        public const int GL_GREEN = 0x1904;
+        public const int GL_BLUE = 0x1905;
+        public const int GL_ALPHA = 0x1906;
         public const int GL_RGB = 0x1907;
         public const uint GL_RGBA = 0x1908;
         public const uint GL_POINT = 0x1B00;
@@ -181,8 +181,8 @@ namespace YOpenGL
         public const uint GL_RENDERER = 0x1F01;
         public const uint GL_VERSION = 0x1F02;
         public const uint GL_EXTENSIONS = 0x1F03;
-        public const uint GL_NEAREST = 0x2600;
-        public const uint GL_LINEAR = 0x2601;
+        public const int GL_NEAREST = 0x2600;
+        public const int GL_LINEAR = 0x2601;
         public const uint GL_NEAREST_MIPMAP_NEAREST = 0x2700;
         public const uint GL_LINEAR_MIPMAP_NEAREST = 0x2701;
         public const uint GL_NEAREST_MIPMAP_LINEAR = 0x2702;
@@ -193,7 +193,7 @@ namespace YOpenGL
         public const uint GL_TEXTURE_WRAP_T = 0x2803;
         public const uint GL_PROXY_TEXTURE_1D = 0x8063;
         public const uint GL_PROXY_TEXTURE_2D = 0x8064;
-        public const uint GL_REPEAT = 0x2901;
+        public const int GL_REPEAT = 0x2901;
         public const uint GL_R3_G3_B2 = 0x2A10;
         public const uint GL_RGB4 = 0x804F;
         public const uint GL_RGB5 = 0x8050;

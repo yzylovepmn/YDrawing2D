@@ -76,9 +76,12 @@
     <Compile Include="Win32Helper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Internal.frag" />
-    <EmbeddedResource Include="Resources\Internal.vert" />
+    <EmbeddedResource Include="Resources\Internel.frag" />
+    <EmbeddedResource Include="Resources\Internel.vert" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Internel_Dash.frag" />
+    <EmbeddedResource Include="Resources\Internel_Dash.geo" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

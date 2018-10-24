@@ -1515,6 +1515,11 @@ namespace YOpenGL
             glUniform1f?.Invoke(location, v0);
         }
 
+        public static void Uniform2fv(GLint location, GLsizei count, GLfloat[] value)
+        {
+            glUniform2fv?.Invoke(location, count, value);
+        }
+
         public static void Uniform3fv(GLint location, GLsizei count, GLfloat[] value)
         {
             glUniform3fv?.Invoke(location, count, value);
@@ -1630,10 +1635,15 @@ namespace YOpenGL
         {
             if (glBufferData != null)
             {
-                unsafe
+                if (data == null)
+                    glBufferData(target, size, GLvoid.Zero, usage);
+                else
                 {
-                    fixed (byte* ptr = data)
-                        glBufferData(target, size, (GLvoid)ptr, usage);
+                    unsafe
+                    {
+                        fixed (byte* ptr = data)
+                            glBufferData(target, size, (GLvoid)ptr, usage);
+                    }
                 }
             }
         }
@@ -1642,10 +1652,15 @@ namespace YOpenGL
         {
             if (glBufferData != null)
             {
-                unsafe
+                if (data == null)
+                    glBufferData(target, size, GLvoid.Zero, usage);
+                else
                 {
-                    fixed (sbyte* ptr = data)
-                        glBufferData(target, size, (GLvoid)ptr, usage);
+                    unsafe
+                    {
+                        fixed (sbyte* ptr = data)
+                            glBufferData(target, size, (GLvoid)ptr, usage);
+                    }
                 }
             }
         }
@@ -1654,10 +1669,15 @@ namespace YOpenGL
         {
             if (glBufferData != null)
             {
-                unsafe
+                if (data == null)
+                    glBufferData(target, size, GLvoid.Zero, usage);
+                else
                 {
-                    fixed (Int16* ptr = data)
-                        glBufferData(target, size, (GLvoid)ptr, usage);
+                    unsafe
+                    {
+                        fixed (Int16* ptr = data)
+                            glBufferData(target, size, (GLvoid)ptr, usage);
+                    }
                 }
             }
         }
@@ -1666,10 +1686,15 @@ namespace YOpenGL
         {
             if (glBufferData != null)
             {
-                unsafe
+                if (data == null)
+                    glBufferData(target, size, GLvoid.Zero, usage);
+                else
                 {
-                    fixed (UInt16* ptr = data)
-                        glBufferData(target, size, (GLvoid)ptr, usage);
+                    unsafe
+                    {
+                        fixed (UInt16* ptr = data)
+                            glBufferData(target, size, (GLvoid)ptr, usage);
+                    }
                 }
             }
         }
@@ -1678,10 +1703,15 @@ namespace YOpenGL
         {
             if (glBufferData != null)
             {
-                unsafe
+                if (data == null)
+                    glBufferData(target, size, GLvoid.Zero, usage);
+                else
                 {
-                    fixed (float* ptr = data)
-                        glBufferData(target, size, (GLvoid)ptr, usage);
+                    unsafe
+                    {
+                        fixed (float* ptr = data)
+                            glBufferData(target, size, (GLvoid)ptr, usage);
+                    }
                 }
             }
         }
@@ -1690,10 +1720,15 @@ namespace YOpenGL
         {
             if (glBufferData != null)
             {
-                unsafe
+                if (data == null)
+                    glBufferData(target, size, GLvoid.Zero, usage);
+                else
                 {
-                    fixed (double* ptr = data)
-                        glBufferData(target, size, (GLvoid)ptr, usage);
+                    unsafe
+                    {
+                        fixed (double* ptr = data)
+                            glBufferData(target, size, (GLvoid)ptr, usage);
+                    }
                 }
             }
         }
@@ -1702,10 +1737,15 @@ namespace YOpenGL
         {
             if (glBufferData != null)
             {
-                unsafe
+                if (data == null)
+                    glBufferData(target, size, GLvoid.Zero, usage);
+                else
                 {
-                    fixed (int* ptr = data)
-                        glBufferData(target, size, (GLvoid)ptr, usage);
+                    unsafe
+                    {
+                        fixed (int* ptr = data)
+                            glBufferData(target, size, (GLvoid)ptr, usage);
+                    }
                 }
             }
         }
@@ -1714,10 +1754,15 @@ namespace YOpenGL
         {
             if (glBufferData != null)
             {
-                unsafe
+                if (data == null)
+                    glBufferData(target, size, GLvoid.Zero, usage);
+                else
                 {
-                    fixed (uint* ptr = data)
-                        glBufferData(target, size, (GLvoid)ptr, usage);
+                    unsafe
+                    {
+                        fixed (uint* ptr = data)
+                            glBufferData(target, size, (GLvoid)ptr, usage);
+                    }
                 }
             }
         }
@@ -1726,10 +1771,15 @@ namespace YOpenGL
         {
             if (glBufferData != null)
             {
-                unsafe
+                if (data == null)
+                    glBufferData(target, size, GLvoid.Zero, usage);
+                else
                 {
-                    fixed (Int64* ptr = data)
-                        glBufferData(target, size, (GLvoid)ptr, usage);
+                    unsafe
+                    {
+                        fixed (Int64* ptr = data)
+                            glBufferData(target, size, (GLvoid)ptr, usage);
+                    }
                 }
             }
         }
@@ -1738,10 +1788,185 @@ namespace YOpenGL
         {
             if (glBufferData != null)
             {
-                unsafe
+                if (data == null)
+                    glBufferData(target, size, GLvoid.Zero, usage);
+                else
                 {
-                    fixed (UInt64* ptr = data)
-                        glBufferData(target, size, (GLvoid)ptr, usage);
+                    unsafe
+                    {
+                        fixed (UInt64* ptr = data)
+                            glBufferData(target, size, (GLvoid)ptr, usage);
+                    }
+                }
+            }
+        }
+
+        public static void BufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, byte[] data)
+        {
+            if (glBufferSubData != null)
+            {
+                if (data == null)
+                    glBufferSubData(target, offset, size, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (byte* ptr = data)
+                            glBufferSubData(target, offset, size, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void BufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, sbyte[] data)
+        {
+            if (glBufferSubData != null)
+            {
+                if (data == null)
+                    glBufferSubData(target, offset, size, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (sbyte* ptr = data)
+                            glBufferSubData(target, offset, size, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void BufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, short[] data)
+        {
+            if (glBufferSubData != null)
+            {
+                if (data == null)
+                    glBufferSubData(target, offset, size, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (short* ptr = data)
+                            glBufferSubData(target, offset, size, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void BufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, ushort[] data)
+        {
+            if (glBufferSubData != null)
+            {
+                if (data == null)
+                    glBufferSubData(target, offset, size, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (ushort* ptr = data)
+                            glBufferSubData(target, offset, size, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void BufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, int[] data)
+        {
+            if (glBufferSubData != null)
+            {
+                if (data == null)
+                    glBufferSubData(target, offset, size, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (int* ptr = data)
+                            glBufferSubData(target, offset, size, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void BufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, uint[] data)
+        {
+            if (glBufferSubData != null)
+            {
+                if (data == null)
+                    glBufferSubData(target, offset, size, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (uint* ptr = data)
+                            glBufferSubData(target, offset, size, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void BufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, long[] data)
+        {
+            if (glBufferSubData != null)
+            {
+                if (data == null)
+                    glBufferSubData(target, offset, size, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (long* ptr = data)
+                            glBufferSubData(target, offset, size, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void BufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, ulong[] data)
+        {
+            if (glBufferSubData != null)
+            {
+                if (data == null)
+                    glBufferSubData(target, offset, size, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (ulong* ptr = data)
+                            glBufferSubData(target, offset, size, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void BufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, float[] data)
+        {
+            if (glBufferSubData != null)
+            {
+                if (data == null)
+                    glBufferSubData(target, offset, size, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (float* ptr = data)
+                            glBufferSubData(target, offset, size, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void BufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, double[] data)
+        {
+            if (glBufferSubData != null)
+            {
+                if (data == null)
+                    glBufferSubData(target, offset, size, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (double* ptr = data)
+                            glBufferSubData(target, offset, size, (GLvoid)ptr);
+                    }
                 }
             }
         }
@@ -1846,6 +2071,181 @@ namespace YOpenGL
             glTexImage2DMultisample?.Invoke(target, samples, internalformat, width, height, fixedsamplelocations);
         }
 
+        public static void TexParameteri(GLenum target, GLenum pname, GLint param)
+        {
+            glTexParameteri?.Invoke(target, pname, param);
+        }
+
+        public static void TexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, byte[] pixels)
+        {
+            if (glTexImage1D != null)
+            {
+                if (pixels == null)
+                    glTexImage1D(target, level, internalformat, width, border, format, type, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (byte* ptr = pixels)
+                            glTexImage1D(target, level, internalformat, width, border, format, type, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void TexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, sbyte[] pixels)
+        {
+            if (glTexImage1D != null)
+            {
+                if (pixels == null)
+                    glTexImage1D(target, level, internalformat, width, border, format, type, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (sbyte* ptr = pixels)
+                            glTexImage1D(target, level, internalformat, width, border, format, type, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void TexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, ushort[] pixels)
+        {
+            if (glTexImage1D != null)
+            {
+                if (pixels == null)
+                    glTexImage1D(target, level, internalformat, width, border, format, type, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (ushort* ptr = pixels)
+                            glTexImage1D(target, level, internalformat, width, border, format, type, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void TexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, short[] pixels)
+        {
+            if (glTexImage1D != null)
+            {
+                if (pixels == null)
+                    glTexImage1D(target, level, internalformat, width, border, format, type, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (short* ptr = pixels)
+                            glTexImage1D(target, level, internalformat, width, border, format, type, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void TexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, int[] pixels)
+        {
+            if (glTexImage1D != null)
+            {
+                if (pixels == null)
+                    glTexImage1D(target, level, internalformat, width, border, format, type, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (int* ptr = pixels)
+                            glTexImage1D(target, level, internalformat, width, border, format, type, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void TexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, uint[] pixels)
+        {
+            if (glTexImage1D != null)
+            {
+                if (pixels == null)
+                    glTexImage1D(target, level, internalformat, width, border, format, type, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (uint* ptr = pixels)
+                            glTexImage1D(target, level, internalformat, width, border, format, type, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void TexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, long[] pixels)
+        {
+            if (glTexImage1D != null)
+            {
+                if (pixels == null)
+                    glTexImage1D(target, level, internalformat, width, border, format, type, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (long* ptr = pixels)
+                            glTexImage1D(target, level, internalformat, width, border, format, type, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void TexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, ulong[] pixels)
+        {
+            if (glTexImage1D != null)
+            {
+                if (pixels == null)
+                    glTexImage1D(target, level, internalformat, width, border, format, type, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (ulong* ptr = pixels)
+                            glTexImage1D(target, level, internalformat, width, border, format, type, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void TexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, float[] pixels)
+        {
+            if (glTexImage1D != null)
+            {
+                if (pixels == null)
+                    glTexImage1D(target, level, internalformat, width, border, format, type, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (float* ptr = pixels)
+                            glTexImage1D(target, level, internalformat, width, border, format, type, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
+        public static void TexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, double[] pixels)
+        {
+            if (glTexImage1D != null)
+            {
+                if (pixels == null)
+                    glTexImage1D(target, level, internalformat, width, border, format, type, GLvoid.Zero);
+                else
+                {
+                    unsafe
+                    {
+                        fixed (double* ptr = pixels)
+                            glTexImage1D(target, level, internalformat, width, border, format, type, (GLvoid)ptr);
+                    }
+                }
+            }
+        }
+
         public static void FramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
         {
             glFramebufferTexture2D?.Invoke(target, attachment, textarget, texture, level);
@@ -1859,6 +2259,55 @@ namespace YOpenGL
         public static void BlendFunc(GLenum sfactor, GLenum dfactor)
         {
             glBlendFunc?.Invoke(sfactor, dfactor);
+        }
+
+        public static void BindBufferBase(GLenum target, GLuint index, GLuint buffer)
+        {
+            glBindBufferBase?.Invoke(target, index, buffer);
+        }
+
+        public static void BindBufferRange(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size)
+        {
+            glBindBufferRange?.Invoke(target, index, buffer, offset, size);
+        }
+
+        public static GLuint GetUniformBlockIndex(GLuint program, string uniformBlockName)
+        {
+            if (glGetUniformBlockIndex != null)
+                return glGetUniformBlockIndex(program, uniformBlockName);
+            return 0;
+        }
+
+        public static GLint GetUniformLocation(GLuint program, string name)
+        {
+            if (glGetUniformLocation != null)
+                return glGetUniformLocation(program, name);
+            return 0;
+        }
+
+        public static void UniformBlockBinding(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding)
+        {
+            glUniformBlockBinding?.Invoke(program, uniformBlockIndex, uniformBlockBinding);
+        }
+
+        public static void GetShaderiv(GLuint shader, GLenum pname, GLint[] _params)
+        {
+            glGetShaderiv?.Invoke(shader, pname, _params);
+        }
+
+        public static void GetShaderInfoLog(GLuint shader, GLsizei bufSize, GLsizei[] length, GLchar[] infoLog)
+        {
+            glGetShaderInfoLog?.Invoke(shader, bufSize, length, infoLog);
+        }
+
+        public static void GetProgramiv(GLuint program, GLenum pname, GLint[] _params)
+        {
+            glGetProgramiv?.Invoke(program, pname, _params);
+        }
+
+        public static void GetProgramInfoLog(GLuint program, GLsizei bufSize, GLsizei[] length, GLchar[] infoLog)
+        {
+            glGetProgramInfoLog?.Invoke(program, bufSize, length, infoLog);
         }
         #endregion
 

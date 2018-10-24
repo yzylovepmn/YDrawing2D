@@ -43,14 +43,25 @@ namespace YOpenGL
             return new float[] { color.R / maxValue, color.G / maxValue, color.B / maxValue, color.A / maxValue };
         }
 
-        public static float[] GetData(this MatrixF matrix)
+        /// <summary>
+        /// Base alignment of vec3 is 16 in Uniform buffer(std140), So we fill the data with 0
+        /// </summary>
+        public static float[] GetData(this MatrixF matrix, bool needfill = false)
         {
-            return new float[] 
-            {
-                matrix.M11, matrix.M21, 0,
-                matrix.M12, matrix.M22, 0,
-                matrix.OffsetX, matrix.OffsetY, 1f
-            };
+            if (needfill)
+                return new float[] 
+                {
+                    matrix.M11, matrix.M21, 0, 0,
+                    matrix.M12, matrix.M22, 0, 0,
+                    matrix.OffsetX, matrix.OffsetY, 1f, 0
+                };
+            else
+                return new float[]
+                {
+                    matrix.M11, matrix.M21, 0,
+                    matrix.M12, matrix.M22, 0,
+                    matrix.OffsetX, matrix.OffsetY, 1f
+                };
         }
 
         public static bool Contains(this RectF bounds, PointF p, float sensitive)

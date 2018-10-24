@@ -31,8 +31,7 @@ namespace YDrawing2DTest
             InitializeComponent();
             Loaded += OnLoaded;
             _glPanel = new GLPanel(new PointF(100, 100), Colors.Black);
-            GD_Main.Children.Add(_glPanel);
-            //Content = _glPanel;
+            Content = _glPanel;
         }
 
         private static GLPanel _glPanel;

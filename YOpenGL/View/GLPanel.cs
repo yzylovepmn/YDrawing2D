@@ -18,7 +18,8 @@ namespace YOpenGL
     /// </summary>
     public class GLPanel : HwndHost, IDisposable
     {
-        private static readonly string[] _shaders = new string[] { "Internal.vert", "Internal.frag" };
+        private static readonly string[] _shaders_normal = new string[] { "Internel.vert", "Internel.frag" };
+        private static readonly string[] _shaders_dashed = new string[] { "Internel.vert", "Internel_Dash.geo", "Internel_Dash.frag" };
 
         public GLPanel(PointF origin, Color color, float frameRate = 60)
         {
@@ -32,6 +33,7 @@ namespace YOpenGL
             _visuals = new List<GLVisual>();
             _fillModels = new Dictionary<Color, List<MeshModel>>();
             _lineModels = new Dictionary<PenF, List<MeshModel>>();
+            _shaders = new List<Shader>();
 
             _timer = new Timer(_AfterPainted);
         }
@@ -42,7 +44,9 @@ namespace YOpenGL
         private bool _needUpdate;
         private int _signal;
         private int _frameSpan;
-        private Shader _shader;
+        private Shader _shader_normal;
+        private Shader _shader_dashed;
+        private List<Shader> _shaders;
 
         private MatrixF _transformToDevice;
         private MatrixF _worldToNDC;
@@ -57,11 +61,20 @@ namespace YOpenGL
 
         #region MSAA
         private uint[] _fbo;
-        private uint[] _texture;
+        private uint[] _texture_msaa;
 
         private int _viewWidth;
         private int _viewHeight;
         #endregion
+
+        #region Dash
+        private uint[] _texture_dash;
+        #endregion
+
+        #region Uniform
+        private uint[] _matrix;
+        #endregion
+
         #endregion
 
         #region Property
@@ -222,8 +235,9 @@ namespace YOpenGL
             GLFunc.ClearColor(_red, _green, _blue, 1.0f);
             GLFunc.Clear(GLConst.GL_COLOR_BUFFER_BIT | GLConst.GL_DEPTH_BUFFER_BIT | GLConst.GL_STENCIL_BUFFER_BIT);
 
-            _shader.SetMat3("worldToNDC", _worldToNDC);
-            _shader.SetMat3("view", _view);
+            GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, _matrix[0]);
+            GLFunc.BufferSubData(GLConst.GL_UNIFORM_BUFFER, 0, 12 * sizeof(float), _worldToNDC.GetData(true));
+            GLFunc.BufferSubData(GLConst.GL_UNIFORM_BUFFER, 12 * sizeof(float), 12 * sizeof(float), _view.GetData(true));
             _InvalidateModel();
             _DrawModels();
 
@@ -254,34 +268,69 @@ namespace YOpenGL
 
             GL.MakeContextCurrent(Handle);
             GLFunc.Init();
-            _shader = GenShader();
-            _CreateFrameBuffer();
-
             GLFunc.Enable(GLConst.GL_BLEND);
-            GLFunc.BlendFunc(GLConst.GL_SRC_ALPHA, GLConst.GL_ONE_MINUS_SRC_ALPHA);
             GLFunc.Enable(GLConst.GL_CULL_FACE);
             GLFunc.Enable(GLConst.GL_LINE_WIDTH);
-            _shader.Use();
+            GLFunc.Enable(GLConst.GL_LINE_SMOOTH);
+            GLFunc.BlendFunc(GLConst.GL_SRC_ALPHA, GLConst.GL_ONE_MINUS_SRC_ALPHA);
+            _CreateResource();
+
+            _shader_dashed.Use();
+            _shader_dashed.SetFloat("patternSize", 16.0f);
 
             _timer.Start(Timeout.Infinite, Timeout.Infinite);
         }
 
-        private void _CreateFrameBuffer()
+        private void _CreateResource()
         {
+            _shader_normal = GenShader(_shaders_normal);
+            _shader_dashed = GenShader(_shaders_dashed);
+            _shaders.Add(_shader_normal);
+            _shaders.Add(_shader_dashed);
+
+            // for dash line texture
+            _texture_dash = new uint[1];
+            GLFunc.GenTextures(1, _texture_dash);
+            GLFunc.BindTexture(GLConst.GL_TEXTURE_1D, _texture_dash[0]);
+            GLFunc.TexParameteri(GLConst.GL_TEXTURE_1D, GLConst.GL_TEXTURE_WRAP_S, GLConst.GL_REPEAT);
+            GLFunc.TexParameteri(GLConst.GL_TEXTURE_1D, GLConst.GL_TEXTURE_WRAP_T, GLConst.GL_REPEAT);
+            GLFunc.TexParameteri(GLConst.GL_TEXTURE_1D, GLConst.GL_TEXTURE_MIN_FILTER, GLConst.GL_NEAREST);
+            GLFunc.TexParameteri(GLConst.GL_TEXTURE_1D, GLConst.GL_TEXTURE_MAG_FILTER, GLConst.GL_NEAREST);
+            GLFunc.BindTexture(GLConst.GL_TEXTURE_1D, 0);
+
+            // for anti-aliasing
             _fbo = new uint[1];
-            _texture = new uint[1];
+            _texture_msaa = new uint[1];
             GLFunc.GenFramebuffers(1, _fbo);
             GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
+            GLFunc.GenTextures(1, _texture_msaa);
+            GLFunc.BindTexture(GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0]);
+            GLFunc.FramebufferTexture2D(GLConst.GL_FRAMEBUFFER, GLConst.GL_COLOR_ATTACHMENT0, GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0], 0);
 
-            GLFunc.GenTextures(1, _texture);
-            GLFunc.BindTexture(GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture[0]);
-            GLFunc.FramebufferTexture2D(GLConst.GL_FRAMEBUFFER, GLConst.GL_COLOR_ATTACHMENT0, GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture[0], 0);
+            // for transform
+            _matrix = new uint[1];
+            GLFunc.GenBuffers(1, _matrix);
+            GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, _matrix[0]);
+            GLFunc.BufferData(GLConst.GL_UNIFORM_BUFFER, 24 * sizeof(float), default(byte[]), GLConst.GL_STATIC_DRAW);
+            GLFunc.BindBufferRange(GLConst.GL_UNIFORM_BUFFER, 0, _matrix[0], 0, 24 * sizeof(float));
+            GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, 0);
+            foreach (var shader in _shaders)
+                GLFunc.UniformBlockBinding(shader.ID, GLFunc.GetUniformBlockIndex(shader.ID, "Matrices"), 0);
         }
 
-        private void _DeleteFrameBuffer()
+        private void _DeleteResource()
         {
+            _shaders.Dispose();
+            _shaders.Clear();
+            _shader_normal = null;
+            _shader_dashed = null;
+
+            GLFunc.DeleteTextures(1, _texture_dash);
+
             GLFunc.DeleteFramebuffers(1, _fbo);
-            GLFunc.DeleteTextures(1, _texture);
+            GLFunc.DeleteTextures(1, _texture_msaa);
+
+            GLFunc.DeleteBuffers(1, _matrix);
         }
 
         private void _Destroy()
@@ -291,8 +340,7 @@ namespace YOpenGL
             _timer.Stop();
             _timer.Dispose();
 
-            _shader.Dispose();
-            _DeleteFrameBuffer();
+            _DeleteResource();
             GL.DeleteContext();
             GLFunc.Dispose();
             _isInit = false;
@@ -372,21 +420,41 @@ namespace YOpenGL
 
         private void _DrawModels()
         {
-            foreach (var pair in _fillModels)
-                foreach (var model in pair.Value)
-                    model.Draw(_shader, pair.Key);
-
             foreach (var pair in _lineModels)
+            {
+                if(pair.Key.Data != null)
+                {
+                    _shader_dashed.Use();
+
+                    // Set line pattern
+                    GLFunc.BindTexture(GLConst.GL_TEXTURE_1D, _texture_dash[0]);
+                    GLFunc.TexImage1D(GLConst.GL_TEXTURE_1D, 0, GLConst.GL_RED, pair.Key.Data.Length, 0, GLConst.GL_RED, GLConst.GL_UNSIGNED_BYTE, pair.Key.Data);
+
+                    foreach (var model in pair.Value)
+                        model.Draw(_shader_dashed, pair.Key, _transformToDevice.M11);
+                }
+                else
+                {
+                    _shader_normal.Use();
+                    foreach (var model in pair.Value)
+                        model.Draw(_shader_normal, pair.Key, _transformToDevice.M11);
+                }
+            }
+
+            foreach (var pair in _fillModels)
+            {
+                _shader_normal.Use();
                 foreach (var model in pair.Value)
-                    model.Draw(_shader, pair.Key, _transformToDevice.M11);
+                    model.Draw(_shader_normal, pair.Key);
+            }
         }
 
-        private static Shader GenShader()
+        private static Shader GenShader(string[] shaders)
         {
             var header = GL.CreateGLSLHeader();
             var source = new List<ShaderSource>();
             string code;
-            foreach (var shader in _shaders)
+            foreach (var shader in shaders)
             {
                 using (var stream = new StreamReader(YOpenGL.Resources.OpenStream(shader)))
                 {
@@ -463,6 +531,9 @@ namespace YOpenGL
             _viewWidth = (int)(width * _transformToDevice.M11);
             _viewHeight = (int)(height * _transformToDevice.M22);
             GLFunc.Viewport(0, 0, _viewWidth, _viewHeight);
+
+            _shader_dashed.Use();
+            _shader_dashed.SetVec2("screenSize", new float[] { _viewWidth, _viewHeight });
         }
         #endregion
 

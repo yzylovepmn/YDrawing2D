@@ -17,7 +17,7 @@ namespace YOpenGL
             vec.Normalize();
             while (true)
             {
-                var end = curP + vec * line.Pen.Dashes[curValIndex] * 2;
+                var end = curP + vec * line.Pen.Data[curValIndex] * 2;
                 if (flag)
                 {
                     if ((end - _end) * vec > 0)
@@ -32,7 +32,7 @@ namespace YOpenGL
                 }
                 curP = end;
                 flag = !flag;
-                curValIndex = (curValIndex + 1) % line.Pen.Dashes.Length;
+                curValIndex = (curValIndex + 1) % line.Pen.Data.Length;
             }
         }
     }

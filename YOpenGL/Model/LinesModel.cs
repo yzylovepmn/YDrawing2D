@@ -20,7 +20,8 @@ namespace YOpenGL
 
         internal override bool TryAttachPrimitive(IPrimitive primitive)
         {
-            if (primitive.Points.Count < Capacity && _points.Count + primitive.Points.Count > Capacity)
+            var cnt = primitive.Points.Count();
+            if (cnt < Capacity && _points.Count + cnt > Capacity)
                 return false;
             _points.AddRange(primitive.Points);
             return true;

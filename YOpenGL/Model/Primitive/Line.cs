@@ -13,15 +13,10 @@ namespace YOpenGL
         {
             _pen = pen;
             _bounds = new RectF(start, end);
-            _points = new List<PointF>();
             _fillColor = null;
 
-            if (_pen.Dashes == null)
-            {
-                _points.Add(start);
-                _points.Add(end);
-            }
-            else _points.AddRange(GeometryHelper.GetDashPoints(this, start, end));
+            Start = start;
+            End = end;
         }
 
         public RectF Bounds { get { return _bounds; } }
@@ -36,13 +31,19 @@ namespace YOpenGL
 
         public Color? FillColor { get { return _fillColor; } }
 
-        public IList<PointF> Points { get { return _points; } }
-        private List<PointF> _points;
+        public IEnumerable<PointF> Points
+        {
+            get
+            {
+                yield return Start;
+                yield return End;
+            }
+        }
 
         private Color? _fillColor;
 
-        internal PointF Start { get { return _points.First(); } }
-        internal PointF End { get { return _points.Last(); } }
+        internal PointF Start;
+        internal PointF End;
 
         public bool HitTest(PointF p, float sensitive)
         {
