@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace YOpenGL
 {
-    public struct ContextHandle : IComparable<ContextHandle>, IEquatable<ContextHandle>
+    internal struct ContextHandle : IComparable<ContextHandle>, IEquatable<ContextHandle>
     {
         public static readonly ContextHandle Zero = new ContextHandle(IntPtr.Zero);
 

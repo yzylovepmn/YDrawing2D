@@ -231,7 +231,6 @@ namespace YOpenGL
         private void _DispatchFrame()
         {
             GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
-            GLFunc.TexImage2DMultisample(GLConst.GL_TEXTURE_2D_MULTISAMPLE, 4, GLConst.GL_RGB, _viewWidth, _viewHeight, GLConst.GL_TRUE);
             GLFunc.ClearColor(_red, _green, _blue, 1.0f);
             GLFunc.Clear(GLConst.GL_COLOR_BUFFER_BIT | GLConst.GL_DEPTH_BUFFER_BIT | GLConst.GL_STENCIL_BUFFER_BIT);
 
@@ -306,6 +305,7 @@ namespace YOpenGL
             GLFunc.GenTextures(1, _texture_msaa);
             GLFunc.BindTexture(GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0]);
             GLFunc.FramebufferTexture2D(GLConst.GL_FRAMEBUFFER, GLConst.GL_COLOR_ATTACHMENT0, GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0], 0);
+            GLFunc.TexImage2DMultisample(GLConst.GL_TEXTURE_2D_MULTISAMPLE, 4, GLConst.GL_RGB, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11), GLConst.GL_TRUE);
 
             // for transform
             _matrix = new uint[1];
@@ -530,6 +530,7 @@ namespace YOpenGL
             _worldToNDC.Translate(-1, -1);
             _viewWidth = (int)(width * _transformToDevice.M11);
             _viewHeight = (int)(height * _transformToDevice.M22);
+
             GLFunc.Viewport(0, 0, _viewWidth, _viewHeight);
 
             _shader_dashed.Use();
