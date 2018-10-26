@@ -18,8 +18,8 @@ namespace YOpenGL
     /// </summary>
     public class GLPanel : HwndHost, IDisposable
     {
-        private static readonly string[] _shaders_normal = new string[] { "Internel.vert", "Internel.frag" };
-        private static readonly string[] _shaders_dashed = new string[] { "Internel.vert", "Internel_Dash.geo", "Internel_Dash.frag" };
+        private static readonly string[] _shaders_line = new string[] { "line.vert", "line.geom", "line.frag" };
+        private static readonly string[] _shaders_arc = new string[] { "arc.vert", "arc.geom", "arc.frag" };
 
         public GLPanel(PointF origin, Color color, float frameRate = 60)
         {
@@ -33,6 +33,7 @@ namespace YOpenGL
             _visuals = new List<GLVisual>();
             _fillModels = new Dictionary<Color, List<MeshModel>>();
             _lineModels = new Dictionary<PenF, List<MeshModel>>();
+            _arcModels = new Dictionary<PenF, List<MeshModel>>();
             _shaders = new List<Shader>();
 
             _timer = new Timer(_AfterPainted);
@@ -44,20 +45,20 @@ namespace YOpenGL
         private bool _needUpdate;
         private int _signal;
         private int _frameSpan;
-        private Shader _shader_normal;
-        private Shader _shader_dashed;
-        private List<Shader> _shaders;
+        private Timer _timer;
 
+        #region Matrix
         private MatrixF _transformToDevice;
         private MatrixF _worldToNDC;
         private MatrixF _view;
         private MatrixF _viewResverse;
+        #endregion
 
-        private float _red;
-        private float _green;
-        private float _blue;
-
-        private Timer _timer;
+        #region Shader
+        private Shader _lineshader;
+        private Shader _arcshader;
+        private List<Shader> _shaders;
+        #endregion
 
         #region MSAA
         private uint[] _fbo;
@@ -83,6 +84,7 @@ namespace YOpenGL
 
         private Dictionary<Color, List<MeshModel>> _fillModels;
         private Dictionary<PenF, List<MeshModel>> _lineModels;
+        private Dictionary<PenF, List<MeshModel>> _arcModels;
 
         public Color Color
         {
@@ -98,6 +100,9 @@ namespace YOpenGL
         }
         private Color _color;
         private SolidColorBrush _brush;
+        private float _red;
+        private float _green;
+        private float _blue;
 
         public PointF Origin
         {
@@ -161,11 +166,11 @@ namespace YOpenGL
         #endregion
 
         #region Visual
-        public GLVisual HitTest(PointF point, float sensitive = 5)
+        public GLVisual HitTest(PointF point, float sensitive = 6)
         {
             point = ViewToWorld(point);
             foreach (var visual in _visuals)
-                if (visual.HitTest(point, sensitive * _viewResverse.M11 * _transformToDevice.M11))
+                if (visual.HitTest(point, sensitive * _viewResverse.M11))
                     return visual;
             return null;
         }
@@ -230,8 +235,8 @@ namespace YOpenGL
         #region RenderFrame
         private void _DispatchFrame()
         {
-            GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
             GLFunc.ClearColor(_red, _green, _blue, 1.0f);
+            GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
             GLFunc.Clear(GLConst.GL_COLOR_BUFFER_BIT | GLConst.GL_DEPTH_BUFFER_BIT | GLConst.GL_STENCIL_BUFFER_BIT);
 
             GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, _matrix[0]);
@@ -274,18 +279,20 @@ namespace YOpenGL
             GLFunc.BlendFunc(GLConst.GL_SRC_ALPHA, GLConst.GL_ONE_MINUS_SRC_ALPHA);
             _CreateResource();
 
-            _shader_dashed.Use();
-            _shader_dashed.SetFloat("patternSize", 16.0f);
-
             _timer.Start(Timeout.Infinite, Timeout.Infinite);
         }
 
         private void _CreateResource()
         {
-            _shader_normal = GenShader(_shaders_normal);
-            _shader_dashed = GenShader(_shaders_dashed);
-            _shaders.Add(_shader_normal);
-            _shaders.Add(_shader_dashed);
+            _lineshader = GenShader(_shaders_line);
+            _arcshader = GenShader(_shaders_arc);
+
+            _shaders.Add(_lineshader);
+            _shaders.Add(_arcshader);
+
+            // for draw cicle and arc
+            _arcshader.Use();
+            _arcshader.SetVec2("samples", 65, GeometryHelper.GenArcPoints(360 / 64f, 0, 360).GetData());
 
             // for dash line texture
             _texture_dash = new uint[1];
@@ -314,6 +321,8 @@ namespace YOpenGL
             GLFunc.BufferData(GLConst.GL_UNIFORM_BUFFER, 24 * sizeof(float), default(byte[]), GLConst.GL_STATIC_DRAW);
             GLFunc.BindBufferRange(GLConst.GL_UNIFORM_BUFFER, 0, _matrix[0], 0, 24 * sizeof(float));
             GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, 0);
+
+            //Set binding point
             foreach (var shader in _shaders)
                 GLFunc.UniformBlockBinding(shader.ID, GLFunc.GetUniformBlockIndex(shader.ID, "Matrices"), 0);
         }
@@ -322,8 +331,8 @@ namespace YOpenGL
         {
             _shaders.Dispose();
             _shaders.Clear();
-            _shader_normal = null;
-            _shader_dashed = null;
+            _lineshader = null;
+            _arcshader = null;
 
             GLFunc.DeleteTextures(1, _texture_dash);
 
@@ -373,7 +382,7 @@ namespace YOpenGL
                 {
                     foreach (var primitive in visual.Context.Primitives)
                     {
-                        _AttachLinesModel(primitive);
+                        _AttachModel(primitive);
                         if (primitive.Filled)
                             _AttachFillModels(primitive);
                     }
@@ -382,22 +391,28 @@ namespace YOpenGL
             }
         }
 
-        private void _AttachLinesModel(IPrimitive primitive)
+        private void _AttachModel(IPrimitive primitive)
         {
             var model = default(MeshModel);
-            if (_lineModels.ContainsKey(primitive.Pen))
-                model = _lineModels[primitive.Pen].Last();
+            var models = default(Dictionary<PenF, List<MeshModel>>);
+
+            if (primitive.Type == PrimitiveType.Arc)
+                models = _arcModels;
+            else models = _lineModels;
+
+            if (models.ContainsKey(primitive.Pen))
+                model = models[primitive.Pen].Last();
             else
             {
-                model = new LinesModel();
+                model = _GreateModel(primitive);
                 model.BeginInit();
-                _lineModels.Add(primitive.Pen, new List<MeshModel>() { model });
+                models.Add(primitive.Pen, new List<MeshModel>() { model });
             }
             if (!model.TryAttachPrimitive(primitive))
             {
-                model = new LinesModel();
+                model = _GreateModel(primitive);
                 model.BeginInit();
-                _lineModels[primitive.Pen].Add(model);
+                models[primitive.Pen].Add(model);
                 model.TryAttachPrimitive(primitive);
             }
         }
@@ -407,9 +422,20 @@ namespace YOpenGL
 
         }
 
+        private MeshModel _GreateModel(IPrimitive primitive)
+        {
+            if (primitive.Type == PrimitiveType.Arc)
+                return new ArcModel();
+            return new LinesModel();
+        }
+
         private void _EndInitModels()
         {
             foreach (var value in _lineModels.Values)
+                foreach (var model in value)
+                    model.EndInit();
+
+            foreach (var value in _arcModels.Values)
                 foreach (var model in value)
                     model.EndInit();
 
@@ -421,31 +447,38 @@ namespace YOpenGL
         private void _DrawModels()
         {
             foreach (var pair in _lineModels)
-            {
-                if(pair.Key.Data != null)
-                {
-                    _shader_dashed.Use();
+                _DrawModelHandle(pair, _lineshader);
 
-                    // Set line pattern
-                    GLFunc.BindTexture(GLConst.GL_TEXTURE_1D, _texture_dash[0]);
-                    GLFunc.TexImage1D(GLConst.GL_TEXTURE_1D, 0, GLConst.GL_RED, pair.Key.Data.Length, 0, GLConst.GL_RED, GLConst.GL_UNSIGNED_BYTE, pair.Key.Data);
-
-                    foreach (var model in pair.Value)
-                        model.Draw(_shader_dashed, pair.Key, _transformToDevice.M11);
-                }
-                else
-                {
-                    _shader_normal.Use();
-                    foreach (var model in pair.Value)
-                        model.Draw(_shader_normal, pair.Key, _transformToDevice.M11);
-                }
-            }
+            foreach (var pair in _arcModels)
+                _DrawModelHandle(pair, _arcshader);
 
             foreach (var pair in _fillModels)
             {
-                _shader_normal.Use();
+            }
+        }
+
+        private void _DrawModelHandle(KeyValuePair<PenF, List<MeshModel>> pair, Shader shader)
+        {
+            //Set line width
+            GLFunc.LineWidth(pair.Key.Thickness / _transformToDevice.M11);
+
+            shader.Use();
+            shader.SetBool("dashed", pair.Key.Data != null);
+            shader.SetVec4("color", 1, pair.Key.Color.GetData());
+
+            if (pair.Key.Data != null)
+            {
+                // Set line pattern
+                GLFunc.BindTexture(GLConst.GL_TEXTURE_1D, _texture_dash[0]);
+                GLFunc.TexImage1D(GLConst.GL_TEXTURE_1D, 0, GLConst.GL_RED, pair.Key.Data.Length, 0, GLConst.GL_RED, GLConst.GL_UNSIGNED_BYTE, pair.Key.Data);
+
                 foreach (var model in pair.Value)
-                    model.Draw(_shader_normal, pair.Key);
+                    model.Draw();
+            }
+            else
+            {
+                foreach (var model in pair.Value)
+                    model.Draw();
             }
         }
 
@@ -464,9 +497,9 @@ namespace YOpenGL
                         type = ShaderType.Vert;
                     if (shader.EndsWith("frag"))
                         type = ShaderType.Frag;
-                    if (shader.EndsWith("geo"))
-                        type = ShaderType.Geo;
-                    source.Add(new ShaderSource(type, string.Concat(header, code)));
+                    if (shader.EndsWith("geom"))
+                        type = ShaderType.Geom;
+                    source.Add(new ShaderSource(type, code.Replace("#version 330 core", header)));
                 }
             }
             return Shader.CreateShader(source);
@@ -533,8 +566,13 @@ namespace YOpenGL
 
             GLFunc.Viewport(0, 0, _viewWidth, _viewHeight);
 
-            _shader_dashed.Use();
-            _shader_dashed.SetVec2("screenSize", new float[] { _viewWidth, _viewHeight });
+            // for dashed line
+            _lineshader.Use();
+            _lineshader.SetVec2("screenSize", 1, new float[] { width, height });
+
+            // for dashed cicle and arc
+            _arcshader.Use();
+            _arcshader.SetVec2("screenSize", 1, new float[] { width, height });
         }
         #endregion
 
@@ -547,6 +585,7 @@ namespace YOpenGL
             _DisposeModels();
             _fillModels = null;
             _lineModels = null;
+            _arcModels = null;
         }
 
         private void _DisposeVisuals()
@@ -561,9 +600,12 @@ namespace YOpenGL
                 item?.Dispose();
             foreach (var item in _lineModels.Values)
                 item?.Dispose();
+            foreach (var item in _arcModels.Values)
+                item?.Dispose();
 
             _fillModels.Clear();
             _lineModels.Clear();
+            _arcModels.Clear();
         }
 
         protected override void Dispose(bool disposing)

@@ -87,23 +87,9 @@ namespace YOpenGL
         #region Shader
         public static string CreateGLSLHeader()
         {
-            if (Version >= GLVersion.FromNumber(3, 3))
+            if (Version >= GLVersion.MinimumSupportedVersion)
                 return string.Format("#version {0}{1}0 core\r\n", Version.Major, Version.Minor);
 
-            if (Version == GLVersion.FromNumber(2, 0))
-                return "#version 110\r\n";
-
-            if (Version == GLVersion.FromNumber(2, 1))
-                return "#version 120\r\n";
-
-            if (Version == GLVersion.FromNumber(3, 0))
-                return "#version 130 core\r\n";
-
-            if (Version == GLVersion.FromNumber(3, 1))
-                return "#version 140 core\r\n";
-
-            if (Version == GLVersion.FromNumber(3, 2))
-                return "#version 150 core\r\n";
             return null;
         }
         #endregion

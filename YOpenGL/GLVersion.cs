@@ -8,6 +8,13 @@ namespace YOpenGL
 {
     public struct GLVersion : IComparable<GLVersion>
     {
+        public static GLVersion MinimumSupportedVersion;
+
+        static GLVersion()
+        {
+            MinimumSupportedVersion = new GLVersion(3, 3);
+        }
+
         public GLVersion(int major, int minor)
         {
             _major = major;

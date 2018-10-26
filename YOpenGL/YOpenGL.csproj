@@ -31,6 +31,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -63,8 +64,10 @@
     <Compile Include="Math\SizeF.cs" />
     <Compile Include="Math\StackTransform.cs" />
     <Compile Include="Math\VectorF.cs" />
+    <Compile Include="Model\ArcModel.cs" />
     <Compile Include="Model\LinesModel.cs" />
     <Compile Include="Model\MeshModel.cs" />
+    <Compile Include="Model\Primitive\Arc.cs" />
     <Compile Include="Model\Primitive\IPrimitive.cs" />
     <Compile Include="Model\Primitive\Line.cs" />
     <Compile Include="Internel\Shader.cs" />
@@ -76,12 +79,20 @@
     <Compile Include="Win32Helper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Internel.frag" />
-    <EmbeddedResource Include="Resources\Internel.vert" />
+    <EmbeddedResource Include="Resources\line.vert" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Internel_Dash.frag" />
-    <EmbeddedResource Include="Resources\Internel_Dash.geo" />
+    <EmbeddedResource Include="Resources\line.frag" />
+    <EmbeddedResource Include="Resources\line.geom" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\arc.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\arc.geom" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\arc.vert" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

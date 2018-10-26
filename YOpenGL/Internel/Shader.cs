@@ -10,7 +10,7 @@ namespace YOpenGL
     public enum ShaderType
     {
         Vert,
-        Geo,
+        Geom,
         Frag
     }
 
@@ -59,24 +59,27 @@ namespace YOpenGL
             GLFunc.Uniform1f(GLFunc.GetUniformLocation(ID, name), value);
         }
 
-        public void SetVec2(string name, float[] value)
+        public void SetVec2(string name, int count, float[] value)
         {
-            GLFunc.Uniform2fv(GLFunc.GetUniformLocation(ID, name), 1, value);
+            GLFunc.Uniform2fv(GLFunc.GetUniformLocation(ID, name), count, value);
         }
 
-        public void SetVec3(string name, float[] value)
+        public void SetVec3(string name, int count, float[] value)
         {
-            GLFunc.Uniform3fv(GLFunc.GetUniformLocation(ID, name), 1, value);
+            GLFunc.Uniform3fv(GLFunc.GetUniformLocation(ID, name), count, value);
         }
 
-        public void SetVec4(string name, float[] value)
+        public void SetVec4(string name, int count, float[] value)
         {
-            GLFunc.Uniform4fv(GLFunc.GetUniformLocation(ID, name), 1, value);
+            GLFunc.Uniform4fv(GLFunc.GetUniformLocation(ID, name), count, value);
         }
 
-        public void SetMat3(string name, MatrixF matrix)
+        public void SetMat3(string name, MatrixF[] matrices)
         {
-            GLFunc.UniformMatrix3fv(GLFunc.GetUniformLocation(ID, name), 1, GLConst.GL_FALSE, matrix.GetData());
+            var data = new List<float>();
+            foreach (var matrix in matrices)
+                data.AddRange(matrix.GetData());
+            GLFunc.UniformMatrix3fv(GLFunc.GetUniformLocation(ID, name), matrices.Length, GLConst.GL_FALSE, data.ToArray());
         }
 
         #region Static
@@ -91,7 +94,7 @@ namespace YOpenGL
                     case ShaderType.Vert:
                         shader = GLFunc.CreateShader(GLConst.GL_VERTEX_SHADER);
                         break;
-                    case ShaderType.Geo:
+                    case ShaderType.Geom:
                         shader = GLFunc.CreateShader(GLConst.GL_GEOMETRY_SHADER);
                         break;
                     case ShaderType.Frag:
@@ -130,6 +133,7 @@ namespace YOpenGL
                 if (success[0] == 0)
                     GLFunc.GetProgramInfoLog(id, 1024, null, infoLog);
             }
+            var msg = Encoding.ASCII.GetString(infoLog);
             return success[0] != 0;
         }
         #endregion

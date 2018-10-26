@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace YOpenGL
@@ -17,19 +18,26 @@ namespace YOpenGL
 
         protected uint[] _vao;
         protected uint[] _vbo;
-        private bool _hasInit;
+        protected bool _hasInit;
 
-        internal abstract void Draw(Shader shader, params object[] param);
+        internal abstract void Draw();
 
-        internal abstract bool TryAttachPrimitive(IPrimitive primitive);
+        internal virtual bool TryAttachPrimitive(IPrimitive primitive)
+        {
+            var cnt = primitive.Points.Count();
+            if (cnt < Capacity && _points.Count + cnt > Capacity)
+                return false;
+            _points.AddRange(primitive.Points);
+            return true;
+        }
 
-        internal void BeginInit()
+        internal virtual void BeginInit()
         {
             _Dispose();
             _points = new List<PointF>();
         }
 
-        internal void EndInit()
+        internal virtual void EndInit()
         {
             if (_hasInit) return;
             _hasInit = true;
@@ -44,7 +52,7 @@ namespace YOpenGL
             GLFunc.VertexAttribPointer(0, 2, GLConst.GL_FLOAT, GLConst.GL_FALSE, 2 * sizeof(float), 0);
         }
 
-        private void _Dispose()
+        protected virtual void _Dispose()
         {
             if (_hasInit)
             {

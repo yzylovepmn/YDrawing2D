@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
 
 namespace YOpenGL
 {
@@ -73,6 +74,33 @@ namespace YOpenGL
             end = _transform.Transform(end);
 
             return new Line(start, end, pen);
+        }
+
+        public void DrawCicle(PenF pen, Color? fillColor, PointF center, float radius)
+        {
+            center = _transform.Transform(center);
+            radius *= _transform.ScaleX;
+            _primitives.Add(new Arc(center, radius, float.PositiveInfinity, float.PositiveInfinity, pen, fillColor));
+        }
+
+        public void DrawArc(PenF pen, PointF center, float radius, float startAngle, float endAngle, bool isClockwise)
+        {
+            if (startAngle == endAngle)
+                return;
+
+            if (!isClockwise)
+                MathUtil.Switch(ref startAngle, ref endAngle);
+
+            GeometryHelper.FormatAngle(ref startAngle);
+            GeometryHelper.FormatAngle(ref endAngle);
+
+            center = _transform.Transform(center);
+            radius *= _transform.ScaleX;
+
+            var startRadian = GeometryHelper.GetRadian(startAngle);
+            var endRadian = GeometryHelper.GetRadian(endAngle);
+
+            _primitives.Add(new Arc(center, radius, startRadian, endRadian, pen, null));
         }
         #endregion
 

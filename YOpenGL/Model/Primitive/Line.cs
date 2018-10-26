@@ -13,7 +13,6 @@ namespace YOpenGL
         {
             _pen = pen;
             _bounds = new RectF(start, end);
-            _fillColor = null;
 
             Start = start;
             End = end;
@@ -27,9 +26,9 @@ namespace YOpenGL
 
         public PrimitiveType Type { get { return PrimitiveType.Line; } }
 
-        public bool Filled { get { return _fillColor.HasValue; } }
+        public bool Filled { get { return false; } }
 
-        public Color? FillColor { get { return _fillColor; } }
+        public Color? FillColor { get { return null; } }
 
         public IEnumerable<PointF> Points
         {
@@ -39,8 +38,6 @@ namespace YOpenGL
                 yield return End;
             }
         }
-
-        private Color? _fillColor;
 
         internal PointF Start;
         internal PointF End;
@@ -57,11 +54,6 @@ namespace YOpenGL
                 var b = Start.Y - k * Start.X;
                 return Math.Abs(p.Y - k * p.X - b) / Math.Sqrt(k * k + 1) < sensitive;
             }
-        }
-
-        public bool IsIntersect(IPrimitive other)
-        {
-            return false;
         }
 
         public void Dispose()

@@ -122,10 +122,12 @@ namespace YDrawing2DTest
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            for (int i = 0; i < 10000; i++)
+            for (int i = 1; i < 10000; i++)
             {
-                _glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i + 100)));
+                //_glPanel.AddVisual(new Cicle(new PointF(0, 0), i * 2));
+                //_glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i + 100)));
             }
+            _glPanel.AddVisual(new Arc(new PointF(0, 0), 10, 30, 100));
             _glPanel.MouseMove += _panel_MouseMove;
             _glPanel.MouseWheel += _panel_MouseWheel;
             _glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
@@ -279,25 +281,24 @@ namespace YDrawing2DTest
         }
     }
 
-    public class Cicle : PresentationVisual
+    public class Cicle : GLVisual
     {
-        public Cicle(Point center, double radius)
+        public Cicle(PointF center, float radius)
         {
             _center = center;
             _radius = radius;
         }
 
-        private Point _center;
-        private double _radius;
+        private PointF _center;
+        private float _radius;
 
-        protected override void Draw(IContext context)
+        protected override void Draw(GLDrawContext context)
         {
-            context.PushOpacity(0.5);
-            if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                context.DrawCicle(null, MainWindow.ActivePen, _center, _radius);
-            else if (this == MainWindow.SelectedVisual)
-                context.DrawCicle(null, MainWindow.SelectedPen, _center, _radius);
-            else context.DrawCicle(null, MainWindow.WhitePen, _center, _radius);
+            if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
+                context.DrawCicle(MainWindow.GLActivePen, null, _center, _radius);
+            else if (this == MainWindow.GLSelectedVisual)
+                context.DrawCicle(MainWindow.GLSelectedPen, null, _center, _radius);
+            else context.DrawCicle(MainWindow.GLWhitePen, null, _center, _radius);
         }
     }
 
@@ -325,9 +326,9 @@ namespace YDrawing2DTest
         }
     }
 
-    public class Arc : PresentationVisual
+    public class Arc : GLVisual
     {
-        public Arc(Point center, double startAngle, double endAngle, double radius, bool isClockwise = true)
+        public Arc(PointF center, float startAngle, float endAngle, float radius, bool isClockwise = true)
         {
             _center = center;
             _radius = radius;
@@ -336,7 +337,7 @@ namespace YDrawing2DTest
             _isClockwise = isClockwise;
         }
 
-        public Arc(Point start, Point end, double radius, bool isClockwise, bool isLargeAngle)
+        public Arc(PointF start, PointF end, float radius, bool isClockwise, bool isLargeAngle)
         {
             _start = start;
             _end = end;
@@ -345,24 +346,24 @@ namespace YDrawing2DTest
             _isLargeAngle = isLargeAngle;
         }
 
-        private Point? _start;
-        private Point? _end;
-        private Point _center;
-        private double _radius;
-        private double _startAngle;
-        private double _endAngle;
+        private PointF? _start;
+        private PointF? _end;
+        private PointF _center;
+        private float _radius;
+        private float _startAngle;
+        private float _endAngle;
         private bool _isClockwise;
         private bool _isLargeAngle;
 
-        protected override void Draw(IContext context)
+        protected override void Draw(GLDrawContext context)
         {
             if (!_start.HasValue)
             {
-                if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                    context.DrawArc(MainWindow.ActivePen, _center, _radius, _startAngle, _endAngle, _isClockwise);
-                else if (this == MainWindow.SelectedVisual)
-                    context.DrawArc(MainWindow.SelectedPen, _center, _radius, _startAngle, _endAngle, _isClockwise);
-                else context.DrawArc(MainWindow.WhitePen, _center, _radius, _startAngle, _endAngle, _isClockwise);
+                if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
+                    context.DrawArc(MainWindow.GLActivePen, _center, _radius, _startAngle, _endAngle, _isClockwise);
+                else if (this == MainWindow.GLSelectedVisual)
+                    context.DrawArc(MainWindow.GLSelectedPen, _center, _radius, _startAngle, _endAngle, _isClockwise);
+                else context.DrawArc(MainWindow.GLWhitePen, _center, _radius, _startAngle, _endAngle, _isClockwise);
             }
         }
     }
