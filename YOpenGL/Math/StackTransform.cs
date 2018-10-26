@@ -16,6 +16,7 @@ namespace YOpenGL
             _transforms = new Stack<object>();
         }
 
+        public MatrixF Matrix { get { return _matrix; } }
         private MatrixF _matrix;
         private Stack<object> _transforms;
 

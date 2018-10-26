@@ -68,19 +68,19 @@ namespace YOpenGL
             _primitives.Add(_DrawLine(pen, start, end));
         }
 
-        private Line _DrawLine(PenF pen, PointF start, PointF end)
+        private _Line _DrawLine(PenF pen, PointF start, PointF end)
         {
             start = _transform.Transform(start);
             end = _transform.Transform(end);
 
-            return new Line(start, end, pen);
+            return new _Line(start, end, pen);
         }
 
         public void DrawCicle(PenF pen, Color? fillColor, PointF center, float radius)
         {
             center = _transform.Transform(center);
             radius *= _transform.ScaleX;
-            _primitives.Add(new Arc(center, radius, float.PositiveInfinity, float.PositiveInfinity, pen, fillColor));
+            _primitives.Add(new _Arc(center, radius, float.PositiveInfinity, float.PositiveInfinity, pen, fillColor));
         }
 
         public void DrawArc(PenF pen, PointF center, float radius, float startAngle, float endAngle, bool isClockwise)
@@ -100,7 +100,13 @@ namespace YOpenGL
             var startRadian = GeometryHelper.GetRadian(startAngle);
             var endRadian = GeometryHelper.GetRadian(endAngle);
 
-            _primitives.Add(new Arc(center, radius, startRadian, endRadian, pen, null));
+            _primitives.Add(new _Arc(center, radius, startRadian, endRadian, pen, null));
+        }
+
+        public void DrawRectangle(PenF pen, Color? fillColor, RectF rectangle)
+        {
+            rectangle.Transform(_transform.Matrix);
+            _primitives.Add(new _Rect(rectangle, pen, fillColor));
         }
         #endregion
 

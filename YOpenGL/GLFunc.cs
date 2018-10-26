@@ -2011,9 +2011,9 @@ namespace YOpenGL
             glDrawArraysInstanced?.Invoke(mode, first, count, primcount);
         }
 
-        public static void DrawElements(GLenum mode, GLsizei count, GLenum type, GLvoid indices)
+        public static void DrawElements(GLenum mode, GLsizei count, GLenum type, int indices)
         {
-            glDrawElements?.Invoke(mode, count, type, indices);
+            glDrawElements?.Invoke(mode, count, type, (GLvoid)indices);
         }
 
         public static void PolygonMode(GLenum face, GLenum mode)

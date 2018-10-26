@@ -9,7 +9,7 @@ namespace YOpenGL
 {
     public static class GeometryHelper
     {
-        public static bool IsArcContain(Arc arc, PointF point)
+        public static bool IsArcContain(_Arc arc, PointF point)
         {
             var vec = point - arc.Center;
             var radian = (float)Math.Atan(vec.Y / vec.X);
@@ -82,5 +82,17 @@ namespace YOpenGL
         {
             return (float)(angle * Math.PI / 180);
         }
+
+        #region Indices
+        public static IEnumerable<uint> GenRectIndices(uint offset)
+        {
+            yield return offset + 0;
+            yield return offset + 1;
+            yield return offset + 2;
+            yield return offset + 0;
+            yield return offset + 2;
+            yield return offset + 3;
+        }
+        #endregion
     }
 }

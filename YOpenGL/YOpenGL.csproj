@@ -65,12 +65,14 @@
     <Compile Include="Math\StackTransform.cs" />
     <Compile Include="Math\VectorF.cs" />
     <Compile Include="Model\ArcModel.cs" />
+    <Compile Include="Model\FillModel.cs" />
     <Compile Include="Model\LinesModel.cs" />
     <Compile Include="Model\MeshModel.cs" />
-    <Compile Include="Model\Primitive\Arc.cs" />
+    <Compile Include="Model\Primitive\_Arc.cs" />
     <Compile Include="Model\Primitive\IPrimitive.cs" />
-    <Compile Include="Model\Primitive\Line.cs" />
+    <Compile Include="Model\Primitive\_Line.cs" />
     <Compile Include="Internel\Shader.cs" />
+    <Compile Include="Model\Primitive\_Rect.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resources\Resources.cs" />
     <Compile Include="View\GLDrawContext.cs" />
@@ -93,6 +95,12 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\arc.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\fill.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\fill.frag" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

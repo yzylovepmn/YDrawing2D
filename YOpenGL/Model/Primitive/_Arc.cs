@@ -7,9 +7,9 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    public struct Arc : IPrimitive
+    public struct _Arc : IPrimitive
     {
-        public Arc(PointF center, float radius, float startRadian, float endRadian, PenF pen, Color? fillColor = null)
+        public _Arc(PointF center, float radius, float startRadian, float endRadian, PenF pen, Color? fillColor = null)
         {
             _pen = pen;
             _fillColor = fillColor;
@@ -43,7 +43,7 @@ namespace YOpenGL
         public float StartRadian;
         public float EndRadian;
 
-        public IEnumerable<PointF> Points
+        public IEnumerable<PointF> this[bool isOutline]
         {
             get
             {
@@ -61,7 +61,7 @@ namespace YOpenGL
 
         public void Dispose()
         {
-
+            _pen = null;
         }
     }
 }

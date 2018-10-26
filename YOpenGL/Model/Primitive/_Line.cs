@@ -7,9 +7,9 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    public struct Line : IPrimitive
+    public struct _Line : IPrimitive
     {
-        public Line(PointF start, PointF end, PenF pen)
+        public _Line(PointF start, PointF end, PenF pen)
         {
             _pen = pen;
             _bounds = new RectF(start, end);
@@ -30,7 +30,7 @@ namespace YOpenGL
 
         public Color? FillColor { get { return null; } }
 
-        public IEnumerable<PointF> Points
+        public IEnumerable<PointF> this[bool isOutline]
         {
             get
             {

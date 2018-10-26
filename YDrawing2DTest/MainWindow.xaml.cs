@@ -128,6 +128,7 @@ namespace YDrawing2DTest
                 //_glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i + 100)));
             }
             _glPanel.AddVisual(new Arc(new PointF(0, 0), 10, 30, 100));
+            _glPanel.AddVisual(new Rectangle(new RectF(new PointF(0, 0), new PointF(300, 600))));
             _glPanel.MouseMove += _panel_MouseMove;
             _glPanel.MouseWheel += _panel_MouseWheel;
             _glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
@@ -238,24 +239,23 @@ namespace YDrawing2DTest
         }
     }
 
-    public class Rectangle : PresentationVisual
+    public class Rectangle : GLVisual
     {
-        public Rectangle(Rect rect)
+        public Rectangle(RectF rect)
         {
             _rect = rect;
         }
 
-        public Rect Rect { get { return _rect; } }
-        private Rect _rect;
+        public RectF Rect { get { return _rect; } }
+        private RectF _rect;
 
-        protected override void Draw(IContext context)
+        protected override void Draw(GLDrawContext context)
         {
-            context.PushOpacity(0.5);
-            if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                context.DrawRectangle(null, MainWindow.ActivePen, _rect);
-            else if (this == MainWindow.SelectedVisual)
-                context.DrawRectangle(null, MainWindow.SelectedPen, _rect);
-            else context.DrawRectangle(null, MainWindow.WhitePen, _rect);
+            if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
+                context.DrawRectangle(MainWindow.GLActivePen, Colors.Blue, _rect);
+            else if (this == MainWindow.GLSelectedVisual)
+                context.DrawRectangle(MainWindow.GLSelectedPen, new Color() { R = 255, A = 128 }, _rect);
+            else context.DrawRectangle(MainWindow.GLWhitePen, Colors.Green, _rect);
         }
     }
 

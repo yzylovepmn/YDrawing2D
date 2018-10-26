@@ -22,12 +22,12 @@ namespace YOpenGL
 
         internal abstract void Draw();
 
-        internal virtual bool TryAttachPrimitive(IPrimitive primitive)
+        internal virtual bool TryAttachPrimitive(IPrimitive primitive, bool isOutline = true)
         {
-            var cnt = primitive.Points.Count();
+            var cnt = primitive[isOutline].Count();
             if (cnt < Capacity && _points.Count + cnt > Capacity)
                 return false;
-            _points.AddRange(primitive.Points);
+            _points.AddRange(primitive[isOutline]);
             return true;
         }
 
@@ -54,17 +54,21 @@ namespace YOpenGL
 
         protected virtual void _Dispose()
         {
-            if (_hasInit)
-            {
-                _hasInit = false;
+            if (_vao != null)
                 GLFunc.DeleteVertexArrays(1, _vao);
+            if (_vbo != null)
                 GLFunc.DeleteBuffers(1, _vbo);
-            }
+            _vao = null;
+            _vbo = null;
         }
 
         public void Dispose()
         {
-            _Dispose();
+            if (_hasInit)
+            {
+                _hasInit = false;
+                _Dispose();
+            }
             _points = null;
         }
     }

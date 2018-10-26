@@ -50,6 +50,7 @@ namespace YOpenGL
         public static bool operator ==(PenF pen1, PenF pen2)
         {
             if (ReferenceEquals(pen1, pen2)) return true;
+            if (pen1 is null || pen2 is null) return false;
             if (pen1._thickness == pen2._thickness && pen1._color == pen2._color)
             {
                 if (pen1._data == null && pen2._data == null)

@@ -36,12 +36,12 @@ namespace YOpenGL
             GLFunc.VertexAttribPointer(1, 3, GLConst.GL_FLOAT, GLConst.GL_FALSE, 3 * sizeof(float), _points.Count * 2 * sizeof(float));
         }
 
-        internal override bool TryAttachPrimitive(IPrimitive primitive)
+        internal override bool TryAttachPrimitive(IPrimitive primitive, bool isOutline = true)
         {
-            var ret = base.TryAttachPrimitive(primitive);
+            var ret = base.TryAttachPrimitive(primitive, isOutline);
             if (ret)
             {
-                var arc = (Arc)primitive;
+                var arc = (_Arc)primitive;
                 _attribute.Add(arc.Radius);
                 if (arc.IsCicle)
                 {

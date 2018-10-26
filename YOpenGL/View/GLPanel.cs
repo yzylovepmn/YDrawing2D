@@ -20,6 +20,7 @@ namespace YOpenGL
     {
         private static readonly string[] _shaders_line = new string[] { "line.vert", "line.geom", "line.frag" };
         private static readonly string[] _shaders_arc = new string[] { "arc.vert", "arc.geom", "arc.frag" };
+        private static readonly string[] _shaders_fill = new string[] { "fill.vert", "fill.frag" };
 
         public GLPanel(PointF origin, Color color, float frameRate = 60)
         {
@@ -57,6 +58,7 @@ namespace YOpenGL
         #region Shader
         private Shader _lineshader;
         private Shader _arcshader;
+        private Shader _fillshader;
         private List<Shader> _shaders;
         #endregion
 
@@ -259,7 +261,7 @@ namespace YOpenGL
         /// </summary>
         protected override void OnRender(DrawingContext drawingContext)
         {
-            drawingContext.DrawRectangle(_brush, null, new Rect(RenderSize));
+            drawingContext.DrawRectangle(_brush, null, new System.Windows.Rect(RenderSize));
         }
         #endregion
 
@@ -286,9 +288,11 @@ namespace YOpenGL
         {
             _lineshader = GenShader(_shaders_line);
             _arcshader = GenShader(_shaders_arc);
+            _fillshader = GenShader(_shaders_fill);
 
             _shaders.Add(_lineshader);
             _shaders.Add(_arcshader);
+            _shaders.Add(_fillshader);
 
             // for draw cicle and arc
             _arcshader.Use();
@@ -321,10 +325,6 @@ namespace YOpenGL
             GLFunc.BufferData(GLConst.GL_UNIFORM_BUFFER, 24 * sizeof(float), default(byte[]), GLConst.GL_STATIC_DRAW);
             GLFunc.BindBufferRange(GLConst.GL_UNIFORM_BUFFER, 0, _matrix[0], 0, 24 * sizeof(float));
             GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, 0);
-
-            //Set binding point
-            foreach (var shader in _shaders)
-                GLFunc.UniformBlockBinding(shader.ID, GLFunc.GetUniformBlockIndex(shader.ID, "Matrices"), 0);
         }
 
         private void _DeleteResource()
@@ -333,6 +333,7 @@ namespace YOpenGL
             _shaders.Clear();
             _lineshader = null;
             _arcshader = null;
+            _fillshader = null;
 
             GLFunc.DeleteTextures(1, _texture_dash);
 
@@ -419,11 +420,30 @@ namespace YOpenGL
 
         private void _AttachFillModels(IPrimitive primitive)
         {
+            var model = default(MeshModel);
+            var models = _fillModels;
 
+            if (models.ContainsKey(primitive.FillColor.Value))
+                model = models[primitive.FillColor.Value].Last();
+            else
+            {
+                model = _GreateModel(primitive, true);
+                model.BeginInit();
+                models.Add(primitive.FillColor.Value, new List<MeshModel>() { model });
+            }
+            if (!model.TryAttachPrimitive(primitive, false))
+            {
+                model = _GreateModel(primitive, true);
+                model.BeginInit();
+                models[primitive.FillColor.Value].Add(model);
+                model.TryAttachPrimitive(primitive, false);
+            }
         }
 
-        private MeshModel _GreateModel(IPrimitive primitive)
+        private MeshModel _GreateModel(IPrimitive primitive, bool isFilled = false)
         {
+            if (isFilled)
+                return new FillModel();
             if (primitive.Type == PrimitiveType.Arc)
                 return new ArcModel();
             return new LinesModel();
@@ -446,15 +466,14 @@ namespace YOpenGL
 
         private void _DrawModels()
         {
+            foreach (var pair in _fillModels)
+                _DrawFilledModelHandle(pair, _fillshader);
+
             foreach (var pair in _lineModels)
                 _DrawModelHandle(pair, _lineshader);
 
             foreach (var pair in _arcModels)
                 _DrawModelHandle(pair, _arcshader);
-
-            foreach (var pair in _fillModels)
-            {
-            }
         }
 
         private void _DrawModelHandle(KeyValuePair<PenF, List<MeshModel>> pair, Shader shader)
@@ -475,11 +494,16 @@ namespace YOpenGL
                 foreach (var model in pair.Value)
                     model.Draw();
             }
-            else
-            {
-                foreach (var model in pair.Value)
+            else foreach (var model in pair.Value)
                     model.Draw();
-            }
+        }
+
+        private void _DrawFilledModelHandle(KeyValuePair<Color, List<MeshModel>> pair, Shader shader)
+        {
+            shader.Use();
+            shader.SetVec4("color", 1, pair.Key.GetData());
+            foreach (var model in pair.Value)
+                model.Draw();
         }
 
         private static Shader GenShader(string[] shaders)
