@@ -78,7 +78,6 @@ namespace YOpenGL
 
         public void Dispose()
         {
-            _pen = null;
         }
     }
 }

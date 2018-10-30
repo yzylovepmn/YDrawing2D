@@ -79,7 +79,6 @@ namespace YOpenGL
             _stream.Dispose();
             _stream.Clear();
             _stream = null;
-            _pen = null;
         }
     }
 }

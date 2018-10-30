@@ -68,6 +68,7 @@
     <Compile Include="Model\FillModel.cs" />
     <Compile Include="Model\LinesModel.cs" />
     <Compile Include="Model\MeshModel.cs" />
+    <Compile Include="Model\Primitive\_Spline.cs" />
     <Compile Include="Model\StreamModel.cs" />
     <Compile Include="Model\Primitive\_Arc.cs" />
     <Compile Include="Model\Primitive\IPrimitive.cs" />

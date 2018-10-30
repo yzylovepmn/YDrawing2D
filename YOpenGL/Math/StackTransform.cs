@@ -20,7 +20,6 @@ namespace YOpenGL
         private MatrixF _matrix;
         private Stack<object> _transforms;
 
-        internal float Opacity { get { return _opacity; } }
         private float _opacity;
 
         internal float ScaleX { get { return _scaleX; } }
@@ -30,6 +29,11 @@ namespace YOpenGL
         private float _scaleY = 1;
 
         #region Transform
+        internal Color Transform(Color color)
+        {
+            return Color.FromArgb((byte)(color.A * _opacity) , color.R, color.G, color.B);
+        }
+
         internal PointF Transform(PointF point)
         {
             return _matrix.Transform(point);
@@ -48,11 +52,6 @@ namespace YOpenGL
         internal void Transform(VectorF[] vectors)
         {
             _matrix.Transform(vectors);
-        }
-
-        internal void Transform(Color color)
-        {
-            color.A = (byte)(color.A * _opacity);
         }
 
         internal void Reset()

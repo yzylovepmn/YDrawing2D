@@ -623,6 +623,91 @@ namespace YOpenGL
         }
         #endregion
 
+        #region Spline
+        internal static List<_Line> CalcSampleLines(_Spline spline)
+        {
+            var lines = new List<_Line>();
+
+            var samplePoints = new List<PointF>();
+            if (spline.Knots.Length == 0)
+                samplePoints = spline.FitPoints.ToList();
+            else for (int i = 0; i <= (int)spline.Domain; i += 2)
+                    samplePoints.Add(ComputePoint(spline, i));
+
+            var _samplePoints = samplePoints.ToArray();
+            for (int i = 1; i < _samplePoints.Length; i++)
+                lines.Add(new _Line(_samplePoints[i - 1], _samplePoints[i], PenF.NULL));
+
+            return lines;
+        }
+
+        internal static PointF ComputePoint(_Spline spline, float u)
+        {
+            if (u > spline.Domain) throw new ArgumentOutOfRangeException();
+            int i = spline.Degree;
+            while (spline.Knots[i + 1] < u) i++;
+            int start = i - spline.Degree;
+            var p = new PointF();
+            float down = 0;
+            if (spline.Weights.Length > 0)
+            {
+                for (int j = start; j <= i; j++)
+                {
+                    float value = _GetBaseFuncValue(spline, u, j, spline.Degree);
+                    float downSpan = spline.Weights[j] * value;
+                    down += downSpan;
+                    p.X += downSpan * spline.ControlPoints[j].X;
+                    p.Y += downSpan * spline.ControlPoints[j].Y;
+                }
+                p.X /= down;
+                p.Y /= down;
+            }
+            else
+            {
+                for (int j = start; j <= i; j++)
+                {
+                    float value = _GetBaseFuncValue(spline, u, j, spline.Degree);
+                    down += value;
+                    p.X += value * spline.ControlPoints[j].X;
+                    p.Y += value * spline.ControlPoints[j].Y;
+                }
+                p.X /= down;
+                p.Y /= down;
+            }
+            return p;
+        }
+
+        private static float _GetBaseFuncValue(_Spline spline, float u, int pbase, int rank)
+        {
+            if (rank > 0)
+            {
+                return _GetRatioLeft(spline, u, pbase, rank) * _GetBaseFuncValue(spline, u, pbase, rank - 1)
+                    + _GetRatioRight(spline, u, pbase, rank) * _GetBaseFuncValue(spline, u, pbase + 1, rank - 1);
+            }
+            else
+            {
+                if (u >= spline.Knots[pbase] && u <= spline.Knots[pbase + 1]) return 1;
+                return 0;
+            }
+        }
+
+        private static float _GetRatioLeft(_Spline spline, float u, int pbase, int rank)
+        {
+            float up = u - spline.Knots[pbase];
+            float down = spline.Knots[pbase + rank] - spline.Knots[pbase];
+            if (down < 0.001) return 0;
+            return up / down;
+        }
+
+        private static float _GetRatioRight(_Spline spline, float u, int pbase, int rank)
+        {
+            float up = spline.Knots[pbase + rank + 1] - u;
+            float down = spline.Knots[pbase + rank + 1] - spline.Knots[pbase + 1];
+            if (down < 0.001) return 0;
+            return up / down;
+        }
+        #endregion
+
         #region Bezier
         internal static List<_Line> CalcSampleLines(_Bezier bezier)
         {
@@ -661,7 +746,7 @@ namespace YOpenGL
                 {
                     if (last != p)
                     {
-                        lines.Add(new _Line(last, p, null));
+                        lines.Add(new _Line(last, p, PenF.NULL));
                         last = p;
                     }
                 }

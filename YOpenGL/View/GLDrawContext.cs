@@ -74,6 +74,8 @@ namespace YOpenGL
             start = _transform.Transform(start);
             end = _transform.Transform(end);
 
+            pen.Color = _transform.Transform(pen.Color);
+
             return new _Line(start, end, pen);
         }
 
@@ -81,6 +83,11 @@ namespace YOpenGL
         {
             center = _transform.Transform(center);
             radius *= _transform.ScaleX;
+
+            pen.Color = _transform.Transform(pen.Color);
+            if (fillColor.HasValue)
+                fillColor = _transform.Transform(fillColor.Value);
+
             _primitives.Add(new _Arc(center, radius, float.PositiveInfinity, float.PositiveInfinity, pen, fillColor));
         }
 
@@ -101,12 +108,19 @@ namespace YOpenGL
             var startRadian = GeometryHelper.GetRadian(startAngle);
             var endRadian = GeometryHelper.GetRadian(endAngle);
 
+            pen.Color = _transform.Transform(pen.Color);
+
             _primitives.Add(new _Arc(center, radius, startRadian, endRadian, pen, null));
         }
 
         public void DrawRectangle(PenF pen, Color? fillColor, RectF rectangle)
         {
             rectangle.Transform(_transform.Matrix);
+
+            pen.Color = _transform.Transform(pen.Color);
+            if (fillColor.HasValue)
+                fillColor = _transform.Transform(fillColor.Value);
+
             _primitives.Add(new _Rect(rectangle, pen, fillColor));
         }
 
@@ -120,7 +134,19 @@ namespace YOpenGL
 
         private _Bezier _DrawBezier(PenF pen, int degree, IEnumerable<PointF> points)
         {
+            pen.Color = _transform.Transform(pen.Color);
+
             return new _Bezier(points.Select(p => _transform.Transform(p)).ToArray(), degree, pen);
+        }
+
+        /// <summary>
+        /// Non-uniform rational B-spline (NURBS)
+        /// </summary>
+        public void DrawSpline(PenF pen, int degree, IEnumerable<float> knots, IEnumerable<PointF> controlPoints, IEnumerable<float> weights, IEnumerable<PointF> fitPoints)
+        {
+            pen.Color = _transform.Transform(pen.Color);
+
+            _primitives.Add(new _Spline(degree, knots.ToArray(), controlPoints.Select(c => _transform.Transform(c)).ToArray(), weights.ToArray(), fitPoints.Select(f => _transform.Transform(f)).ToArray(), pen));
         }
 
         #region Stream
@@ -134,6 +160,11 @@ namespace YOpenGL
                 throw new InvalidOperationException("Must call EndFigure before call this method!");
             _begin = begin;
             _current = begin;
+
+            pen.Color = _transform.Transform(pen.Color);
+            if (fillColor.HasValue)
+                fillColor = _transform.Transform(fillColor.Value);
+
             _stream = new _Geometry(pen, fillColor, begin, isClosed);
         }
 
@@ -143,7 +174,7 @@ namespace YOpenGL
                 throw new InvalidOperationException("Must call BeginFigure before call this method!");
             if (_stream.IsClosed && _begin != _current)
                 LineTo(_begin.Value);
-            else _stream.UnClosedLine = _DrawLine(null, _current.Value, _begin.Value);
+            else _stream.UnClosedLine = _DrawLine(PenF.NULL, _current.Value, _begin.Value);
             _primitives.Add(_stream);
             _begin = null;
             _current = null;
@@ -152,7 +183,7 @@ namespace YOpenGL
         public void LineTo(PointF point)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
-            _stream.StreamTo(_DrawLine(null, _current.Value, point));
+            _stream.StreamTo(_DrawLine(PenF.NULL, _current.Value, point));
             _current = point;
         }
 
@@ -169,7 +200,7 @@ namespace YOpenGL
             var _points = new List<PointF>();
             _points.Add(_current.Value);
             _points.AddRange(points);
-            _stream.StreamTo(_DrawBezier(null, degree, _points));
+            _stream.StreamTo(_DrawBezier(PenF.NULL, degree, _points));
             _current = points.Last();
         }
 
@@ -223,7 +254,7 @@ namespace YOpenGL
                 var startRadian = GeometryHelper.GetRadian(center, startP);
                 var endRadian = GeometryHelper.GetRadian(center, endP);
 
-                _stream.StreamTo(new _Arc(center, radius, startRadian, endRadian, null));
+                _stream.StreamTo(new _Arc(center, radius, startRadian, endRadian, PenF.NULL));
             }
         }
         #endregion

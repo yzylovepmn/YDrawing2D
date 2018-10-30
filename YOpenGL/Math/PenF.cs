@@ -7,12 +7,20 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    public class PenF
+    public struct PenF
     {
+        public static readonly PenF NULL;
+
+        static PenF()
+        {
+            NULL = new PenF(-1, Colors.Transparent, null);
+        }
+
         public PenF(float thickness, Color color, byte[] dashes = null)
         {
             _thickness = thickness;
             _color = color;
+            _data = null;
             if (dashes != null)
                 _data = _GenData(dashes);
         }
@@ -26,8 +34,10 @@ namespace YOpenGL
         /// <summary>
         /// Color of the pen
         /// </summary>
-        public Color Color { get { return _color; } }
+        public Color Color { get { return _color; } set { _color = value; } }
         private Color _color;
+
+        public bool IsNULL { get { return _thickness < 0; } }
 
         public byte[] Data { get { return _data; } }
         private byte[] _data;
@@ -49,9 +59,7 @@ namespace YOpenGL
 
         public static bool operator ==(PenF pen1, PenF pen2)
         {
-            if (ReferenceEquals(pen1, pen2)) return true;
-            if (pen1 is null || pen2 is null) return false;
-            if (pen1._thickness == pen2._thickness && pen1._color == pen2._color)
+            if (pen1._thickness == pen2._thickness && pen1.Color == pen2.Color)
             {
                 if (pen1._data == null && pen2._data == null)
                     return true;
@@ -75,7 +83,7 @@ namespace YOpenGL
 
         public override int GetHashCode()
         {
-            var code = _thickness.GetHashCode() ^ _color.GetHashCode();
+            var code = _thickness.GetHashCode() ^ Color.GetHashCode();
             if (_data != null)
                 foreach (var dash in _data)
                     code ^= dash.GetHashCode();

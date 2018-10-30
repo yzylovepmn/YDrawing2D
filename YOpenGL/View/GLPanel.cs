@@ -395,7 +395,7 @@ namespace YOpenGL
                 {
                     foreach (var primitive in visual.Context.Primitives)
                     {
-                        if (primitive.Pen != null)
+                        if (!primitive.Pen.IsNULL)
                             _AttachModel(primitive, primitive.Pen);
                         if (primitive.Filled)
                             _AttachFillModels(primitive);

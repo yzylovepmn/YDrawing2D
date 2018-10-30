@@ -74,7 +74,6 @@ namespace YOpenGL
             _innerLines.Dispose();
             _innerLines.Clear();
             _innerLines = null;
-            _pen = null;
         }
     }
 }
