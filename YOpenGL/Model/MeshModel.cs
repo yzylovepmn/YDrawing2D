@@ -24,10 +24,11 @@ namespace YOpenGL
 
         internal virtual bool TryAttachPrimitive(IPrimitive primitive, bool isOutline = true)
         {
-            var cnt = primitive[isOutline].Count();
+            var points = primitive[isOutline];
+            var cnt = points.Count();
             if (cnt < Capacity && _points.Count + cnt > Capacity)
                 return false;
-            _points.AddRange(primitive[isOutline]);
+            _points.AddRange(points);
             return true;
         }
 

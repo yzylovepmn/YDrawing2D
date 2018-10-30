@@ -35,7 +35,7 @@ namespace YOpenGL
             var ret = base.TryAttachPrimitive(primitive, isOutline);
             if (ret)
             {
-                _indices.AddRange(GeometryHelper.GenRectIndices(oldCount));
+                _indices.AddRange(GeometryHelper.GenIndices(primitive, oldCount));
                 return true;
             }
             return false;
@@ -44,7 +44,6 @@ namespace YOpenGL
         internal override void Draw()
         {
             GLFunc.BindVertexArray(_vao[0]);
-            GLFunc.BindBuffer(GLConst.GL_ELEMENT_ARRAY_BUFFER, _ebo[0]);
             GLFunc.DrawElements(GLConst.GL_TRIANGLES, _indices.Count, GLConst.GL_UNSIGNED_INT, 0);
         }
 

@@ -33,6 +33,7 @@ namespace YOpenGL
             _viewResverse = new MatrixF();
             _visuals = new List<GLVisual>();
             _fillModels = new Dictionary<Color, List<MeshModel>>();
+            _streamModels = new Dictionary<Color, List<MeshModel>>();
             _lineModels = new Dictionary<PenF, List<MeshModel>>();
             _arcModels = new Dictionary<PenF, List<MeshModel>>();
             _shaders = new List<Shader>();
@@ -65,6 +66,7 @@ namespace YOpenGL
         #region MSAA
         private uint[] _fbo;
         private uint[] _texture_msaa;
+        private uint[] _rbo;
 
         private int _viewWidth;
         private int _viewHeight;
@@ -85,6 +87,7 @@ namespace YOpenGL
         protected List<GLVisual> _visuals;
 
         private Dictionary<Color, List<MeshModel>> _fillModels;
+        private Dictionary<Color, List<MeshModel>> _streamModels;
         private Dictionary<PenF, List<MeshModel>> _lineModels;
         private Dictionary<PenF, List<MeshModel>> _arcModels;
 
@@ -185,6 +188,7 @@ namespace YOpenGL
         public void AddVisual(GLVisual visual, bool refresh = false)
         {
             _visuals.Add(visual);
+            visual.Panel = this;
             _Update(visual);
             if (refresh)
                 _Refresh();
@@ -193,6 +197,7 @@ namespace YOpenGL
         public void RemoveVisual(GLVisual visual)
         {
             _visuals.Remove(visual);
+            visual.Panel = null;
             _needUpdate = true;
             _Refresh();
         }
@@ -237,9 +242,10 @@ namespace YOpenGL
         #region RenderFrame
         private void _DispatchFrame()
         {
-            GLFunc.ClearColor(_red, _green, _blue, 1.0f);
             GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
-            GLFunc.Clear(GLConst.GL_COLOR_BUFFER_BIT | GLConst.GL_DEPTH_BUFFER_BIT | GLConst.GL_STENCIL_BUFFER_BIT);
+
+            GLFunc.ClearColor(_red, _green, _blue, 1.0f);
+            GLFunc.Clear(GLConst.GL_COLOR_BUFFER_BIT);
 
             GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, _matrix[0]);
             GLFunc.BufferSubData(GLConst.GL_UNIFORM_BUFFER, 0, 12 * sizeof(float), _worldToNDC.GetData(true));
@@ -275,10 +281,10 @@ namespace YOpenGL
             GL.MakeContextCurrent(Handle);
             GLFunc.Init();
             GLFunc.Enable(GLConst.GL_BLEND);
-            GLFunc.Enable(GLConst.GL_CULL_FACE);
             GLFunc.Enable(GLConst.GL_LINE_WIDTH);
             GLFunc.Enable(GLConst.GL_LINE_SMOOTH);
             GLFunc.BlendFunc(GLConst.GL_SRC_ALPHA, GLConst.GL_ONE_MINUS_SRC_ALPHA);
+            GLFunc.StencilMask(1);
             _CreateResource();
 
             _timer.Start(Timeout.Infinite, Timeout.Infinite);
@@ -296,7 +302,7 @@ namespace YOpenGL
 
             // for draw cicle and arc
             _arcshader.Use();
-            _arcshader.SetVec2("samples", 65, GeometryHelper.GenArcPoints(360 / 64f, 0, 360).GetData());
+            _arcshader.SetVec2("samples", 65, GeometryHelper.UnitCicle.GetData());
 
             // for dash line texture
             _texture_dash = new uint[1];
@@ -311,12 +317,17 @@ namespace YOpenGL
             // for anti-aliasing
             _fbo = new uint[1];
             _texture_msaa = new uint[1];
+            _rbo = new uint[1];
             GLFunc.GenFramebuffers(1, _fbo);
             GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
             GLFunc.GenTextures(1, _texture_msaa);
             GLFunc.BindTexture(GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0]);
             GLFunc.FramebufferTexture2D(GLConst.GL_FRAMEBUFFER, GLConst.GL_COLOR_ATTACHMENT0, GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0], 0);
             GLFunc.TexImage2DMultisample(GLConst.GL_TEXTURE_2D_MULTISAMPLE, 4, GLConst.GL_RGB, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11), GLConst.GL_TRUE);
+            GLFunc.GenRenderbuffers(1, _rbo);
+            GLFunc.BindRenderbuffer(GLConst.GL_RENDERBUFFER, _rbo[0]);
+            GLFunc.RenderbufferStorageMultisample(GLConst.GL_RENDERBUFFER, 4, GLConst.GL_STENCIL_INDEX1, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11));
+            GLFunc.FramebufferRenderbuffer(GLConst.GL_FRAMEBUFFER, GLConst.GL_STENCIL_ATTACHMENT, GLConst.GL_RENDERBUFFER, _rbo[0]);
 
             // for transform
             _matrix = new uint[1];
@@ -339,6 +350,7 @@ namespace YOpenGL
 
             GLFunc.DeleteFramebuffers(1, _fbo);
             GLFunc.DeleteTextures(1, _texture_msaa);
+            GLFunc.DeleteRenderbuffers(1, _rbo);
 
             GLFunc.DeleteBuffers(1, _matrix);
         }
@@ -383,7 +395,8 @@ namespace YOpenGL
                 {
                     foreach (var primitive in visual.Context.Primitives)
                     {
-                        _AttachModel(primitive);
+                        if (primitive.Pen != null)
+                            _AttachModel(primitive, primitive.Pen);
                         if (primitive.Filled)
                             _AttachFillModels(primitive);
                     }
@@ -392,8 +405,15 @@ namespace YOpenGL
             }
         }
 
-        private void _AttachModel(IPrimitive primitive)
+        private void _AttachModel(IPrimitive primitive, PenF pen)
         {
+            if (primitive.Type == PrimitiveType.Geometry)
+            {
+                foreach (var item in ((_Geometry)primitive).Stream)
+                    _AttachModel(item, pen);
+                return;
+            }
+
             var model = default(MeshModel);
             var models = default(Dictionary<PenF, List<MeshModel>>);
 
@@ -401,19 +421,19 @@ namespace YOpenGL
                 models = _arcModels;
             else models = _lineModels;
 
-            if (models.ContainsKey(primitive.Pen))
-                model = models[primitive.Pen].Last();
+            if (models.ContainsKey(pen))
+                model = models[pen].Last();
             else
             {
                 model = _GreateModel(primitive);
                 model.BeginInit();
-                models.Add(primitive.Pen, new List<MeshModel>() { model });
+                models.Add(pen, new List<MeshModel>() { model });
             }
             if (!model.TryAttachPrimitive(primitive))
             {
                 model = _GreateModel(primitive);
                 model.BeginInit();
-                models[primitive.Pen].Add(model);
+                models[pen].Add(model);
                 model.TryAttachPrimitive(primitive);
             }
         }
@@ -421,7 +441,7 @@ namespace YOpenGL
         private void _AttachFillModels(IPrimitive primitive)
         {
             var model = default(MeshModel);
-            var models = _fillModels;
+            var models = primitive.Type == PrimitiveType.Geometry ? _streamModels : _fillModels;
 
             if (models.ContainsKey(primitive.FillColor.Value))
                 model = models[primitive.FillColor.Value].Last();
@@ -443,7 +463,11 @@ namespace YOpenGL
         private MeshModel _GreateModel(IPrimitive primitive, bool isFilled = false)
         {
             if (isFilled)
+            {
+                if (primitive.Type == PrimitiveType.Geometry)
+                    return new StreamModel();
                 return new FillModel();
+            }
             if (primitive.Type == PrimitiveType.Arc)
                 return new ArcModel();
             return new LinesModel();
@@ -462,10 +486,20 @@ namespace YOpenGL
             foreach (var value in _fillModels.Values)
                 foreach (var model in value)
                     model.EndInit();
+
+            foreach (var value in _streamModels.Values)
+                foreach (var model in value)
+                    model.EndInit();
         }
 
         private void _DrawModels()
         {
+            GLFunc.Enable(GLConst.GL_STENCIL_TEST);
+            foreach (var pair in _streamModels)
+                _DrawFilledModelHandle(pair, _fillshader);
+            GLFunc.Disable(GLConst.GL_STENCIL_TEST);
+
+            GLFunc.Enable(GLConst.GL_CULL_FACE);
             foreach (var pair in _fillModels)
                 _DrawFilledModelHandle(pair, _fillshader);
 
@@ -474,6 +508,7 @@ namespace YOpenGL
 
             foreach (var pair in _arcModels)
                 _DrawModelHandle(pair, _arcshader);
+            GLFunc.Disable(GLConst.GL_CULL_FACE);
         }
 
         private void _DrawModelHandle(KeyValuePair<PenF, List<MeshModel>> pair, Shader shader)
@@ -608,6 +643,7 @@ namespace YOpenGL
 
             _DisposeModels();
             _fillModels = null;
+            _streamModels = null;
             _lineModels = null;
             _arcModels = null;
         }
@@ -622,12 +658,15 @@ namespace YOpenGL
         {
             foreach (var item in _fillModels.Values)
                 item?.Dispose();
+            foreach (var item in _streamModels.Values)
+                item?.Dispose();
             foreach (var item in _lineModels.Values)
                 item?.Dispose();
             foreach (var item in _arcModels.Values)
                 item?.Dispose();
 
             _fillModels.Clear();
+            _streamModels.Clear();
             _lineModels.Clear();
             _arcModels.Clear();
         }

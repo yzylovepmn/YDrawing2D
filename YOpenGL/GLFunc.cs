@@ -1601,6 +1601,11 @@ namespace YOpenGL
             glEnable?.Invoke(cap);
         }
 
+        public static void Disable(GLenum cap)
+        {
+            glDisable?.Invoke(cap);
+        }
+
         public static void GenVertexArrays(GLsizei n, GLuint[] arrays)
         {
             glGenVertexArrays?.Invoke(n, arrays);
@@ -2308,6 +2313,63 @@ namespace YOpenGL
         public static void GetProgramInfoLog(GLuint program, GLsizei bufSize, GLsizei[] length, GLchar[] infoLog)
         {
             glGetProgramInfoLog?.Invoke(program, bufSize, length, infoLog);
+        }
+
+        public static void GenRenderbuffers(GLsizei n, GLuint[] renderbuffers)
+        {
+            glGenRenderbuffers?.Invoke(n, renderbuffers);
+        }
+
+        public static void BindRenderbuffer(GLenum target, GLuint renderbuffer)
+        {
+            glBindRenderbuffer?.Invoke(target, renderbuffer);
+        }
+
+        public static void RenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, GLsizei height)
+        {
+            glRenderbufferStorage?.Invoke(target, internalformat, width, height);
+        }
+
+        public static void RenderbufferStorageMultisample(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height)
+        {
+            glRenderbufferStorageMultisample?.Invoke(target, samples, internalformat, width, height);
+        }
+
+        public static void FramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
+        {
+            glFramebufferRenderbuffer?.Invoke(target, attachment, renderbuffertarget, renderbuffer);
+        }
+
+        public static void DeleteRenderbuffers(GLsizei n, GLuint[] renderbuffers)
+        {
+            glDeleteRenderbuffers?.Invoke(n, renderbuffers);
+        }
+
+        public static void StencilMask(GLuint mask)
+        {
+            glStencilMask?.Invoke(mask);
+        }
+
+        public static void StencilFunc(GLenum func, GLint _ref, GLuint mask)
+        {
+            glStencilFunc?.Invoke(func, _ref, mask);
+        }
+
+        public static void StencilOp(GLenum fail, GLenum zfail, GLenum zpass)
+        {
+            glStencilOp?.Invoke(fail, zfail, zpass);
+        }
+
+        public static void ColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha)
+        {
+            glColorMask?.Invoke(red, green, blue, alpha);
+        }
+
+        public static GLenum CheckFramebufferStatus(GLenum target)
+        {
+            if (glCheckFramebufferStatus != null)
+                return glCheckFramebufferStatus(target);
+            return 0;
         }
         #endregion
 

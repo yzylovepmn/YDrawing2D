@@ -16,6 +16,29 @@ namespace YOpenGL
 
             Start = start;
             End = end;
+
+            var deltaY = End.Y - Start.Y;
+            var deltaX = End.X - Start.X;
+            var k = deltaY / deltaX;
+            if (float.IsInfinity(k))
+            {
+                A = 1;
+                B = 0;
+                C = -Start.X;
+            }
+            else
+            {
+                var b = Start.Y - k * Start.X;
+                A = k;
+                B = -1;
+                C = b;
+                if (k < 0)
+                {
+                    A = -A;
+                    B = -B;
+                    C = -C;
+                }
+            }
         }
 
         public RectF Bounds { get { return _bounds; } }
@@ -34,26 +57,23 @@ namespace YOpenGL
         {
             get
             {
-                yield return Start;
+                if (isOutline)
+                    yield return Start;
                 yield return End;
             }
         }
 
         internal PointF Start;
         internal PointF End;
+        internal float A;
+        internal float B;
+        internal float C;
 
         public bool HitTest(PointF p, float sensitive)
         {
-            var deltaY = End.Y - Start.Y;
-            var deltaX = End.X - Start.X;
-            var k = deltaY / deltaX;
-            if (float.IsInfinity(k))
+            if (B == 0)
                 return Math.Abs(p.X - Start.X) < sensitive;
-            else
-            {
-                var b = Start.Y - k * Start.X;
-                return Math.Abs(p.Y - k * p.X - b) / Math.Sqrt(k * k + 1) < sensitive;
-            }
+            else return Math.Abs(A * p.X + B * p.Y + C) / Math.Sqrt(A * A + B * B) < sensitive;
         }
 
         public void Dispose()

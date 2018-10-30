@@ -371,7 +371,7 @@ namespace YOpenGL
                 }
                 else
                 {
-                    //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)                    
+                    //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)
                     Float maxRight = Math.Max(Right, rect.Right);
                     _width = Math.Max(maxRight - left, 0);
                 }

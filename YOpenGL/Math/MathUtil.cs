@@ -17,6 +17,13 @@ namespace YOpenGL
             b = c;
         }
 
+        public static void Switch(ref PointF p1, ref PointF p2)
+        {
+            var p = p1;
+            p1 = p2;
+            p2 = p;
+        }
+
         public static bool IsZero(double value)
         {
             return Math.Abs(value) < 10.0 * DBL_EPSILON;

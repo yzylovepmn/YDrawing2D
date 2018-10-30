@@ -30,7 +30,7 @@ namespace YDrawing2DTest
         {
             InitializeComponent();
             Loaded += OnLoaded;
-            _glPanel = new GLPanel(new PointF(100, 100), Colors.Black);
+            _glPanel = new GLPanel(new PointF(0, 0), Colors.Black);
             Content = _glPanel;
         }
 
@@ -127,8 +127,11 @@ namespace YDrawing2DTest
                 //_glPanel.AddVisual(new Cicle(new PointF(0, 0), i * 2));
                 //_glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i + 100)));
             }
-            _glPanel.AddVisual(new Arc(new PointF(0, 0), 10, 30, 100));
-            _glPanel.AddVisual(new Rectangle(new RectF(new PointF(0, 0), new PointF(300, 600))));
+            _glPanel.AddVisual(new CustomShape());
+            //_glPanel.AddVisual(new Cicle(new PointF(500, 500), 200));
+            //_glPanel.AddVisual(new Cicle(new PointF(100, 500), 100));
+            //_glPanel.AddVisual(new Arc(new PointF(550, 100), 10, 30, 100));
+            //_glPanel.AddVisual(new Rectangle(new RectF(new PointF(500, 0), new PointF(300, 600))));
             _glPanel.MouseMove += _panel_MouseMove;
             _glPanel.MouseWheel += _panel_MouseWheel;
             _glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
@@ -214,27 +217,20 @@ namespace YDrawing2DTest
         }
     }
 
-    public class CustomShape : PresentationVisual
+    public class CustomShape : GLVisual
     {
-        protected override void Draw(IContext context)
+        protected override void Draw(GLDrawContext context)
         {
-            context.PushOpacity(0.5);
-            if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                context.BeginFigure(null, MainWindow.ActivePen, new Point(600, 400), true);
-            else if (this == MainWindow.SelectedVisual)
-                context.BeginFigure(null, MainWindow.SelectedPen, new Point(600, 400), true);
-            else context.BeginFigure(null, MainWindow.WhitePen, new Point(600, 400), true);
-
-            //context.LineTo(new Point(700, 400));
-            //context.LineTo(new Point(750, 480));
-            //context.LineTo(new Point(800, 400));
-            //context.LineTo(new Point(900, 400));
-            //context.LineTo(new Point(820, 350));
-            //
-            //context.ArcTo(new Point(600, 480), 180, false, false);
-
-            context.BezierTo(2, new List<Point>() { new Point(500, 300), new Point(300, 700) });
-
+            if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
+                context.BeginFigure(MainWindow.GLActivePen, Colors.Blue, new PointF(100, 100), true);
+            else if (this == MainWindow.GLSelectedVisual)
+                context.BeginFigure(MainWindow.GLSelectedPen, Colors.Red, new PointF(100, 100), true);
+            else context.BeginFigure(MainWindow.GLWhitePen, Colors.Green, new PointF(100, 100), true);
+            //context.LineTo(new PointF(300, 100));
+            context.LineTo(new PointF(300, 500));
+            //context.LineTo(new PointF(100, 500));
+            //context.ArcTo(new PointF(200, 200), 400, true, true);
+            context.BezierTo(2, new List<PointF>() { new PointF(200, 400), new PointF(300, 200) });
             context.EndFigure();
         }
     }
@@ -295,9 +291,9 @@ namespace YDrawing2DTest
         protected override void Draw(GLDrawContext context)
         {
             if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
-                context.DrawCicle(MainWindow.GLActivePen, null, _center, _radius);
+                context.DrawCicle(MainWindow.GLActivePen, Colors.Blue, _center, _radius);
             else if (this == MainWindow.GLSelectedVisual)
-                context.DrawCicle(MainWindow.GLSelectedPen, null, _center, _radius);
+                context.DrawCicle(MainWindow.GLSelectedPen, Colors.Red, _center, _radius);
             else context.DrawCicle(MainWindow.GLWhitePen, null, _center, _radius);
         }
     }

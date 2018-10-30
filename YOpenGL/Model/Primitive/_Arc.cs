@@ -47,15 +47,35 @@ namespace YOpenGL
         {
             get
             {
-                yield return Center;
+                if (isOutline)
+                    yield return Center;
+                else
+                {
+                    if (IsCicle)
+                    {
+                        yield return Center;
+                        foreach (var point in GeometryHelper.UnitCicle)
+                            yield return new PointF(Center.X + point.X * Radius, Center.Y + point.Y * Radius);
+                    }
+                    else
+                    {
+                        foreach (var point in GeometryHelper.GenArcPoints(StartRadian, EndRadian).Skip(1))
+                            yield return new PointF(Center.X + point.X * Radius, Center.Y + point.Y * Radius);
+                    }
+                }
             }
         }
 
         public bool HitTest(PointF p, float sensitive)
         {
             if (IsEmpty) return false;
-            if (IsCicle || GeometryHelper.IsArcContain(this, p))
-                return Math.Abs((p - Center).Length - Radius) < sensitive;
+            if (IsCicle || GeometryHelper.IsPossibleArcContain(this, p))
+            {
+                var vec = p - Center;
+                if (Filled)
+                    return vec.Length - Radius < sensitive;
+                return Math.Abs(vec.Length - Radius) < sensitive;
+            }
             return false;
         }
 

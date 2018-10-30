@@ -40,7 +40,7 @@ namespace YOpenGL
                     yield return _bounds.BottomRight;
                     yield return _bounds.BottomLeft;
                 }
-                else if (_pen != null)
+                else
                 {
                     yield return _bounds.TopLeft;
                     yield return _bounds.TopRight;

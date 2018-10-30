@@ -9,7 +9,16 @@ namespace YOpenGL
 {
     public static class GeometryHelper
     {
-        public static bool IsArcContain(_Arc arc, PointF point)
+        internal readonly static PointF[] UnitCicle;
+        internal readonly static float DeltaRadian;
+
+        static GeometryHelper()
+        {
+            DeltaRadian = GetRadian(360 / 64f);
+            UnitCicle = GenCiclePoints().ToArray();
+        }
+
+        internal static bool IsPossibleArcContain(_Arc arc, PointF point)
         {
             var vec = point - arc.Center;
             var radian = (float)Math.Atan(vec.Y / vec.X);
@@ -27,7 +36,17 @@ namespace YOpenGL
             return radian >= endRadian && radian <= startRadian;
         }
 
-        public static void FormatRadian(ref float radian)
+        internal static float GetRadian(PointF center, PointF p)
+        {
+            var vec = p - center;
+            var radian = (float)Math.Atan(vec.Y / vec.X);
+            if (vec.X < 0)
+                radian += (float)Math.PI;
+            FormatRadian(ref radian);
+            return radian;
+        }
+
+        internal static void FormatRadian(ref float radian)
         {
             var _radian = (double)radian;
 
@@ -40,7 +59,7 @@ namespace YOpenGL
             radian = (float)_radian;
         }
 
-        public static void FormatAngle(ref float angle)
+        internal static void FormatAngle(ref float angle)
         {
             var _angle = (double)angle;
 
@@ -55,36 +74,535 @@ namespace YOpenGL
         /// <summary>
         /// Generate points clockwise(In order to get more accurate results, no matrix rotation is used)
         /// </summary>
-        public static IEnumerable<PointF> GenArcPoints(float deltaAngle, float startAngle, float wAngle)
+        internal static IEnumerable<PointF> GenCiclePoints()
         {
-            if (MathUtil.IsZero(deltaAngle))
-                throw new ArgumentOutOfRangeException("deltaAngle can not be zero!");
+            var cnt = 64;
 
-            FormatAngle(ref wAngle);
-            deltaAngle = Math.Abs(deltaAngle);
-
-            var fcnt = wAngle / deltaAngle;
-            var cnt = (int)fcnt;
-
-            var curRadian = GetRadian(startAngle);
-            var deltaRadian = GetRadian(deltaAngle);
+            var curRadian = 0f;
             for (int i = 0; i <= cnt; i++)
             {
                 yield return (PointF)new Point(Math.Cos(curRadian), Math.Sin(curRadian));
-                curRadian += deltaRadian;
+                curRadian += DeltaRadian;
             }
-
-            if (fcnt > cnt)
-                yield return (PointF)new Point(Math.Cos(GetRadian(startAngle + wAngle)), Math.Sin(GetRadian(startAngle + wAngle)));
         }
 
-        public static float GetRadian(float angle)
+        internal static IEnumerable<PointF> GenArcPoints(float startRadian, float endRadian)
+        {
+            var points = new List<PointF>();
+            float curRadian = 0;
+            bool flag = false, isAfter = startRadian > endRadian, needRestart = endRadian > 0;
+            if (!isAfter)
+            {
+                endRadian -= 2 * (float)Math.PI;
+                curRadian -= 2 * (float)Math.PI;
+            }
+            for (int i = 0; i < 65;)
+            {
+                if (!flag)
+                {
+                    if (endRadian <= curRadian)
+                    {
+                        flag = true;
+                        if (endRadian < curRadian)
+                            points.Add(new PointF((float)Math.Cos(endRadian), (float)Math.Sin(endRadian)));
+                        if (curRadian < startRadian)
+                            points.Add(UnitCicle[i]);
+                        else if (curRadian >= startRadian)
+                        {
+                            points.Add(new PointF((float)Math.Cos(startRadian), (float)Math.Sin(startRadian)));
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    if (curRadian < startRadian)
+                        points.Add(UnitCicle[i]);
+                    else if (curRadian >= startRadian)
+                    {
+                        points.Add(new PointF((float)Math.Cos(startRadian), (float)Math.Sin(startRadian)));
+                        break;
+                    }
+                }
+                curRadian += DeltaRadian;
+                i++;
+                if (i == 65 && needRestart)
+                    i = 1;
+            }
+            points.Reverse();
+            return points;
+        }
+
+        internal static float GetRadian(float angle)
         {
             return (float)(angle * Math.PI / 180);
         }
 
+        internal static float GetLength(IEnumerable<PointF> points)
+        {
+            var len = 0f;
+            var flag = true;
+            var last = default(PointF);
+            foreach (var p in points)
+            {
+                if (flag)
+                {
+                    flag = false;
+                    last = p;
+                }
+                else
+                {
+                    len += (p - last).Length;
+                    last = p;
+                }
+            }
+            return len;
+        }
+
+        public static bool Contains(_Geometry geo, PointF point)
+        {
+            int leftpass = 0, toppass = 0, rightpass = 0, bottompass = 0;
+            var primitives = new List<IPrimitive>();
+            foreach (var primitive in geo.Stream)
+            {
+                switch (primitive.Type)
+                {
+                    case PrimitiveType.Line:
+                    case PrimitiveType.Arc:
+                        primitives.Add(primitive);
+                        break;
+                    case PrimitiveType.Bezier:
+                        primitives.AddRange(((_Bezier)primitive).InnerLines.Cast<IPrimitive>());
+                        break;
+                }
+            }
+
+            if (geo.UnClosedLine.HasValue)
+                primitives.Add(geo.UnClosedLine.Value);
+
+            foreach (var primitive in primitives)
+            {
+                switch (primitive.Type)
+                {
+                    case PrimitiveType.Line:
+                        var line = (_Line)primitive;
+                        if (line.Start.X > point.X)
+                        {
+                            if (line.Start.Y > point.Y)
+                            {
+                                if (line.End.X > point.X)
+                                {
+                                    // 1 1
+                                    if (line.End.Y > point.Y)
+                                        continue;
+                                    else
+                                    {
+                                        // 1 4
+                                        rightpass++;
+                                    }
+                                }
+                                else
+                                {
+                                    // 1 2
+                                    if (line.End.Y > point.Y)
+                                    {
+                                        toppass++;
+                                    }
+                                    else
+                                    {
+                                        // 1 3
+                                        var v = line.A * point.X + line.B * point.Y + line.C;
+                                        if (v > 0)
+                                        {
+                                            toppass++;
+                                            leftpass++;
+                                        }
+                                        if (v < 0)
+                                        {
+                                            rightpass++;
+                                            bottompass++;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (line.End.X > point.X)
+                                {
+                                    if (line.End.Y > point.Y)
+                                    {
+                                        // 4 1
+                                        rightpass++;
+                                    }
+                                    else
+                                    {
+                                        // 4 4
+                                        continue;
+                                    }
+                                }
+                                else
+                                {
+                                    if (line.End.Y > point.Y)
+                                    {
+                                        // 4 2
+                                        var v = line.A * point.X + line.B * point.Y + line.C;
+                                        if (v > 0)
+                                        {
+                                            bottompass++;
+                                            leftpass++;
+                                        }
+                                        if (v < 0)
+                                        {
+                                            rightpass++;
+                                            toppass++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // 4 3
+                                        bottompass++;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (line.Start.Y > point.Y)
+                            {
+                                if (line.End.X > point.X)
+                                {
+                                    // 2 1
+                                    if (line.End.Y > point.Y)
+                                        toppass++;
+                                    else
+                                    {
+                                        // 2 4
+                                        var v = line.A * point.X + line.B * point.Y + line.C;
+                                        if (v > 0)
+                                        {
+                                            bottompass++;
+                                            leftpass++;
+                                        }
+                                        if (v < 0)
+                                        {
+                                            rightpass++;
+                                            toppass++;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // 2 2
+                                    if (line.End.Y > point.Y)
+                                        continue;
+                                    else
+                                    {
+                                        // 2 3
+                                        leftpass++;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (line.End.X > point.X)
+                                {
+                                    if (line.End.Y > point.Y)
+                                    {
+                                        // 3 1
+                                        var v = line.A * point.X + line.B * point.Y + line.C;
+                                        if (v > 0)
+                                        {
+                                            toppass++;
+                                            leftpass++;
+                                        }
+                                        if (v < 0)
+                                        {
+                                            rightpass++;
+                                            bottompass++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // 3 4
+                                        bottompass++;
+                                    }
+                                }
+                                else
+                                {
+                                    if (line.End.Y > point.Y)
+                                    {
+                                        // 3 2
+                                        leftpass++;
+                                    }
+                                    else
+                                    {
+                                        // 3 3
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case PrimitiveType.Arc:
+                        var arc = (_Arc)primitive;
+                        var start = new PointF(arc.Center.X + arc.Radius * (float)Math.Cos(arc.StartRadian), arc.Center.Y + arc.Radius * (float)Math.Sin(arc.StartRadian));
+                        var end = new PointF(arc.Center.X + arc.Radius * (float)Math.Cos(arc.EndRadian), arc.Center.Y + arc.Radius * (float)Math.Sin(arc.EndRadian));
+                        if (start.X > point.X)
+                        {
+                            if (start.Y > point.Y)
+                            {
+                                if (end.X > point.X)
+                                {
+                                    // 1 1
+                                    if (end.Y > point.Y)
+                                    {
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius)
+                                        {
+                                            leftpass++;
+                                            toppass++;
+                                            rightpass++;
+                                            bottompass++;
+                                        }
+                                        else if (len == arc.Radius)
+                                            return true;
+                                    }
+                                    else
+                                    {
+                                        // 1 4
+                                        rightpass++;
+                                    }
+                                }
+                                else
+                                {
+                                    // 1 2
+                                    if (end.Y > point.Y)
+                                    {
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius)
+                                        {
+                                            leftpass++;
+                                            bottompass++;
+                                            rightpass++;
+                                        }
+                                        else if (len > arc.Radius)
+                                            toppass++;
+                                        else return true;
+                                    }
+                                    else
+                                    {
+                                        // 1 3
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius || arc.Center.X > point.X)
+                                        {
+                                            bottompass++;
+                                            rightpass++;
+                                        }
+                                        else if (len > arc.Radius)
+                                        {
+                                            leftpass++;
+                                            toppass++;
+                                        }
+                                        else return true;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (end.X > point.X)
+                                {
+                                    if (end.Y > point.Y)
+                                    {
+                                        // 4 1
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius)
+                                        {
+                                            leftpass++;
+                                            bottompass++;
+                                            toppass++;
+                                        }
+                                        else if (len > arc.Radius)
+                                            rightpass++;
+                                        else return true;
+                                    }
+                                    else
+                                    {
+                                        // 4 4
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius)
+                                        {
+                                            leftpass++;
+                                            toppass++;
+                                            rightpass++;
+                                            bottompass++;
+                                        }
+                                        else if (len == arc.Radius)
+                                            return true;
+                                    }
+                                }
+                                else
+                                {
+                                    if (end.Y > point.Y)
+                                    {
+                                        // 4 2
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius || arc.Center.X < point.X)
+                                        {
+                                            bottompass++;
+                                            leftpass++;
+                                        }
+                                        else if (len > arc.Radius)
+                                        {
+                                            rightpass++;
+                                            toppass++;
+                                        }
+                                        else return true;
+                                    }
+                                    else
+                                    {
+                                        // 4 3
+                                        bottompass++;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (start.Y > point.Y)
+                            {
+                                if (end.X > point.X)
+                                {
+                                    // 2 1
+                                    if (end.Y > point.Y)
+                                        toppass++;
+                                    else
+                                    {
+                                        // 2 4
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius || arc.Center.X > point.X)
+                                        {
+                                            toppass++;
+                                            rightpass++;
+                                        }
+                                        else if (len > arc.Radius)
+                                        {
+                                            leftpass++;
+                                            bottompass++;
+                                        }
+                                        else return true;
+                                    }
+                                }
+                                else
+                                {
+                                    // 2 2
+                                    if (end.Y > point.Y)
+                                    {
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius)
+                                        {
+                                            leftpass++;
+                                            toppass++;
+                                            rightpass++;
+                                            bottompass++;
+                                        }
+                                        else if (len == arc.Radius)
+                                            return true;
+                                    }
+                                    else
+                                    {
+                                        // 2 3
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius)
+                                        {
+                                            rightpass++;
+                                            bottompass++;
+                                            toppass++;
+                                        }
+                                        else if (len > arc.Radius)
+                                            leftpass++;
+                                        else return true;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (end.X > point.X)
+                                {
+                                    if (end.Y > point.Y)
+                                    {
+                                        // 3 1
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius || arc.Center.X < point.X)
+                                        {
+                                            toppass++;
+                                            leftpass++;
+                                        }
+                                        else if (len > arc.Radius)
+                                        {
+                                            rightpass++;
+                                            bottompass++;
+                                        }
+                                        else return true;
+                                    }
+                                    else
+                                    {
+                                        // 3 4
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius)
+                                        {
+                                            rightpass++;
+                                            leftpass++;
+                                            toppass++;
+                                        }
+                                        else if (len > arc.Radius)
+                                            bottompass++;
+                                        else return true;
+                                    }
+                                }
+                                else
+                                {
+                                    if (end.Y > point.Y)
+                                    {
+                                        // 3 2
+                                        leftpass++;
+                                    }
+                                    else
+                                    {
+                                        // 3 3
+                                        var len = (point - arc.Center).Length;
+                                        if (len < arc.Radius)
+                                        {
+                                            leftpass++;
+                                            toppass++;
+                                            rightpass++;
+                                            bottompass++;
+                                        }
+                                        else if (len == arc.Radius)
+                                            return true;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+            return leftpass % 2 == 1 && toppass % 2 == 1 && rightpass % 2 == 1 && bottompass % 2 == 1;
+        }
+
         #region Indices
-        public static IEnumerable<uint> GenRectIndices(uint offset)
+        internal static IEnumerable<uint> GenIndices(IPrimitive primitive, uint offset)
+        {
+            switch (primitive.Type)
+            {
+                case PrimitiveType.Arc:
+                    return _GenCicleIndices(offset);
+                case PrimitiveType.Rect:
+                    return _GenRectIndices(offset);
+            }
+            return null;
+        }
+
+        private static IEnumerable<uint> _GenRectIndices(uint offset)
         {
             yield return offset + 0;
             yield return offset + 1;
@@ -92,6 +610,82 @@ namespace YOpenGL
             yield return offset + 0;
             yield return offset + 2;
             yield return offset + 3;
+        }
+
+        private static IEnumerable<uint> _GenCicleIndices(uint offset)
+        {
+            for (uint i = 1; i < 65; i++)
+            {
+                yield return offset;
+                yield return offset + i;
+                yield return offset + i + 1;
+            }
+        }
+        #endregion
+
+        #region Bezier
+        internal static List<_Line> CalcSampleLines(_Bezier bezier)
+        {
+            var lines = new List<_Line>();
+
+            var samplePoints = new List<PointF>();
+            var i = 0.0;
+            var delta = 5f / GetLength(bezier.Points);
+
+            if (delta > 1)
+            {
+                samplePoints.Add(ComputePoint(bezier, 0));
+                samplePoints.Add(ComputePoint(bezier, 1));
+            }
+            else
+            {
+                while (i <= 1)
+                {
+                    samplePoints.Add(ComputePoint(bezier, i));
+                    i += delta;
+                }
+                if (i - delta != 1)
+                    samplePoints.Add(ComputePoint(bezier, 1));
+            }
+
+            var flag = true;
+            var last = default(PointF);
+            foreach (var p in samplePoints)
+            {
+                if (flag)
+                {
+                    flag = false;
+                    last = p;
+                }
+                else
+                {
+                    if (last != p)
+                    {
+                        lines.Add(new _Line(last, p, null));
+                        last = p;
+                    }
+                }
+            }
+            return lines;
+        }
+
+        internal static PointF ComputePoint(_Bezier bezier, double u)
+        {
+            return CalcValue(bezier, bezier.Degree, 0, u);
+        }
+
+        internal static PointF CalcValue(_Bezier bezier, int degree, int index, double u)
+        {
+            if (degree == 0)
+                return bezier.Points[index];
+            else return Combine(CalcValue(bezier, degree - 1, index, u), CalcValue(bezier, degree - 1, index + 1, u), u);
+        }
+
+        internal static PointF Combine(PointF p1, PointF p2, double u)
+        {
+            var u1 = 1 - u;
+            var u2 = u;
+            return (PointF)new Point(u1 * p1.X + u2 * p2.X, u1 * p1.Y + u2 * p2.Y);
         }
         #endregion
     }

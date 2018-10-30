@@ -68,8 +68,11 @@
     <Compile Include="Model\FillModel.cs" />
     <Compile Include="Model\LinesModel.cs" />
     <Compile Include="Model\MeshModel.cs" />
+    <Compile Include="Model\StreamModel.cs" />
     <Compile Include="Model\Primitive\_Arc.cs" />
     <Compile Include="Model\Primitive\IPrimitive.cs" />
+    <Compile Include="Model\Primitive\_Bezier.cs" />
+    <Compile Include="Model\Primitive\_Geometry.cs" />
     <Compile Include="Model\Primitive\_Line.cs" />
     <Compile Include="Internel\Shader.cs" />
     <Compile Include="Model\Primitive\_Rect.cs" />
