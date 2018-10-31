@@ -41,7 +41,7 @@ namespace YOpenGL
             return false;
         }
 
-        internal override void Draw()
+        internal override void Draw(Shader shader)
         {
             GLFunc.BindVertexArray(_vao[0]);
             GLFunc.DrawElements(GLConst.GL_TRIANGLES, _indices.Count, GLConst.GL_UNSIGNED_INT, 0);

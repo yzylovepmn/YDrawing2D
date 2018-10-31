@@ -226,12 +226,24 @@ namespace YDrawing2DTest
             else if (this == MainWindow.GLSelectedVisual)
                 context.BeginFigure(MainWindow.GLSelectedPen, Colors.Red, new PointF(100, 100), true);
             else context.BeginFigure(MainWindow.GLWhitePen, Colors.Green, new PointF(100, 100), true);
-            //context.LineTo(new PointF(300, 100));
-            context.LineTo(new PointF(300, 500));
-            //context.LineTo(new PointF(100, 500));
+            context.LineTo(new PointF(600, 100));
+            context.LineTo(new PointF(600, 600));
+            context.LineTo(new PointF(100, 600));
             //context.ArcTo(new PointF(200, 200), 400, true, true);
-            context.BezierTo(2, new List<PointF>() { new PointF(200, 400), new PointF(300, 200) });
-            context.EndFigure();
+            context.BezierTo(2, new List<PointF>() { new PointF(300, 400), new PointF(300, 200) });
+
+            // Start new figure
+            if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
+                context.BeginFigure(MainWindow.GLActivePen, Colors.Blue, new PointF(200, 200), true);
+            else if (this == MainWindow.GLSelectedVisual)
+                context.BeginFigure(MainWindow.GLSelectedPen, Colors.Red, new PointF(200, 200), true);
+            else context.BeginFigure(MainWindow.GLWhitePen, Colors.Green, new PointF(200, 200), true);
+            context.LineTo(new PointF(500, 200));
+            context.LineTo(new PointF(500, 500));
+            context.LineTo(new PointF(200, 500));
+
+            // End two figures
+            context.EndFigures();
         }
     }
 

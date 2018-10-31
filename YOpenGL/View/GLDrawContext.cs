@@ -152,30 +152,47 @@ namespace YOpenGL
         #region Stream
         private PointF? _begin;
         private PointF? _current;
-        private _Geometry _stream;
+        private _ComplexGeometry _geo;
+        private _SimpleGeometry _subGeo;
 
+        /// <summary>
+        /// Start drawing a Figure flow (continuous),must call <see cref="EndFigures"/> to end this Figure or combine Figures(generate by <see cref="BeginFigure(PenF, Color?, PointF, bool)"/>)
+        /// </summary>
         public void BeginFigure(PenF pen, Color? fillColor, PointF begin, bool isClosed)
         {
-            if (_begin.HasValue)
-                throw new InvalidOperationException("Must call EndFigure before call this method!");
-            _begin = begin;
-            _current = begin;
-
             pen.Color = _transform.Transform(pen.Color);
             if (fillColor.HasValue)
                 fillColor = _transform.Transform(fillColor.Value);
 
-            _stream = new _Geometry(pen, fillColor, begin, isClosed);
+            if (_begin.HasValue)
+            {
+                if (_subGeo.IsClosed && _begin != _current)
+                    LineTo(_begin.Value);
+                else _subGeo.UnClosedLine = _DrawLine(PenF.NULL, _current.Value, _begin.Value);
+            }
+
+            _begin = begin;
+            _current = begin;
+            _subGeo = new _SimpleGeometry(pen, fillColor, begin, isClosed);
+            _geo.AddChild(_subGeo);
         }
 
-        public void EndFigure()
+        /// <summary>
+        /// Combine the previous Figures into one complex geometry stream
+        /// </summary>
+        public void EndFigures()
         {
             if (_begin == null)
                 throw new InvalidOperationException("Must call BeginFigure before call this method!");
-            if (_stream.IsClosed && _begin != _current)
+
+            if (_subGeo.IsClosed && _begin != _current)
                 LineTo(_begin.Value);
-            else _stream.UnClosedLine = _DrawLine(PenF.NULL, _current.Value, _begin.Value);
-            _primitives.Add(_stream);
+            else _subGeo.UnClosedLine = _DrawLine(PenF.NULL, _current.Value, _begin.Value);
+
+            _geo.Close();
+            _primitives.Add(_geo);
+
+            _geo = new _ComplexGeometry();
             _begin = null;
             _current = null;
         }
@@ -183,7 +200,7 @@ namespace YOpenGL
         public void LineTo(PointF point)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
-            _stream.StreamTo(_DrawLine(PenF.NULL, _current.Value, point));
+            _subGeo.StreamTo(_DrawLine(PenF.NULL, _current.Value, point));
             _current = point;
         }
 
@@ -200,7 +217,7 @@ namespace YOpenGL
             var _points = new List<PointF>();
             _points.Add(_current.Value);
             _points.AddRange(points);
-            _stream.StreamTo(_DrawBezier(PenF.NULL, degree, _points));
+            _subGeo.StreamTo(_DrawBezier(PenF.NULL, degree, _points));
             _current = points.Last();
         }
 
@@ -254,7 +271,7 @@ namespace YOpenGL
                 var startRadian = GeometryHelper.GetRadian(center, startP);
                 var endRadian = GeometryHelper.GetRadian(center, endP);
 
-                _stream.StreamTo(new _Arc(center, radius, startRadian, endRadian, PenF.NULL));
+                _subGeo.StreamTo(new _Arc(center, radius, startRadian, endRadian, PenF.NULL));
             }
         }
         #endregion

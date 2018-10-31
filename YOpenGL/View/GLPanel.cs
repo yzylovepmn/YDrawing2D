@@ -33,12 +33,13 @@ namespace YOpenGL
             _viewResverse = new MatrixF();
             _visuals = new List<GLVisual>();
             _fillModels = new Dictionary<Color, List<MeshModel>>();
-            _streamModels = new Dictionary<Color, List<MeshModel>>();
+            _streamModels = new List<MeshModel>();
             _lineModels = new Dictionary<PenF, List<MeshModel>>();
             _arcModels = new Dictionary<PenF, List<MeshModel>>();
             _shaders = new List<Shader>();
 
             _timer = new Timer(_AfterPainted);
+            _watch = new Stopwatch();
         }
 
         #region Private Field
@@ -48,6 +49,7 @@ namespace YOpenGL
         private int _signal;
         private int _frameSpan;
         private Timer _timer;
+        private Stopwatch _watch;
 
         #region Matrix
         private MatrixF _transformToDevice;
@@ -87,7 +89,7 @@ namespace YOpenGL
         protected List<GLVisual> _visuals;
 
         private Dictionary<Color, List<MeshModel>> _fillModels;
-        private Dictionary<Color, List<MeshModel>> _streamModels;
+        private List<MeshModel> _streamModels;
         private Dictionary<PenF, List<MeshModel>> _lineModels;
         private Dictionary<PenF, List<MeshModel>> _arcModels;
 
@@ -379,8 +381,15 @@ namespace YOpenGL
         private void _AfterPainted()
         {
             var old = Interlocked.Decrement(ref _signal);
+
+            _watch.Restart();
+            var before = _watch.ElapsedMilliseconds;
             Dispatcher.Invoke(() => { _DispatchFrame(); });
-            Thread.Sleep(_frameSpan);
+            var span = (int)(_watch.ElapsedMilliseconds - before);
+            _watch.Stop();
+
+            Thread.Sleep(Math.Max(1, _frameSpan - span));
+
             if (Interlocked.CompareExchange(ref _signal, 0, old) != old)
                 _timer.Change(0, Timeout.Infinite);
         }
@@ -395,10 +404,14 @@ namespace YOpenGL
                 {
                     foreach (var primitive in visual.Context.Primitives)
                     {
-                        if (!primitive.Pen.IsNULL)
+                        if (!primitive.Pen.IsNULL || primitive.Type == PrimitiveType.ComplexGeometry)
                             _AttachModel(primitive, primitive.Pen);
                         if (primitive.Filled)
-                            _AttachFillModels(primitive);
+                        {
+                            if (primitive.Type == PrimitiveType.ComplexGeometry)
+                                _AttachStreamModel(primitive);
+                            else _AttachFillModels(primitive);
+                        }
                     }
                 }
                 _EndInitModels();
@@ -407,9 +420,17 @@ namespace YOpenGL
 
         private void _AttachModel(IPrimitive primitive, PenF pen)
         {
-            if (primitive.Type == PrimitiveType.Geometry)
+            if (primitive.Type == PrimitiveType.ComplexGeometry)
             {
-                foreach (var item in ((_Geometry)primitive).Stream)
+                foreach (var item in ((_ComplexGeometry)primitive).Children)
+                    if (!item.Pen.IsNULL)
+                        _AttachModel(item, item.Pen);
+                return;
+            }
+
+            if (primitive.Type == PrimitiveType.SimpleGeometry)
+            {
+                foreach (var item in ((_SimpleGeometry)primitive).Stream)
                     _AttachModel(item, pen);
                 return;
             }
@@ -438,10 +459,29 @@ namespace YOpenGL
             }
         }
 
+        private void _AttachStreamModel(IPrimitive primitive)
+        {
+            var model = default(MeshModel);
+            if (_streamModels.Count == 0)
+            {
+                model = new StreamModel();
+                model.BeginInit();
+                _streamModels.Add(model);
+            }
+            else model = _streamModels.Last();
+            if (!model.TryAttachPrimitive(primitive, false))
+            {
+                model = new StreamModel();
+                model.BeginInit();
+                _streamModels.Add(model);
+                model.TryAttachPrimitive(primitive, false);
+            }
+        }
+
         private void _AttachFillModels(IPrimitive primitive)
         {
             var model = default(MeshModel);
-            var models = primitive.Type == PrimitiveType.Geometry ? _streamModels : _fillModels;
+            var models = _fillModels;
 
             if (models.ContainsKey(primitive.FillColor.Value))
                 model = models[primitive.FillColor.Value].Last();
@@ -464,7 +504,7 @@ namespace YOpenGL
         {
             if (isFilled)
             {
-                if (primitive.Type == PrimitiveType.Geometry)
+                if (primitive.Type == PrimitiveType.SimpleGeometry)
                     return new StreamModel();
                 return new FillModel();
             }
@@ -487,16 +527,14 @@ namespace YOpenGL
                 foreach (var model in value)
                     model.EndInit();
 
-            foreach (var value in _streamModels.Values)
-                foreach (var model in value)
-                    model.EndInit();
+            foreach (var model in _streamModels)
+                model.EndInit();
         }
 
         private void _DrawModels()
         {
             GLFunc.Enable(GLConst.GL_STENCIL_TEST);
-            foreach (var pair in _streamModels)
-                _DrawFilledModelHandle(pair, _fillshader);
+            _DrawSteramModelHandle(_streamModels, _fillshader);
             GLFunc.Disable(GLConst.GL_STENCIL_TEST);
 
             GLFunc.Enable(GLConst.GL_CULL_FACE);
@@ -527,10 +565,10 @@ namespace YOpenGL
                 GLFunc.TexImage1D(GLConst.GL_TEXTURE_1D, 0, GLConst.GL_RED, pair.Key.Data.Length, 0, GLConst.GL_RED, GLConst.GL_UNSIGNED_BYTE, pair.Key.Data);
 
                 foreach (var model in pair.Value)
-                    model.Draw();
+                    model.Draw(shader);
             }
             else foreach (var model in pair.Value)
-                    model.Draw();
+                    model.Draw(shader);
         }
 
         private void _DrawFilledModelHandle(KeyValuePair<Color, List<MeshModel>> pair, Shader shader)
@@ -538,7 +576,14 @@ namespace YOpenGL
             shader.Use();
             shader.SetVec4("color", 1, pair.Key.GetData());
             foreach (var model in pair.Value)
-                model.Draw();
+                model.Draw(shader);
+        }
+
+        private void _DrawSteramModelHandle(List<MeshModel> models, Shader shader)
+        {
+            shader.Use();
+            foreach (var model in models)
+                model.Draw(shader);
         }
 
         private static Shader GenShader(string[] shaders)
@@ -658,8 +703,7 @@ namespace YOpenGL
         {
             foreach (var item in _fillModels.Values)
                 item?.Dispose();
-            foreach (var item in _streamModels.Values)
-                item?.Dispose();
+            _streamModels?.Dispose();
             foreach (var item in _lineModels.Values)
                 item?.Dispose();
             foreach (var item in _arcModels.Values)
@@ -680,6 +724,7 @@ namespace YOpenGL
             _Destroy();
 
             _timer = null;
+            _watch = null;
             _isDisposed = true;
         }
         #endregion

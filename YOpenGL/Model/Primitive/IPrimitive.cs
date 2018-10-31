@@ -25,6 +25,7 @@ namespace YOpenGL
         Rect,
         Spline,
         Bezier,
-        Geometry
+        SimpleGeometry,
+        ComplexGeometry
     }
 }

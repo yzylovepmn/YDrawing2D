@@ -3,48 +3,85 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
 
 namespace YOpenGL
 {
     internal class StreamModel : MeshModel
     {
-        private Dictionary<int, int> _indices;
+        private Dictionary<int, Tuple<int, Color>> _indices;
+        private Queue<int> _flags;
 
         internal override void BeginInit()
         {
             base.BeginInit();
-            _indices = new Dictionary<int, int>();
+            _indices = new Dictionary<int, Tuple<int, Color>>();
+            _flags = new Queue<int>();
         }
 
         internal override bool TryAttachPrimitive(IPrimitive primitive, bool isOutline = true)
         {
-            var points = primitive[isOutline];
-            var cnt = points.Count();
-            if (cnt < Capacity && _points.Count + cnt > Capacity)
+            var cnt = 0;
+            var geo = (_ComplexGeometry)primitive;
+            var subgeos = new List<Tuple<PointF, Color, List<PointF>>>();
+            foreach (var child in geo.Children.Where(c => c.Filled))
+            {
+                var subpoints = new List<PointF>();
+                subpoints.AddRange(child[isOutline]);
+                subgeos.Add(new Tuple<PointF, Color, List<PointF>>(child.Begin, child.FillColor.Value, subpoints));
+                cnt += subpoints.Count;
+            }
+            if (_points.Count > 0 && cnt < Capacity && _points.Count + cnt > Capacity)
                 return false;
-            _indices.Add(_points.Count, cnt + 1);
-            _points.Add(new PointF());
-            _points.AddRange(points);
+
+            foreach (var tuple in subgeos)
+            {
+                _indices.Add(_points.Count, new Tuple<int, Color>(tuple.Item3.Count + 1, tuple.Item2));
+                _points.Add(tuple.Item1);
+                _points.AddRange(tuple.Item3);
+            }
+            _flags.Enqueue(subgeos.Count);
+
             return true;
         }
 
-        internal override void Draw()
+        internal override void Draw(Shader shader)
         {
             GLFunc.BindVertexArray(_vao[0]);
 
-            foreach (var key in _indices.Keys)
+            var pairs = new List<KeyValuePair<int, Tuple<int, Color>>>();
+            var flag = _flags.Dequeue();
+            _flags.Enqueue(flag);
+            foreach (var index in _indices)
             {
-                GLFunc.Clear(GLConst.GL_STENCIL_BUFFER_BIT);
+                if (flag > 0)
+                {
+                    pairs.Add(index);
+                    flag--;
+                    if (flag == 0)
+                    {
+                        GLFunc.Clear(GLConst.GL_STENCIL_BUFFER_BIT);
 
-                GLFunc.ColorMask(GLConst.GL_FALSE, GLConst.GL_FALSE, GLConst.GL_FALSE, GLConst.GL_FALSE);
-                GLFunc.StencilFunc(GLConst.GL_ALWAYS, 0, 1);
-                GLFunc.StencilOp(GLConst.GL_KEEP, GLConst.GL_KEEP, GLConst.GL_INVERT);
-                GLFunc.DrawArrays(GLConst.GL_TRIANGLE_FAN, key, _indices[key]);
+                        GLFunc.ColorMask(GLConst.GL_FALSE, GLConst.GL_FALSE, GLConst.GL_FALSE, GLConst.GL_FALSE);
+                        GLFunc.StencilFunc(GLConst.GL_ALWAYS, 0, 1);
+                        GLFunc.StencilOp(GLConst.GL_KEEP, GLConst.GL_KEEP, GLConst.GL_INVERT);
+                        foreach (var pair in pairs)
+                            GLFunc.DrawArrays(GLConst.GL_TRIANGLE_FAN, pair.Key, pair.Value.Item1);
 
-                GLFunc.ColorMask(GLConst.GL_TRUE, GLConst.GL_TRUE, GLConst.GL_TRUE, GLConst.GL_TRUE);
-                GLFunc.StencilFunc(GLConst.GL_EQUAL, 1, 1);
-                GLFunc.StencilOp(GLConst.GL_KEEP, GLConst.GL_KEEP, GLConst.GL_KEEP);
-                GLFunc.DrawArrays(GLConst.GL_TRIANGLE_FAN, key, _indices[key]);
+                        GLFunc.ColorMask(GLConst.GL_TRUE, GLConst.GL_TRUE, GLConst.GL_TRUE, GLConst.GL_TRUE);
+                        GLFunc.StencilFunc(GLConst.GL_EQUAL, 1, 1);
+                        GLFunc.StencilOp(GLConst.GL_KEEP, GLConst.GL_KEEP, GLConst.GL_KEEP);
+                        foreach (var pair in pairs)
+                        {
+                            shader.SetVec4("color", 1, pair.Value.Item2.GetData());
+                            GLFunc.DrawArrays(GLConst.GL_TRIANGLE_FAN, pair.Key, pair.Value.Item1);
+                        }
+
+                        pairs.Clear();
+                        flag = _flags.Dequeue();
+                        _flags.Enqueue(flag);
+                    }
+                }
             }
         }
 
@@ -53,6 +90,8 @@ namespace YOpenGL
             base._Dispose();
             _indices?.Clear();
             _indices = null;
+            _flags?.Clear();
+            _flags = null;
         }
     }
 }

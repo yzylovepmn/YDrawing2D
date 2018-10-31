@@ -21,9 +21,7 @@ namespace YOpenGL
         internal static bool IsPossibleArcContain(_Arc arc, PointF point)
         {
             var vec = point - arc.Center;
-            var radian = (float)Math.Atan(vec.Y / vec.X);
-            if (vec.X < 0)
-                radian += (float)Math.PI;
+            var radian = (float)Math.Atan2(vec.Y, vec.X);
             FormatRadian(ref radian);
             var startRadian = arc.StartRadian;
             var endRadian = arc.EndRadian;
@@ -39,9 +37,7 @@ namespace YOpenGL
         internal static float GetRadian(PointF center, PointF p)
         {
             var vec = p - center;
-            var radian = (float)Math.Atan(vec.Y / vec.X);
-            if (vec.X < 0)
-                radian += (float)Math.PI;
+            var radian = (float)Math.Atan2(vec.Y, vec.X);
             FormatRadian(ref radian);
             return radian;
         }
@@ -159,7 +155,7 @@ namespace YOpenGL
             return len;
         }
 
-        public static bool Contains(_Geometry geo, PointF point)
+        public static bool Contains(_SimpleGeometry geo, PointF point)
         {
             int leftpass = 0, toppass = 0, rightpass = 0, bottompass = 0;
             var primitives = new List<IPrimitive>();

@@ -20,7 +20,7 @@ namespace YOpenGL
         protected uint[] _vbo;
         protected bool _hasInit;
 
-        internal abstract void Draw();
+        internal abstract void Draw(Shader shader);
 
         internal virtual bool TryAttachPrimitive(IPrimitive primitive, bool isOutline = true)
         {
