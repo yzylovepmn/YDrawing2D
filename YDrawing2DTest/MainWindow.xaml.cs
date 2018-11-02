@@ -238,10 +238,12 @@ namespace YDrawing2DTest
             else if (this == MainWindow.GLSelectedVisual)
                 context.BeginFigure(MainWindow.GLSelectedPen, Colors.Red, new PointF(200, 200), true);
             else context.BeginFigure(MainWindow.GLWhitePen, Colors.Green, new PointF(200, 200), true);
-            context.LineTo(new PointF(500, 200));
-            context.LineTo(new PointF(500, 500));
-            context.LineTo(new PointF(200, 500));
-
+            context.LineTo(new PointF(400, 300));
+            context.LineTo(new PointF(600, 200));
+            context.LineTo(new PointF(500, 400));
+            context.LineTo(new PointF(700, 600));
+            context.LineTo(new PointF(400, 600));
+            context.LineTo(new PointF(200, 400));
             // End two figures
             context.EndFigures();
         }

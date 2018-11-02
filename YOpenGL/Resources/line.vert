@@ -1,7 +1,7 @@
 ﻿#version 330 core
 layout (location = 0) in vec2 aPos;
 
-layout (std140, binding = 0) uniform Matrices
+layout (std140) uniform Matrices
 {
     mat3 worldToNDC;
     mat3 view;

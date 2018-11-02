@@ -2,7 +2,7 @@
 layout (location = 0) in vec2 aPos;
 layout (location = 1) in vec3 aParams;
 
-layout (std140, binding = 0) uniform Matrices
+layout (std140) uniform Matrices
 {
     mat3 worldToNDC;
     mat3 view;

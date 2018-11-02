@@ -285,6 +285,7 @@ namespace YOpenGL
             GLFunc.Enable(GLConst.GL_BLEND);
             GLFunc.Enable(GLConst.GL_LINE_WIDTH);
             GLFunc.Enable(GLConst.GL_LINE_SMOOTH);
+            GLFunc.Enable(GLConst.GL_FRAMEBUFFER_SRGB); // Gamma Correction
             GLFunc.BlendFunc(GLConst.GL_SRC_ALPHA, GLConst.GL_ONE_MINUS_SRC_ALPHA);
             GLFunc.StencilMask(1);
             _CreateResource();
@@ -336,8 +337,12 @@ namespace YOpenGL
             GLFunc.GenBuffers(1, _matrix);
             GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, _matrix[0]);
             GLFunc.BufferData(GLConst.GL_UNIFORM_BUFFER, 24 * sizeof(float), default(byte[]), GLConst.GL_STATIC_DRAW);
-            GLFunc.BindBufferRange(GLConst.GL_UNIFORM_BUFFER, 0, _matrix[0], 0, 24 * sizeof(float));
+            GLFunc.BindBufferBase(GLConst.GL_UNIFORM_BUFFER, 0, _matrix[0]);
             GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, 0);
+
+            //Set binding point
+            foreach (var shader in _shaders)
+                GLFunc.UniformBlockBinding(shader.ID, GLFunc.GetUniformBlockIndex(shader.ID, "Matrices"), 0);
         }
 
         private void _DeleteResource()

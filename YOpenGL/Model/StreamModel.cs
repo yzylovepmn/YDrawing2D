@@ -23,12 +23,12 @@ namespace YOpenGL
         {
             var cnt = 0;
             var geo = (_ComplexGeometry)primitive;
-            var subgeos = new List<Tuple<PointF, Color, List<PointF>>>();
+            var subgeos = new List<Tuple<Color, List<PointF>>>();
             foreach (var child in geo.Children.Where(c => c.Filled))
             {
                 var subpoints = new List<PointF>();
                 subpoints.AddRange(child[isOutline]);
-                subgeos.Add(new Tuple<PointF, Color, List<PointF>>(child.Begin, child.FillColor.Value, subpoints));
+                subgeos.Add(new Tuple<Color, List<PointF>>(child.FillColor.Value, subpoints));
                 cnt += subpoints.Count;
             }
             if (_points.Count > 0 && cnt < Capacity && _points.Count + cnt > Capacity)
@@ -36,9 +36,9 @@ namespace YOpenGL
 
             foreach (var tuple in subgeos)
             {
-                _indices.Add(_points.Count, new Tuple<int, Color>(tuple.Item3.Count + 1, tuple.Item2));
-                _points.Add(tuple.Item1);
-                _points.AddRange(tuple.Item3);
+                _indices.Add(_points.Count, new Tuple<int, Color>(tuple.Item2.Count + 1, tuple.Item1));
+                _points.Add(new PointF());
+                _points.AddRange(tuple.Item2);
             }
             _flags.Enqueue(subgeos.Count);
 
