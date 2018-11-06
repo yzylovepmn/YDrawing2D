@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 
 namespace YOpenGL
@@ -149,6 +150,78 @@ namespace YOpenGL
             _primitives.Add(new _Spline(degree, knots.ToArray(), controlPoints.Select(c => _transform.Transform(c)).ToArray(), weights.ToArray(), fitPoints.Select(f => _transform.Transform(f)).ToArray(), pen));
         }
 
+        public void DrawText(PenF pen, Color? fillColor, FormattedText textToDraw, PointF origin)
+        {
+            pen.Color = _transform.Transform(pen.Color);
+            if (fillColor.HasValue)
+                fillColor = _transform.Transform(fillColor.Value);
+
+            _DrawGeometry(pen, fillColor, textToDraw.BuildGeometry(new Point(origin.X, origin.Y - textToDraw.Height)));
+        }
+
+        public void DrawGlyphRun(PenF pen, Color? fillColor, GlyphRun glyphRun)
+        {
+            pen.Color = _transform.Transform(pen.Color);
+            if (fillColor.HasValue)
+                fillColor = _transform.Transform(fillColor.Value);
+
+            _DrawGeometry(pen, fillColor, glyphRun.BuildGeometry());
+        }
+
+        private void _DrawGeometry(PenF pen, Color? fillColor, Geometry geometry)
+        {
+            if (geometry.IsEmpty()) return;
+            foreach (var figure in geometry.GetOutlinedPathGeometry().Figures)
+            {
+                BeginFigure(pen, fillColor, _Transform(figure.StartPoint), figure.IsClosed);
+                foreach (var segment in figure.Segments)
+                {
+                    if (segment is LineSegment)
+                    {
+                        var line = (LineSegment)segment;
+                        LineTo(_Transform(line.Point));
+                    }
+                    if (segment is PolyLineSegment)
+                    {
+                        var line = (PolyLineSegment)segment;
+                        PolyLineTo(_Transform(line.Points.ToArray()));
+                    }
+                    if (segment is BezierSegment)
+                    {
+                        var bezier = (BezierSegment)segment;
+                        BezierTo(3, new List<PointF>() { _Transform(bezier.Point1), _Transform(bezier.Point2), _Transform(bezier.Point3) });
+                    }
+                    if (segment is QuadraticBezierSegment)
+                    {
+                        var bezier = (QuadraticBezierSegment)segment;
+                        BezierTo(2, new List<PointF>() { _Transform(bezier.Point1), _Transform(bezier.Point2) });
+                    }
+                    if (segment is PolyBezierSegment)
+                    {
+                        var bezier = (PolyBezierSegment)segment;
+                        PolyBezierTo(3, _Transform(bezier.Points.ToArray()));
+                    }
+                    if (segment is PolyQuadraticBezierSegment)
+                    {
+                        var bezier = (PolyQuadraticBezierSegment)segment;
+                        PolyBezierTo(2, _Transform(bezier.Points.ToArray()));
+                    }
+                }
+            }
+            _EndFigures(true);
+        }
+
+        private static IEnumerable<PointF> _Transform(params Point[] points)
+        {
+            foreach (var p in points)
+                yield return _Transform(p);
+        }
+
+        private static PointF _Transform(Point p)
+        {
+            return (PointF)new Point(p.X, -p.Y);
+        }
+
         #region Stream
         private PointF? _begin;
         private PointF? _current;
@@ -182,6 +255,11 @@ namespace YOpenGL
         /// </summary>
         public void EndFigures()
         {
+            _EndFigures();
+        }
+
+        private void _EndFigures(bool flag = false)
+        {
             if (_begin == null)
                 throw new InvalidOperationException("Must call BeginFigure before call this method!");
 
@@ -192,7 +270,7 @@ namespace YOpenGL
             _geo.Close();
             _primitives.Add(_geo);
 
-            _geo = new _ComplexGeometry();
+            _geo = new _ComplexGeometry() { _wholeFill = flag };
             _begin = null;
             _current = null;
         }

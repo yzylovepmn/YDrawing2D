@@ -16,7 +16,7 @@ namespace YDrawing2D.View
     public interface IContext : IDisposable
     {
         /// <summary>
-        /// Specify the starting point of the geometrystream
+        /// Specify the starting point of the geometry stream
         /// </summary>
         void BeginFigure(Color? fillColor, DrawingPen pen, Point begin, bool isClosed);
 

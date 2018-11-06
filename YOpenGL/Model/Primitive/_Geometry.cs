@@ -116,6 +116,8 @@ namespace YOpenGL
 
         public bool Filled { get { return _children != null && _children.Any(child => child.Filled); } }
 
+        internal bool _wholeFill;
+
         public PrimitiveType Type { get { return PrimitiveType.ComplexGeometry; } }
 
         public IEnumerable<_SimpleGeometry> Children { get { return _children; } }
@@ -141,6 +143,8 @@ namespace YOpenGL
         public bool HitTest(PointF p, float sensitive)
         {
             if (_children == null) return false;
+
+            if (_wholeFill) return true;
 
             if (!_children.Any(child => child._HitTestOutline(p, sensitive)))
             {

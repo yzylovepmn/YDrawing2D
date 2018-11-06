@@ -10,6 +10,12 @@ namespace YOpenGL
 {
     public static class Extension
     {
+        public static IEnumerable<PointF> CastTo(this IEnumerable<Point> source)
+        {
+            foreach (var item in source)
+                yield return (PointF)item;
+        }
+
         public static float ScaleX(this MatrixF m)
         {
             return (float)Math.Sqrt(m.M11 * m.M11 + m.M12 * m.M12);
