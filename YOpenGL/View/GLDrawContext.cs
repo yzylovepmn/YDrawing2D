@@ -156,7 +156,7 @@ namespace YOpenGL
             if (fillColor.HasValue)
                 fillColor = _transform.Transform(fillColor.Value);
 
-            _DrawGeometry(pen, fillColor, textToDraw.BuildGeometry(new Point(origin.X, origin.Y - textToDraw.Height)));
+            _DrawGeometry(pen, fillColor, textToDraw.BuildGeometry(new Point(origin.X, -origin.Y - textToDraw.Height)));
         }
 
         public void DrawGlyphRun(PenF pen, Color? fillColor, GlyphRun glyphRun)
