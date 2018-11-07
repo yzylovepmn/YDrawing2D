@@ -66,14 +66,14 @@ namespace YOpenGL
         #region Draw
         public void DrawLine(PenF pen, PointF start, PointF end)
         {
+            start = _transform.Transform(start);
+            end = _transform.Transform(end);
             _primitives.Add(_DrawLine(pen, start, end));
         }
 
         private _Line? _DrawLine(PenF pen, PointF start, PointF end)
         {
             if (start == end) return null;
-            start = _transform.Transform(start);
-            end = _transform.Transform(end);
 
             pen.Color = _transform.Transform(pen.Color);
 
@@ -130,14 +130,14 @@ namespace YOpenGL
         /// </summary>
         public void DrawBezier(PenF pen, int degree, IEnumerable<PointF> points)
         {
-            _primitives.Add(_DrawBezier(pen, degree, points));
+            _primitives.Add(_DrawBezier(pen, degree, points.Select(p => _transform.Transform(p))));
         }
 
         private _Bezier _DrawBezier(PenF pen, int degree, IEnumerable<PointF> points)
         {
             pen.Color = _transform.Transform(pen.Color);
 
-            return new _Bezier(points.Select(p => _transform.Transform(p)).ToArray(), degree, pen);
+            return new _Bezier(points.ToArray(), degree, pen);
         }
 
         /// <summary>
@@ -240,13 +240,14 @@ namespace YOpenGL
             if (_begin.HasValue)
             {
                 if (_subGeo.IsClosed && _begin != _current)
-                    LineTo(_begin.Value);
+                    _LineTo(_begin.Value);
                 else _subGeo.UnClosedLine = _DrawLine(PenF.NULL, _current.Value, _begin.Value);
             }
 
+            begin = _transform.Transform(begin);
             _begin = begin;
             _current = begin;
-            _subGeo = new _SimpleGeometry(pen, fillColor, begin, isClosed);
+            _subGeo = new _SimpleGeometry(pen, fillColor, _begin.Value, isClosed);
             _geo.AddChild(_subGeo);
         }
 
@@ -264,13 +265,13 @@ namespace YOpenGL
                 throw new InvalidOperationException("Must call BeginFigure before call this method!");
 
             if (_subGeo.IsClosed && _begin != _current)
-                LineTo(_begin.Value);
+                _LineTo(_begin.Value);
             else _subGeo.UnClosedLine = _DrawLine(PenF.NULL, _current.Value, _begin.Value);
 
             _geo.Close();
             _primitives.Add(_geo);
 
-            _geo = new _ComplexGeometry() { _wholeFill = flag };
+            _geo = new _ComplexGeometry() { _wholeFill = flag, _bounds = RectF.Empty };
             _begin = null;
             _current = null;
         }
@@ -278,6 +279,12 @@ namespace YOpenGL
         public void LineTo(PointF point)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
+            point = _transform.Transform(point);
+            _LineTo(point);
+        }
+
+        private void _LineTo(PointF point)
+        {
             _subGeo.StreamTo(_DrawLine(PenF.NULL, _current.Value, point));
             _current = point;
         }
@@ -285,14 +292,15 @@ namespace YOpenGL
         public void PolyLineTo(IEnumerable<PointF> points)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
-            foreach (var point in points)
-                LineTo(point);
+            foreach (var point in points.Select(p => _transform.Transform(p)))
+                _LineTo(point);
         }
 
         public void BezierTo(int degree, IEnumerable<PointF> points)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
             var _points = new List<PointF>();
+            points = points.Select(p => _transform.Transform(p));
             _points.Add(_current.Value);
             _points.AddRange(points);
             _subGeo.StreamTo(_DrawBezier(PenF.NULL, degree, _points));

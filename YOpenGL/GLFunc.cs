@@ -1991,6 +1991,11 @@ namespace YOpenGL
             glClearColor?.Invoke(red, green, blue, alpha);
         }
 
+        public static void ClearStencil(GLint s)
+        {
+            glClearStencil?.Invoke(s);
+        }
+
         public static void Clear(GLbitfield mask)
         {
             glClear?.Invoke(mask);

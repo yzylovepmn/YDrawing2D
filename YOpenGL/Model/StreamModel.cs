@@ -10,13 +10,13 @@ namespace YOpenGL
     internal class StreamModel : MeshModel
     {
         private Dictionary<int, Tuple<int, Color>> _indices;
-        private Queue<int> _flags;
+        private List<int> _flags;
 
         internal override void BeginInit()
         {
             base.BeginInit();
             _indices = new Dictionary<int, Tuple<int, Color>>();
-            _flags = new Queue<int>();
+            _flags = new List<int>();
         }
 
         internal override bool TryAttachPrimitive(IPrimitive primitive, bool isOutline = true)
@@ -40,7 +40,7 @@ namespace YOpenGL
                 _points.Add(new PointF());
                 _points.AddRange(tuple.Item2);
             }
-            _flags.Enqueue(subgeos.Count);
+            _flags.Add(subgeos.Count);
 
             return true;
         }
@@ -50,8 +50,8 @@ namespace YOpenGL
             GLFunc.BindVertexArray(_vao[0]);
 
             var pairs = new List<KeyValuePair<int, Tuple<int, Color>>>();
-            var flag = _flags.Dequeue();
-            _flags.Enqueue(flag);
+            var cnt = 0;
+            var flag = _flags[cnt++];
             foreach (var index in _indices)
             {
                 if (flag > 0)
@@ -60,17 +60,15 @@ namespace YOpenGL
                     flag--;
                     if (flag == 0)
                     {
-                        GLFunc.Clear(GLConst.GL_STENCIL_BUFFER_BIT);
-
                         GLFunc.ColorMask(GLConst.GL_FALSE, GLConst.GL_FALSE, GLConst.GL_FALSE, GLConst.GL_FALSE);
                         GLFunc.StencilFunc(GLConst.GL_ALWAYS, 0, 1);
-                        GLFunc.StencilOp(GLConst.GL_KEEP, GLConst.GL_KEEP, GLConst.GL_INVERT);
+                        GLFunc.StencilOp(GLConst.GL_ZERO, GLConst.GL_ZERO, GLConst.GL_INVERT);
                         foreach (var pair in pairs)
                             GLFunc.DrawArrays(GLConst.GL_TRIANGLE_FAN, pair.Key, pair.Value.Item1);
 
                         GLFunc.ColorMask(GLConst.GL_TRUE, GLConst.GL_TRUE, GLConst.GL_TRUE, GLConst.GL_TRUE);
                         GLFunc.StencilFunc(GLConst.GL_EQUAL, 1, 1);
-                        GLFunc.StencilOp(GLConst.GL_KEEP, GLConst.GL_KEEP, GLConst.GL_KEEP);
+                        GLFunc.StencilOp(GLConst.GL_ZERO, GLConst.GL_ZERO, GLConst.GL_ZERO);
                         foreach (var pair in pairs)
                         {
                             shader.SetVec4("color", 1, pair.Value.Item2.GetData());
@@ -78,8 +76,9 @@ namespace YOpenGL
                         }
 
                         pairs.Clear();
-                        flag = _flags.Dequeue();
-                        _flags.Enqueue(flag);
+
+                        if (cnt < _flags.Count)
+                            flag = _flags[cnt++];
                     }
                 }
             }

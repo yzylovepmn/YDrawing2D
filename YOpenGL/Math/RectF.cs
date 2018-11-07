@@ -80,9 +80,10 @@ namespace YOpenGL
         {
             get
             {
+#if DEBUG
                 // The funny width and height tests are to handle NaNs
                 Debug.Assert((!(_width < 0) && !(_height < 0)) || (this == Empty));
-
+#endif
                 return _width < 0;
             }
         }
