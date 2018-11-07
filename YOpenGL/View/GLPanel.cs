@@ -379,6 +379,7 @@ namespace YOpenGL
         #region Private
         private void _Refresh()
         {
+            if (!_isInit) return;
             if (Interlocked.Increment(ref _signal) == 1)
                 _timer.Change(0, Timeout.Infinite);
         }

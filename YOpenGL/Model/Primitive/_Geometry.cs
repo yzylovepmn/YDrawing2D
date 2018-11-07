@@ -48,6 +48,7 @@ namespace YOpenGL
 
         internal void StreamTo(IPrimitive primitive)
         {
+            if (primitive == null) return;
             _stream.Add(primitive);
         }
 

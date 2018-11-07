@@ -128,7 +128,7 @@ namespace YDrawing2DTest
                 //_glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i + 100)));
             }
             //_glPanel.AddVisual(new CustomShape(new PointF(0, 0)));
-            _glPanel.AddVisual(new Text(new PointF(0, 200)));
+            _glPanel.AddVisual(new Text(new PointF(100, 200)));
             //_glPanel.AddVisual(new Cicle(new PointF(500, 500), 200));
             //_glPanel.AddVisual(new Cicle(new PointF(100, 500), 100));
             //_glPanel.AddVisual(new Arc(new PointF(550, 100), 10, 30, 100));
@@ -216,14 +216,16 @@ namespace YDrawing2DTest
         protected override void Draw(GLDrawContext context)
         {
             context.PushTranslate(_origin.X, _origin.Y);
+            context.PushRotateAt(30, 200, 200);
+            context.PushOpacity(0.5f);
 
             var typeFace = new Typeface(new FontFamily("新宋体"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
             var text = "Hello world!";
             if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
-                context.DrawText(PenF.NULL, new Color() { A = 128, B = 255 }, new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
+                context.DrawText(PenF.NULL, Colors.Red, new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
             else if (this == MainWindow.GLSelectedVisual)
-                context.DrawText(PenF.NULL, new Color() { A = 128, R = 255 }, new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
-            else context.DrawText(PenF.NULL, new Color() { A = 128, R = 255, G = 255, B = 255 }, new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
+                context.DrawText(PenF.NULL, Colors.Blue, new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
+            else context.DrawText(PenF.NULL, Colors.BurlyWood, new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
         }
     }
 

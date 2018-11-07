@@ -68,7 +68,9 @@ namespace YOpenGL
         {
             start = _transform.Transform(start);
             end = _transform.Transform(end);
-            _primitives.Add(_DrawLine(pen, start, end));
+            var line = _DrawLine(pen, start, end);
+            if (line.HasValue)
+                _primitives.Add(line.Value);
         }
 
         private _Line? _DrawLine(PenF pen, PointF start, PointF end)
