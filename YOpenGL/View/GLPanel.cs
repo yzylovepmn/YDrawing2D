@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -173,6 +174,12 @@ namespace YOpenGL
         #endregion
 
         #region Visual
+        public PointF GetMousePosition(MouseEventArgs e)
+        {
+            var p = e.GetPosition(this);
+            return new PointF((float)p.X, (float)(RenderSize.Height - p.Y));
+        }
+
         public GLVisual HitTest(PointF point, float sensitive = 6)
         {
             point = ViewToWorld(point);
@@ -189,6 +196,9 @@ namespace YOpenGL
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
         public void AddVisual(GLVisual visual, bool refresh = false)
         {
+            if (visual.Panel != null)
+                throw new InvalidOperationException("Visual already has a logical parent!");
+
             _visuals.Add(visual);
             visual.Panel = this;
             _Update(visual);
@@ -639,7 +649,7 @@ namespace YOpenGL
         protected override HandleRef BuildWindowCore(HandleRef hwndParent)
         {
             var _hwndHost = Win32Helper.CreateWindowEx(0, "static", "",
-                                      Win32Helper.WS_CHILD | Win32Helper.WS_VISIBLE,
+                                      Win32Helper.WS_CHILD | Win32Helper.WS_VISIBLE | Win32Helper.WS_CLIPCHILDREN | Win32Helper.WS_CLIPSIBLINGS,
                                       0, 0,
                                       0, 0,
                                       hwndParent.Handle,
@@ -665,8 +675,6 @@ namespace YOpenGL
 
         private void _OnRenderSizeChanged(float width, float height)
         {
-            width = Math.Max(1, width);
-            height = Math.Max(1, height);
             _worldToNDC = new MatrixF();
             _worldToNDC.Translate(_origin.X, _origin.Y);
             _worldToNDC.Scale(2 / width, 2 / height);

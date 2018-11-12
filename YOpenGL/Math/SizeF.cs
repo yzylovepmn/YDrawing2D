@@ -87,6 +87,16 @@ namespace YOpenGL
             return new PointF(size._width, size._height);
         }
 
+        public static explicit operator SizeF(Size size)
+        {
+            return new SizeF((float)size.Width, (float)size.Height);
+        }
+
+        public static implicit operator Size(SizeF size)
+        {
+            return new Size(size.Width, size.Height);
+        }
+
         static private SizeF CreateEmptySize()
         {
             SizeF size = new SizeF();

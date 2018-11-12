@@ -127,12 +127,12 @@ namespace YDrawing2DTest
                 //_glPanel.AddVisual(new Cicle(new PointF(0, 0), i * 2));
                 //_glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i + 100)));
             }
-            //_glPanel.AddVisual(new CustomShape(new PointF(0, 0)));
+            _glPanel.AddVisual(new CustomShape(new PointF(0, 0)));
             _glPanel.AddVisual(new Text(new PointF(100, 200)));
             //_glPanel.AddVisual(new Cicle(new PointF(500, 500), 200));
             //_glPanel.AddVisual(new Cicle(new PointF(100, 500), 100));
             //_glPanel.AddVisual(new Arc(new PointF(550, 100), 10, 30, 100));
-            //_glPanel.AddVisual(new Rectangle(new RectF(new PointF(500, 0), new PointF(300, 600))));
+            //_glPanel.AddVisual(new Rectangle(new RectF((SizeF)_glPanel.RenderSize)));
             _glPanel.MouseMove += _panel_MouseMove;
             _glPanel.MouseWheel += _panel_MouseWheel;
             _glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
@@ -163,17 +163,17 @@ namespace YDrawing2DTest
 
         private void _panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            p = (PointF)e.GetPosition(_glPanel);
+            p = _glPanel.GetMousePosition(e);
             if (Keyboard.Modifiers == ModifierKeys.None)
-                GLSelectedVisual = _glPanel.HitTest(new PointF(p.X, (float)(_glPanel.RenderSize.Height - p.Y)));
+                GLSelectedVisual = _glPanel.HitTest(p);
         }
 
         private void _panel_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            var p = e.GetPosition(_panel);
+            var p = _glPanel.GetMousePosition(e);
             if (e.Delta > 0)
-                _glPanel.ScaleAt(1.1f, 1.1f, (float)p.X, (float)_glPanel.RenderSize.Height - (float)p.Y);
-            else _glPanel.ScaleAt(1 / 1.1f, 1 / 1.1f, (float)p.X, (float)_glPanel.RenderSize.Height - (float)p.Y);
+                _glPanel.ScaleAt(1.1f, 1.1f, p.X, p.Y);
+            else _glPanel.ScaleAt(1 / 1.1f, 1 / 1.1f, p.X, p.Y);
         }
 
         PointF p;
@@ -184,20 +184,20 @@ namespace YDrawing2DTest
             {
                 //var visual = VisualHelper.HitTest(_panel, e.GetPosition(_panel));
                 //_panel.RemoveVisual(visual);
-                var point = (PointF)e.GetPosition(_glPanel);
-                GLActiveVisual = _glPanel.HitTest(new PointF(point.X, (float)(_glPanel.RenderSize.Height - point.Y)));
+                var point = _glPanel.GetMousePosition(e);
+                GLActiveVisual = _glPanel.HitTest(point);
             }
             if (Keyboard.Modifiers == ModifierKeys.Control && e.LeftButton == MouseButtonState.Pressed)
             {
                 if (isfirst)
                 {
                     isfirst = false;
-                    p = (PointF)e.GetPosition(_glPanel);
+                    p = _glPanel.GetMousePosition(e);
                 }
                 else
                 {
-                    var _p = (PointF)e.GetPosition(_glPanel);
-                    _glPanel.Translate((float)(_p.X - p.X), (float)(p.Y - _p.Y));
+                    var _p = _glPanel.GetMousePosition(e);
+                    _glPanel.Translate(_p.X - p.X, _p.Y - p.Y);
                     p = _p;
                 }
             }
@@ -285,7 +285,7 @@ namespace YDrawing2DTest
             if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
                 context.DrawRectangle(MainWindow.GLActivePen, Colors.Blue, _rect);
             else if (this == MainWindow.GLSelectedVisual)
-                context.DrawRectangle(MainWindow.GLSelectedPen, new Color() { R = 255, A = 128 }, _rect);
+                context.DrawRectangle(MainWindow.GLSelectedPen, new Color() { R = 255, A = 64 }, _rect);
             else context.DrawRectangle(MainWindow.GLWhitePen, Colors.Green, _rect);
         }
     }
