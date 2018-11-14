@@ -44,6 +44,8 @@ namespace YOpenGL
         }
 
         #region Private Field
+        private ContextHandle _context;
+
         private bool _isDisposed;
         private bool _isInit;
         private bool _needUpdate;
@@ -104,6 +106,7 @@ namespace YOpenGL
                 _red = _color.R / (float)byte.MaxValue;
                 _green = _color.G / (float)byte.MaxValue;
                 _blue = _color.B / (float)byte.MaxValue;
+                _Refresh();
             }
         }
         private Color _color;
@@ -125,11 +128,18 @@ namespace YOpenGL
         #endregion
 
         #region Transform
-        public PointF ViewToWorld(PointF p)
+        public PointF WorldToView(PointF p)
         {
             p = new PointF(p.X - _origin.X, p.Y - _origin.Y);
             p = _viewResverse.Transform(p);
             return p;
+        }
+
+        public void ResetView()
+        {
+            _view = MatrixF.Identity;
+            _viewResverse = MatrixF.Identity;
+            _Refresh();
         }
 
         public void Scale(float scaleX, float scaleY)
@@ -182,7 +192,7 @@ namespace YOpenGL
 
         public GLVisual HitTest(PointF point, float sensitive = 6)
         {
-            point = ViewToWorld(point);
+            point = WorldToView(point);
             foreach (var visual in _visuals)
                 if (visual.HitTest(point, sensitive * _viewResverse.M11))
                     return visual;
@@ -210,6 +220,15 @@ namespace YOpenGL
         {
             _visuals.Remove(visual);
             visual.Panel = null;
+            _needUpdate = true;
+            _Refresh();
+        }
+
+        public void RemoveAll()
+        {
+            foreach (var visual in _visuals)
+                visual.Panel = null;
+            _visuals.Clear();
             _needUpdate = true;
             _Refresh();
         }
@@ -254,6 +273,8 @@ namespace YOpenGL
         #region RenderFrame
         private void _DispatchFrame()
         {
+            GL.MakeSureCurrentContext(_context);
+
             GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
 
             GLFunc.ClearColor(_red, _green, _blue, 1.0f);
@@ -269,7 +290,7 @@ namespace YOpenGL
             GLFunc.BindFramebuffer(GLConst.GL_DRAW_FRAMEBUFFER, 0);
             GLFunc.BlitFramebuffer(0, 0, _viewWidth, _viewHeight, 0, 0, _viewWidth, _viewHeight, GLConst.GL_COLOR_BUFFER_BIT, GLConst.GL_NEAREST);
 
-            GLFunc.SwapBuffers();
+            GLFunc.SwapBuffers(_context.HDC);
         }
         #endregion
 
@@ -290,7 +311,7 @@ namespace YOpenGL
             _isInit = true;
             _transformToDevice = (MatrixF)PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
 
-            GL.MakeContextCurrent(Handle);
+            _context = GL.CreateContextCurrent(Handle);
             GLFunc.Init();
             GLFunc.Enable(GLConst.GL_BLEND);
             GLFunc.Enable(GLConst.GL_LINE_WIDTH);
@@ -379,9 +400,9 @@ namespace YOpenGL
             _timer.Stop();
             _timer.Dispose();
 
+            GL.MakeSureCurrentContext(_context);
             _DeleteResource();
-            GL.DeleteContext();
-            GLFunc.Dispose();
+            GL.DeleteContext(_context);
             _isInit = false;
         }
         #endregion
@@ -662,7 +683,6 @@ namespace YOpenGL
 
         protected override void DestroyWindowCore(HandleRef hwnd)
         {
-            _Destroy();
             Win32Helper.DestroyWindow(hwnd.Handle);
         }
 
@@ -675,6 +695,8 @@ namespace YOpenGL
 
         private void _OnRenderSizeChanged(float width, float height)
         {
+            GL.MakeSureCurrentContext(_context);
+
             _worldToNDC = new MatrixF();
             _worldToNDC.Translate(_origin.X, _origin.Y);
             _worldToNDC.Scale(2 / width, 2 / height);

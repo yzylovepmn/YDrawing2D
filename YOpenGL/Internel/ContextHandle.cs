@@ -6,18 +6,21 @@ using System.Threading.Tasks;
 
 namespace YOpenGL
 {
-    internal struct ContextHandle : IComparable<ContextHandle>, IEquatable<ContextHandle>
+    public struct ContextHandle : IEquatable<ContextHandle>
     {
-        public static readonly ContextHandle Zero = new ContextHandle(IntPtr.Zero);
+        public static readonly ContextHandle Zero = new ContextHandle(IntPtr.Zero, IntPtr.Zero);
 
-        public IntPtr Handle { get { return handle; } }
-        private IntPtr handle;
+        public IntPtr HDC { get { return _hdc; } }
+        private IntPtr _hdc;
 
-        public ContextHandle(IntPtr h) { handle = h; }
+        public IntPtr Handle { get { return _handle; } }
+        private IntPtr _handle;
+
+        public ContextHandle(IntPtr hdc, IntPtr handle) { _hdc = hdc; _handle = handle; }
 
         public override string ToString()
         {
-            return Handle.ToString();
+            return string.Format("HDC:{0} Handle:{1}", _hdc, _handle);
         }
 
         public override bool Equals(object obj)
@@ -31,17 +34,7 @@ namespace YOpenGL
 
         public override int GetHashCode()
         {
-            return Handle.GetHashCode();
-        }
-
-        public static explicit operator IntPtr(ContextHandle c)
-        {
-            return c != ContextHandle.Zero ? c.handle : IntPtr.Zero;
-        }
-
-        public static explicit operator ContextHandle(IntPtr p)
-        {
-            return new ContextHandle(p);
+            return _hdc.GetHashCode() ^ _handle.GetHashCode();
         }
 
         public static bool operator ==(ContextHandle left, ContextHandle right)
@@ -54,14 +47,9 @@ namespace YOpenGL
             return !left.Equals(right);
         }
 
-        public int CompareTo(ContextHandle other)
-        {
-            unsafe { return (int)((int*)other.handle.ToPointer() - (int*)this.handle.ToPointer()); }
-        }
-
         public bool Equals(ContextHandle other)
         {
-            return Handle == other.Handle;
+            return _hdc == other._hdc && _handle == other._handle;
         }
     }
 }

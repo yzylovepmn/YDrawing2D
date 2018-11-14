@@ -39,6 +39,12 @@ namespace YOpenGL
     {
         private static IntPtr OpenGLHandle { get; set; }
         internal const string OpenGLName = "OPENGL32.DLL";
+        private static bool _isInit;
+
+        static GLFunc()
+        {
+            _isInit = false;
+        }
 
         /// <summary>
         /// Must be initialized before calling any function
@@ -46,15 +52,21 @@ namespace YOpenGL
         /// <returns></returns>
         public static bool Init()
         {
+            if (_isInit) return true;
+            _isInit = true;
+
             OpenGLHandle = Win32Helper.LoadLibrary(OpenGLName);
             _Init();
             _ParseVersion();
             Win32Helper.FreeLibrary(OpenGLHandle);
-            return GL.Version >= GLVersion.FromNumber(2, 0);
+            return GL.Version >= GLVersion.MinimumSupportedVersion;
         }
 
         public static void Dispose()
         {
+            if (!_isInit) return;
+            _isInit = false;
+
             GL.Version = new GLVersion();
             glCullFace = null;
             glFrontFace = null;
@@ -1495,9 +1507,9 @@ namespace YOpenGL
         }
 
         #region Func
-        public static void SwapBuffers()
+        public static void SwapBuffers(IntPtr hdc)
         {
-            Win32Helper.SwapBuffers(GL.HDC);
+            Win32Helper.SwapBuffers(hdc);
         }
 
         public static void UseProgram(GLuint program)

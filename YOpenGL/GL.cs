@@ -15,21 +15,25 @@ namespace YOpenGL
 {
     public static class GL
     {
-        private static ContextHandle _hdcHandle = ContextHandle.Zero;
         private static int _frameSpan;
         private static long _lastFrameTime;
         private static Stopwatch _stopwatch;
+        private static Dictionary<IntPtr, ContextHandle> _contexts;
+        private static ContextHandle _current;
 
-        internal static IntPtr HDC;
+        static GL()
+        {
+            _contexts = new Dictionary<IntPtr, ContextHandle>();
+        }
+
         internal static GLVersion Version;
 
         public static event EventHandler DispatchFrame = delegate { };
 
-        public static void MakeContextCurrent(IntPtr hwnd)
+        public static ContextHandle CreateContextCurrent(IntPtr hwnd)
         {
-            DeleteContext();
-
-            HDC = Win32Helper.GetDC(hwnd);//取得设备上下文
+            var context = ContextHandle.Zero;
+            var hdc = Win32Helper.GetDC(hwnd);//取得设备上下文
             PixelFormatDescriptor pfd;
             pfd.Size = 40;
             pfd.Version = 1;
@@ -42,19 +46,42 @@ namespace YOpenGL
             unsafe
             {
                 PixelFormatDescriptor* ppfd = &pfd;
-                pixelFormat = Win32Helper.ChoosePixelFormat(HDC, (IntPtr)ppfd);//选择像素格式
-                Win32Helper.SetPixelFormat(HDC, pixelFormat, (IntPtr)ppfd);//设置像素格式
+                pixelFormat = Win32Helper.ChoosePixelFormat(hdc, (IntPtr)ppfd);//选择像素格式
+                Win32Helper.SetPixelFormat(hdc, pixelFormat, (IntPtr)ppfd);//设置像素格式
 
-                _hdcHandle = new ContextHandle(Win32Helper.CreateContext(HDC));//建立OpenGL渲染上下文
+                context = new ContextHandle(hdc, Win32Helper.CreateContext(hdc));//建立OpenGL渲染上下文
 
-                Win32Helper.MakeCurrent(HDC, _hdcHandle.Handle);//激活当前渲染上下文
+                MakeCurrentContext(context);//激活当前渲染上下文
+
+                if (!_contexts.ContainsKey(context.HDC))
+                    _contexts.Add(context.HDC, context);
+                else _contexts[context.HDC] = context;
             }
+            return context;
         }
 
-        public static void DeleteContext()
+        public static void MakeCurrentContext(ContextHandle context)
         {
-            if (_hdcHandle != ContextHandle.Zero)
-                Win32Helper.DeleteContext(_hdcHandle.Handle);
+            Win32Helper.MakeCurrent(context.HDC, context.Handle);//激活当前渲染上下文
+            _current = context;
+        }
+
+        public static void MakeSureCurrentContext(ContextHandle context)
+        {
+            if (context != _current)
+                MakeCurrentContext(context);
+        }
+
+        public static void DeleteContext(ContextHandle context)
+        {
+            if (_contexts.ContainsKey(context.HDC))
+                _contexts.Remove(context.HDC);
+
+            if (context != ContextHandle.Zero)
+                Win32Helper.DeleteContext(context.Handle);
+
+            if (_contexts.Count == 0)
+                GLFunc.Dispose();
         }
 
         #region For Game Render
