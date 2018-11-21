@@ -16,6 +16,8 @@ namespace YOpenGL
         PrimitiveType Type { get; }
         bool HitTest(PointF p, float sensitive);
         IEnumerable<PointF> this[bool isOutline] { get; }
+        MeshModel Model { get; set; }
+        MeshModel FillModel { get; set; }
     }
 
     public enum PrimitiveType

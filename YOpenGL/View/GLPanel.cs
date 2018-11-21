@@ -48,7 +48,6 @@ namespace YOpenGL
 
         private bool _isDisposed;
         private bool _isInit;
-        private bool _needUpdate;
         private int _signal;
         private int _frameSpan;
         private Timer _timer;
@@ -138,8 +137,7 @@ namespace YOpenGL
         public void ResetView()
         {
             _view = MatrixF.Identity;
-            _viewResverse = MatrixF.Identity;
-            _Refresh();
+            _AfterTransform();
         }
 
         public void Scale(float scaleX, float scaleY)
@@ -179,7 +177,7 @@ namespace YOpenGL
             _viewResverse = _view;
             _view = view;
 
-            _Refresh();
+            _Refresh(false);
         }
         #endregion
 
@@ -218,18 +216,21 @@ namespace YOpenGL
 
         public void RemoveVisual(GLVisual visual)
         {
+            _DetachVisual(visual);
             _visuals.Remove(visual);
             visual.Panel = null;
-            _needUpdate = true;
             _Refresh();
         }
 
         public void RemoveAll()
         {
+            _DisposeModels();
             foreach (var visual in _visuals)
+            {
+                visual.Reset();
                 visual.Panel = null;
+            }
             _visuals.Clear();
-            _needUpdate = true;
             _Refresh();
         }
 
@@ -240,15 +241,17 @@ namespace YOpenGL
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
         public void Update(GLVisual visual, bool refresh = false)
         {
-            _Update(visual);
+            _Update(visual, true);
             if (refresh)
                 _Refresh();
         }
 
-        private void _Update(GLVisual visual)
+        private void _Update(GLVisual visual, bool needDetach = false)
         {
+            if (needDetach)
+                _DetachVisual(visual);
             visual.Update();
-            _needUpdate = true;
+            _AttachVisual(visual);
         }
 
         /// <summary>
@@ -256,6 +259,7 @@ namespace YOpenGL
         /// </summary>
         public void UpdateAll()
         {
+            _DisposeModels();
             foreach (var visual in _visuals)
                 _Update(visual);
             _Refresh();
@@ -283,7 +287,6 @@ namespace YOpenGL
             GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, _matrix[0]);
             GLFunc.BufferSubData(GLConst.GL_UNIFORM_BUFFER, 0, 12 * sizeof(float), _worldToNDC.GetData(true));
             GLFunc.BufferSubData(GLConst.GL_UNIFORM_BUFFER, 12 * sizeof(float), 12 * sizeof(float), _view.GetData(true));
-            _InvalidateModel();
             _DrawModels();
 
             GLFunc.BindFramebuffer(GLConst.GL_READ_FRAMEBUFFER, _fbo[0]);
@@ -408,9 +411,13 @@ namespace YOpenGL
         #endregion
 
         #region Private
-        private void _Refresh()
+        private void _Refresh(bool needUpdate = true)
         {
             if (!_isInit) return;
+
+            if (needUpdate)
+                _EndInitModels();
+
             if (Interlocked.Increment(ref _signal) == 1)
                 _timer.Change(0, Timeout.Infinite);
         }
@@ -425,34 +432,31 @@ namespace YOpenGL
             var span = (int)(_watch.ElapsedMilliseconds - before);
             _watch.Stop();
 
-            Thread.Sleep(Math.Max(1, _frameSpan - span));
+            if (_frameSpan > span)
+                Thread.Sleep(_frameSpan - span);
 
             if (Interlocked.CompareExchange(ref _signal, 0, old) != old)
                 _timer.Change(0, Timeout.Infinite);
         }
 
-        private void _InvalidateModel()
+        private void _AttachVisual(GLVisual visual)
         {
-            if (_needUpdate)
+            foreach (var primitive in visual.Context.Primitives)
             {
-                _needUpdate = false;
-                _DisposeModels();
-                foreach (var visual in _visuals)
+                if (!primitive.Pen.IsNULL || primitive.Type == PrimitiveType.ComplexGeometry)
+                    _AttachModel(primitive, primitive.Pen);
+                if (primitive.Filled)
                 {
-                    foreach (var primitive in visual.Context.Primitives)
-                    {
-                        if (!primitive.Pen.IsNULL || primitive.Type == PrimitiveType.ComplexGeometry)
-                            _AttachModel(primitive, primitive.Pen);
-                        if (primitive.Filled)
-                        {
-                            if (primitive.Type == PrimitiveType.ComplexGeometry)
-                                _AttachStreamModel(primitive);
-                            else _AttachFillModels(primitive);
-                        }
-                    }
+                    if (primitive.Type == PrimitiveType.ComplexGeometry)
+                        _AttachStreamModel(primitive);
+                    else _AttachFillModels(primitive);
                 }
-                _EndInitModels();
             }
+        }
+
+        private void _DetachVisual(GLVisual visual)
+        {
+            visual.Detach();
         }
 
         private void _AttachModel(IPrimitive primitive, PenF pen)
@@ -484,16 +488,15 @@ namespace YOpenGL
             else
             {
                 model = _GreateModel(primitive);
-                model.BeginInit();
                 models.Add(pen, new List<MeshModel>() { model });
             }
             if (!model.TryAttachPrimitive(primitive))
             {
                 model = _GreateModel(primitive);
-                model.BeginInit();
                 models[pen].Add(model);
                 model.TryAttachPrimitive(primitive);
             }
+            primitive.Model = model;
         }
 
         private void _AttachStreamModel(IPrimitive primitive)
@@ -501,18 +504,17 @@ namespace YOpenGL
             var model = default(MeshModel);
             if (_streamModels.Count == 0)
             {
-                model = new StreamModel();
-                model.BeginInit();
+                model = _GreateModel(primitive);
                 _streamModels.Add(model);
             }
             else model = _streamModels.Last();
             if (!model.TryAttachPrimitive(primitive, false))
             {
-                model = new StreamModel();
-                model.BeginInit();
+                model = _GreateModel(primitive);
                 _streamModels.Add(model);
                 model.TryAttachPrimitive(primitive, false);
             }
+            primitive.FillModel = model;
         }
 
         private void _AttachFillModels(IPrimitive primitive)
@@ -524,48 +526,88 @@ namespace YOpenGL
                 model = models[primitive.FillColor.Value].Last();
             else
             {
-                model = _GreateModel(primitive, true);
-                model.BeginInit();
+                model = _GreateModel(null, true);
                 models.Add(primitive.FillColor.Value, new List<MeshModel>() { model });
             }
             if (!model.TryAttachPrimitive(primitive, false))
             {
-                model = _GreateModel(primitive, true);
-                model.BeginInit();
+                model = _GreateModel(null, true);
                 models[primitive.FillColor.Value].Add(model);
                 model.TryAttachPrimitive(primitive, false);
             }
+            primitive.FillModel = model;
         }
 
         private MeshModel _GreateModel(IPrimitive primitive, bool isFilled = false)
         {
+            var model = default(MeshModel);
             if (isFilled)
-            {
-                if (primitive.Type == PrimitiveType.SimpleGeometry)
-                    return new StreamModel();
-                return new FillModel();
-            }
-            if (primitive.Type == PrimitiveType.Arc)
-                return new ArcModel();
-            return new LinesModel();
+                model = new FillModel();
+            else if (primitive.Type == PrimitiveType.ComplexGeometry)
+                model = new StreamModel();
+            else if (primitive.Type == PrimitiveType.Arc)
+                model = new ArcModel();
+            else model = new LinesModel();
+            model.BeginInit();
+            return model;
         }
 
         private void _EndInitModels()
         {
-            foreach (var value in _lineModels.Values)
-                foreach (var model in value)
-                    model.EndInit();
+            foreach (var pair in _lineModels.ToList())
+            {
+                foreach (var model in pair.Value.ToList())
+                {
+                    if (model.NeedDisposed)
+                    {
+                        model.Dispose();
+                        pair.Value.Remove(model);
+                    }
+                    else model.EndInit();
+                }
+                if (pair.Value.Count == 0)
+                    _lineModels.Remove(pair.Key);
+            }
 
-            foreach (var value in _arcModels.Values)
-                foreach (var model in value)
-                    model.EndInit();
+            foreach (var pair in _arcModels.ToList())
+            {
+                foreach (var model in pair.Value.ToList())
+                {
+                    if (model.NeedDisposed)
+                    {
+                        model.Dispose();
+                        pair.Value.Remove(model);
+                    }
+                    else model.EndInit();
+                }
+                if (pair.Value.Count == 0)
+                    _arcModels.Remove(pair.Key);
+            }
 
-            foreach (var value in _fillModels.Values)
-                foreach (var model in value)
-                    model.EndInit();
+            foreach (var pair in _fillModels.ToList())
+            {
+                foreach (var model in pair.Value.ToList())
+                {
+                    if (model.NeedDisposed)
+                    {
+                        model.Dispose();
+                        pair.Value.Remove(model);
+                    }
+                    else model.EndInit();
+                }
+                if (pair.Value.Count == 0)
+                    _fillModels.Remove(pair.Key);
+            }
 
-            foreach (var model in _streamModels)
-                model.EndInit();
+            foreach (var model in _streamModels.ToList())
+            {
+                if (model.NeedDisposed)
+                {
+                    model.Dispose();
+                    _streamModels.Remove(model);
+                }
+                else model.EndInit();
+            }
         }
 
         private void _DrawModels()

@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    public struct _Line : IPrimitive
+    public class _Line : IPrimitive
     {
         public _Line(PointF start, PointF end, PenF pen)
         {
@@ -53,6 +53,11 @@ namespace YOpenGL
 
         public Color? FillColor { get { return null; } }
 
+        public MeshModel Model { get { return _model; } set { _model = value; } }
+        private MeshModel _model;
+
+        public MeshModel FillModel { get { return null; } set { } }
+
         public IEnumerable<PointF> this[bool isOutline]
         {
             get
@@ -78,6 +83,7 @@ namespace YOpenGL
 
         public void Dispose()
         {
+            _model = null;
         }
     }
 }

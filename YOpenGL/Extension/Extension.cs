@@ -32,6 +32,18 @@ namespace YOpenGL
                 item.Dispose();
         }
 
+        public static int IndexOf<T>(this IEnumerable<T> source, T item)
+        {
+            var index = 0;
+            foreach (var _item in source)
+            {
+                if (ReferenceEquals(item, _item))
+                    return index;
+                index++;
+            }
+            return -1;
+        }
+
         public static float[] GetData(this IEnumerable<PointF> points)
         {
             var data = new List<float>();

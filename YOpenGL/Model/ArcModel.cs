@@ -6,63 +6,51 @@ using System.Threading.Tasks;
 
 namespace YOpenGL
 {
-    internal class ArcModel : MeshModel
+    public class ArcModel : MeshModel
     {
-        private List<float> _attribute;
+        internal ArcModel() { }
 
-        internal override void BeginInit()
+        protected override void _BindData()
         {
-            base.BeginInit();
-            _attribute = new List<float>();
-        }
-
-        internal override void EndInit()
-        {
-            //base.EndInit();
-            if (_hasInit) return;
-            _hasInit = true;
-            _vao = new uint[1];
-            _vbo = new uint[1];
-            GLFunc.GenVertexArrays(1, _vao);
             GLFunc.BindVertexArray(_vao[0]);
-            GLFunc.GenBuffers(1, _vbo);
             GLFunc.BindBuffer(GLConst.GL_ARRAY_BUFFER, _vbo[0]);
-            GLFunc.BufferData(GLConst.GL_ARRAY_BUFFER, (_points.Count * 2 + _attribute.Count) * sizeof(float), default(float[]), GLConst.GL_STATIC_DRAW);
-            GLFunc.BufferSubData(GLConst.GL_ARRAY_BUFFER, 0, _points.Count * 2 * sizeof(float), _points.GetData());
-            GLFunc.BufferSubData(GLConst.GL_ARRAY_BUFFER, _points.Count * 2 * sizeof(float), _attribute.Count * sizeof(float), _attribute.ToArray());
+            GLFunc.BufferData(GLConst.GL_ARRAY_BUFFER, (_pointCount * 2 + _primitives.Count * 3) * sizeof(float), default(float[]), GLConst.GL_STATIC_DRAW);
+            GLFunc.BufferSubData(GLConst.GL_ARRAY_BUFFER, 0, _pointCount * 2 * sizeof(float), GenVertice());
+            GLFunc.BufferSubData(GLConst.GL_ARRAY_BUFFER, _pointCount * 2 * sizeof(float), _primitives.Count * 3 * sizeof(float), GenAttribute());
             GLFunc.EnableVertexAttribArray(0);
             GLFunc.VertexAttribPointer(0, 2, GLConst.GL_FLOAT, GLConst.GL_FALSE, 2 * sizeof(float), 0);
             GLFunc.EnableVertexAttribArray(1);
-            GLFunc.VertexAttribPointer(1, 3, GLConst.GL_FLOAT, GLConst.GL_FALSE, 3 * sizeof(float), _points.Count * 2 * sizeof(float));
+            GLFunc.VertexAttribPointer(1, 3, GLConst.GL_FLOAT, GLConst.GL_FALSE, 3 * sizeof(float), _pointCount * 2 * sizeof(float));
         }
 
-        internal override bool TryAttachPrimitive(IPrimitive primitive, bool isOutline = true)
+        private float[] GenAttribute()
         {
-            var ret = base.TryAttachPrimitive(primitive, isOutline);
-            if (ret)
+            var attributes = new List<float>();
+
+            foreach (var tuple in _primitives)
             {
-                var arc = (_Arc)primitive;
-                _attribute.Add(arc.Radius);
+                var arc = (_Arc)tuple.Item1;
+                attributes.Add(arc.Radius);
                 if (arc.IsCicle)
                 {
                     // The startRadian and endRadian of cicle is zero!
-                    _attribute.Add(0);
-                    _attribute.Add(0);
+                    attributes.Add(0);
+                    attributes.Add(0);
                 }
                 else
                 {
-                    _attribute.Add(arc.StartRadian);
-                    _attribute.Add(arc.EndRadian);
+                    attributes.Add(arc.StartRadian);
+                    attributes.Add(arc.EndRadian);
                 }
-                return true;
             }
-            return false;
+
+            return attributes.ToArray();
         }
 
         internal override void Draw(Shader shader)
         {
             GLFunc.BindVertexArray(_vao[0]);
-            GLFunc.DrawArrays(GLConst.GL_POINTS, 0, _points.Count);
+            GLFunc.DrawArrays(GLConst.GL_POINTS, 0, _pointCount);
         }
     }
 }

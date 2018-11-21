@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    public struct _Rect : IPrimitive
+    public class _Rect : IPrimitive
     {
         public _Rect(RectF rect, PenF pen, Color? color)
         {
@@ -26,6 +26,12 @@ namespace YOpenGL
 
         public Color? FillColor { get { return _fillColor; } }
         private Color? _fillColor;
+
+        public MeshModel Model { get { return _model; } set { _model = value; } }
+        private MeshModel _model;
+
+        public MeshModel FillModel { get { return _fillModel; } set { _fillModel = value; } }
+        private MeshModel _fillModel;
 
         public PrimitiveType Type { get { return PrimitiveType.Rect; } }
 
@@ -64,6 +70,8 @@ namespace YOpenGL
 
         public void Dispose()
         {
+            _model = null;
+            _fillModel = null;
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    public struct _Arc : IPrimitive
+    public class _Arc : IPrimitive
     {
         public _Arc(PointF center, float radius, float startRadian, float endRadian, PenF pen, Color? fillColor = null)
         {
@@ -36,6 +36,13 @@ namespace YOpenGL
         public bool IsEmpty { get { return Radius == 0 || (StartRadian == EndRadian && !float.IsInfinity(StartRadian)); } }
 
         public Color? FillColor { get { return _fillColor; } }
+
+        public MeshModel Model { get { return _model; } set { _model = value; } }
+        private MeshModel _model;
+
+        public MeshModel FillModel { get { return _fillModel; } set { _fillModel = value; } }
+        private MeshModel _fillModel;
+
         private Color? _fillColor;
 
         public PointF Center;
@@ -81,6 +88,8 @@ namespace YOpenGL
 
         public void Dispose()
         {
+            _model = null;
+            _fillModel = null;
         }
     }
 }

@@ -173,8 +173,8 @@ namespace YOpenGL
                 }
             }
 
-            if (geo.UnClosedLine.HasValue)
-                primitives.Add(geo.UnClosedLine.Value);
+            if (geo.UnClosedLine != null)
+                primitives.Add(geo.UnClosedLine);
 
             foreach (var primitive in primitives)
             {

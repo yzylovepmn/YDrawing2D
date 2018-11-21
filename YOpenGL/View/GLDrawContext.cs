@@ -69,11 +69,11 @@ namespace YOpenGL
             start = _transform.Transform(start);
             end = _transform.Transform(end);
             var line = _DrawLine(pen, start, end);
-            if (line.HasValue)
-                _primitives.Add(line.Value);
+            if (line != null)
+                _primitives.Add(line);
         }
 
-        private _Line? _DrawLine(PenF pen, PointF start, PointF end)
+        private _Line _DrawLine(PenF pen, PointF start, PointF end)
         {
             if (start == end) return null;
 
@@ -250,6 +250,9 @@ namespace YOpenGL
             _begin = begin;
             _current = begin;
             _subGeo = new _SimpleGeometry(pen, fillColor, _begin.Value, isClosed);
+
+            if (_geo == null)
+                _geo = new _ComplexGeometry() { _bounds = RectF.Empty };
             _geo.AddChild(_subGeo);
         }
 
@@ -263,7 +266,7 @@ namespace YOpenGL
 
         private void _EndFigures(bool flag = false)
         {
-            if (_begin == null)
+            if (_geo == null)
                 throw new InvalidOperationException("Must call BeginFigure before call this method!");
 
             if (_subGeo.IsClosed && _begin != _current)
@@ -271,9 +274,10 @@ namespace YOpenGL
             else _subGeo.UnClosedLine = _DrawLine(PenF.NULL, _current.Value, _begin.Value);
 
             _geo.Close();
+            _geo._wholeFill = flag;
             _primitives.Add(_geo);
 
-            _geo = new _ComplexGeometry() { _wholeFill = flag, _bounds = RectF.Empty };
+            //_geo = new _ComplexGeometry() { _wholeFill = flag, _bounds = RectF.Empty };
             _begin = null;
             _current = null;
         }

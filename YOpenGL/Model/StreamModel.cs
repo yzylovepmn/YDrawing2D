@@ -7,15 +7,17 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    internal class StreamModel : MeshModel
+    public class StreamModel : MeshModel
     {
-        private Dictionary<int, Tuple<int, Color>> _indices;
+        internal StreamModel() { }
+
+        private Dictionary<int, Tuple<int, Color>> _idx;
         private List<int> _flags;
 
         internal override void BeginInit()
         {
             base.BeginInit();
-            _indices = new Dictionary<int, Tuple<int, Color>>();
+            _idx = new Dictionary<int, Tuple<int, Color>>();
             _flags = new List<int>();
         }
 
@@ -23,26 +25,76 @@ namespace YOpenGL
         {
             var cnt = 0;
             var geo = (_ComplexGeometry)primitive;
-            var subgeos = new List<Tuple<Color, List<PointF>>>();
+            var subgeos = new List<Tuple<int, Color>>();
             foreach (var child in geo.Children.Where(c => c.Filled))
             {
-                var subpoints = new List<PointF>();
-                subpoints.AddRange(child[isOutline]);
-                subgeos.Add(new Tuple<Color, List<PointF>>(child.FillColor.Value, subpoints));
-                cnt += subpoints.Count;
+                var tuple = new Tuple<int, Color>(child[isOutline].Count() + 1, child.FillColor.Value);
+                subgeos.Add(tuple);
+                cnt += tuple.Item1;
             }
-            if (_points.Count > 0 && cnt < Capacity && _points.Count + cnt > Capacity)
+            if (_pointCount > 0 && cnt < Capacity && _pointCount + cnt > Capacity)
                 return false;
 
+            var _currentCount = _pointCount;
             foreach (var tuple in subgeos)
             {
-                _indices.Add(_points.Count, new Tuple<int, Color>(tuple.Item2.Count + 1, tuple.Item1));
-                _points.Add(new PointF());
-                _points.AddRange(tuple.Item2);
+                _idx.Add(_currentCount, tuple);
+                _currentCount += tuple.Item1;
             }
             _flags.Add(subgeos.Count);
+            _pointCount = _currentCount;
 
+            _primitives.Add(new Tuple<IPrimitive, bool, int>(primitive, isOutline, cnt));
+            _needUpdate = true;
             return true;
+        }
+
+        protected override void _DetachBefore(Tuple<IPrimitive, bool, int> tuple)
+        {
+            var index = _primitives.IndexOf(tuple);
+            if (index >= 0)
+            {
+                int skipCount = 0, removeCount = _flags[index];
+                for (int i = 0; i < index; i++)
+                    skipCount += _flags[i];
+                _flags.RemoveAt(index);
+
+                var ahead = _idx.Take(skipCount);
+                var idx = new Dictionary<int, Tuple<int, Color>>();
+                foreach (var pair in _idx.ToList())
+                {
+                    if (skipCount == 0)
+                    {
+                        if (removeCount > 0)
+                            removeCount--;
+                        else idx.Add(pair.Key - tuple.Item3, pair.Value);
+                    }
+                    else
+                    {
+                        idx.Add(pair.Key, pair.Value);
+                        skipCount--;
+                    }
+                }
+                _idx = idx;
+            }
+            base._DetachBefore(tuple);
+        }
+
+        protected override float[] GenVertice(List<uint> indices = null)
+        {
+            var points = new List<PointF>();
+
+            foreach (var tuple in _primitives)
+            {
+                var geo = (_ComplexGeometry)tuple.Item1;
+                foreach (var child in geo.Children.Where(c => c.Filled))
+                {
+                    points.Add(new PointF());
+                    points.AddRange(child[tuple.Item2]);
+                }
+            }
+
+            return points.GetData();
         }
 
         internal override void Draw(Shader shader)
@@ -52,7 +104,7 @@ namespace YOpenGL
             var pairs = new List<KeyValuePair<int, Tuple<int, Color>>>();
             var cnt = 0;
             var flag = _flags[cnt++];
-            foreach (var index in _indices)
+            foreach (var index in _idx)
             {
                 if (flag > 0)
                 {
@@ -87,8 +139,8 @@ namespace YOpenGL
         protected override void _Dispose()
         {
             base._Dispose();
-            _indices?.Clear();
-            _indices = null;
+            _idx?.Clear();
+            _idx = null;
             _flags?.Clear();
             _flags = null;
         }

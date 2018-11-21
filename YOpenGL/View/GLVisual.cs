@@ -32,6 +32,41 @@ namespace YOpenGL
             Draw(context);
         }
 
+        internal void Reset()
+        {
+            foreach (var primitive in _context.Primitives)
+                _Deatch(primitive, true);
+        }
+
+        internal void Detach()
+        {
+            foreach (var primitive in _context.Primitives)
+                _Deatch(primitive);
+        }
+
+        private void _Deatch(IPrimitive primitive, bool isReset = false)
+        {
+            if (primitive.Type == PrimitiveType.ComplexGeometry)
+            {
+                var geo = (_ComplexGeometry)primitive;
+                foreach (var subgeo in geo.Children)
+                    foreach (var item in subgeo.Stream)
+                        _Deatch(item);
+            }
+            if (primitive.FillModel != null)
+            {
+                if (!isReset)
+                    primitive.FillModel.DetachPrimitive(primitive);
+                primitive.FillModel = null;
+            }
+            if (primitive.Model != null)
+            {
+                if (!isReset)
+                    primitive.Model.DetachPrimitive(primitive);
+                primitive.Model = null;
+            }
+        }
+
         internal bool HitTest(PointF p, float sensitive)
         {
             foreach (var primitive in _context.Primitives)

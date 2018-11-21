@@ -6,12 +6,14 @@ using System.Threading.Tasks;
 
 namespace YOpenGL
 {
-    internal class LinesModel : MeshModel
+    public class LinesModel : MeshModel
     {
+        internal LinesModel() { }
+
         internal override void Draw(Shader shader)
         {
             GLFunc.BindVertexArray(_vao[0]);
-            GLFunc.DrawArrays(GLConst.GL_LINES, 0, _points.Count);
+            GLFunc.DrawArrays(GLConst.GL_LINES, 0, _pointCount);
         }
     }
 }

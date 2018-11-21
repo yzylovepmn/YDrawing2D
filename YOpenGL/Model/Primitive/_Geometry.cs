@@ -10,7 +10,7 @@ namespace YOpenGL
     /// <summary>
     /// Simple polygon
     /// </summary>
-    public struct _SimpleGeometry : IPrimitive
+    public class _SimpleGeometry : IPrimitive
     {
         public _SimpleGeometry(PenF pen, Color? fillColor, PointF begin, bool isClosed)
         {
@@ -36,12 +36,16 @@ namespace YOpenGL
         public Color? FillColor { get { return _fillColor; } }
         private Color? _fillColor;
 
+        public MeshModel Model { get { return null; } set { } }
+
+        public MeshModel FillModel { get { return null; } set { } }
+
         internal bool IsClosed { get { return _isClosed; } set { _isClosed = value; } }
         private bool _isClosed;
 
         internal PointF Begin;
 
-        internal _Line? UnClosedLine;
+        internal _Line UnClosedLine;
 
         internal IEnumerable<IPrimitive> Stream { get { return _stream; } }
         private List<IPrimitive> _stream;
@@ -68,8 +72,8 @@ namespace YOpenGL
                 foreach (var primitive in _stream)
                     foreach (var p in primitive[isOutline])
                         yield return p;
-                if (!isOutline && UnClosedLine.HasValue)
-                    yield return UnClosedLine.Value.End;
+                if (!isOutline && UnClosedLine != null)
+                    yield return UnClosedLine.End;
             }
         }
 
@@ -104,7 +108,7 @@ namespace YOpenGL
         }
     }
 
-    public struct _ComplexGeometry : IPrimitive
+    public class _ComplexGeometry : IPrimitive
     {
         public IEnumerable<PointF> this[bool isOutline] { get { yield break; } }
 
@@ -114,6 +118,11 @@ namespace YOpenGL
         public PenF Pen { get { return PenF.NULL; } }
 
         public Color? FillColor { get { return null; } }
+
+        public MeshModel Model { get { return null; } set { } }
+
+        public MeshModel FillModel { get { return _fillModel; } set { _fillModel = value; } }
+        private MeshModel _fillModel;
 
         public bool Filled { get { return _children != null && _children.Any(child => child.Filled); } }
 
@@ -166,6 +175,8 @@ namespace YOpenGL
             _children?.Dispose();
             _children?.Clear();
             _children = null;
+
+            _fillModel = null;
         }
     }
 }

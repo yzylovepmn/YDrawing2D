@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    public struct _Spline : IPrimitive
+    public class _Spline : IPrimitive
     {
         public _Spline(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints, PenF pen)
         {
@@ -83,6 +83,11 @@ namespace YOpenGL
 
         public Color? FillColor { get { return null; } }
 
+        public MeshModel Model { get { return _model; } set { _model = value; } }
+        private MeshModel _model;
+
+        public MeshModel FillModel { get { return null; } set { } }
+
         internal IEnumerable<_Line> InnerLines { get { return _innerLines; } }
         private List<_Line> _innerLines;
 
@@ -118,6 +123,7 @@ namespace YOpenGL
             _innerLines.Dispose();
             _innerLines.Clear();
             _innerLines = null;
+            _model = null;
         }
     }
 }

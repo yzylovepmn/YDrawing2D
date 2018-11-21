@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    public struct _Bezier : IPrimitive
+    public class _Bezier : IPrimitive
     {
         public _Bezier(PointF[] points, int degree, PenF pen)
         {
@@ -35,6 +35,11 @@ namespace YOpenGL
         public bool Filled { get { return false; } }
 
         public Color? FillColor { get { return null; } }
+
+        public MeshModel Model { get { return _model; } set { _model = value; } }
+        private MeshModel _model;
+
+        public MeshModel FillModel { get { return null; } set { } }
 
         internal IEnumerable<_Line> InnerLines { get { return _innerLines; } }
         private List<_Line> _innerLines;
@@ -74,6 +79,8 @@ namespace YOpenGL
             _innerLines.Dispose();
             _innerLines.Clear();
             _innerLines = null;
+
+            _model = null;
         }
     }
 }
