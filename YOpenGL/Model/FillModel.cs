@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static YOpenGL.GLFunc;
+using static YOpenGL.GLConst;
 
 namespace YOpenGL
 {
@@ -31,26 +33,26 @@ namespace YOpenGL
         {
             base._GenData();
             _ebo = new uint[1];
-            GLFunc.GenBuffers(1, _ebo);
+            GenBuffers(1, _ebo);
         }
 
         protected override void _BindData()
         {
             base._BindData();
-            GLFunc.BindBuffer(GLConst.GL_ELEMENT_ARRAY_BUFFER, _ebo[0]);
-            GLFunc.BufferData(GLConst.GL_ELEMENT_ARRAY_BUFFER, _indices.Count * sizeof(uint), _indices.ToArray(), GLConst.GL_STATIC_DRAW);
+            BindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo[0]);
+            BufferData(GL_ELEMENT_ARRAY_BUFFER, _indices.Count * sizeof(uint), _indices.ToArray(), GL_STATIC_DRAW);
         }
 
         internal override void Draw(Shader shader)
         {
-            GLFunc.BindVertexArray(_vao[0]);
-            GLFunc.DrawElements(GLConst.GL_TRIANGLES, _indexCount, GLConst.GL_UNSIGNED_INT, 0);
+            BindVertexArray(_vao[0]);
+            DrawElements(GL_TRIANGLES, _indexCount, GL_UNSIGNED_INT, 0);
         }
 
         protected override void _Dispose()
         {
             if (_ebo != null)
-                GLFunc.DeleteBuffers(1, _ebo);
+                DeleteBuffers(1, _ebo);
             _ebo = null;
             base._Dispose();
         }

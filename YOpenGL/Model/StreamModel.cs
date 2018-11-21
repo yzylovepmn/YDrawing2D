@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
+using static YOpenGL.GLFunc;
+using static YOpenGL.GLConst;
 
 namespace YOpenGL
 {
@@ -99,7 +101,7 @@ namespace YOpenGL
 
         internal override void Draw(Shader shader)
         {
-            GLFunc.BindVertexArray(_vao[0]);
+            BindVertexArray(_vao[0]);
 
             var pairs = new List<KeyValuePair<int, Tuple<int, Color>>>();
             var cnt = 0;
@@ -112,19 +114,19 @@ namespace YOpenGL
                     flag--;
                     if (flag == 0)
                     {
-                        GLFunc.ColorMask(GLConst.GL_FALSE, GLConst.GL_FALSE, GLConst.GL_FALSE, GLConst.GL_FALSE);
-                        GLFunc.StencilFunc(GLConst.GL_ALWAYS, 0, 1);
-                        GLFunc.StencilOp(GLConst.GL_ZERO, GLConst.GL_ZERO, GLConst.GL_INVERT);
+                        ColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                        StencilFunc(GL_ALWAYS, 0, 1);
+                        StencilOp(GL_ZERO, GL_ZERO, GL_INVERT);
                         foreach (var pair in pairs)
-                            GLFunc.DrawArrays(GLConst.GL_TRIANGLE_FAN, pair.Key, pair.Value.Item1);
+                            DrawArrays(GL_TRIANGLE_FAN, pair.Key, pair.Value.Item1);
 
-                        GLFunc.ColorMask(GLConst.GL_TRUE, GLConst.GL_TRUE, GLConst.GL_TRUE, GLConst.GL_TRUE);
-                        GLFunc.StencilFunc(GLConst.GL_EQUAL, 1, 1);
-                        GLFunc.StencilOp(GLConst.GL_ZERO, GLConst.GL_ZERO, GLConst.GL_ZERO);
+                        ColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                        StencilFunc(GL_EQUAL, 1, 1);
+                        StencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
                         foreach (var pair in pairs)
                         {
                             shader.SetVec4("color", 1, pair.Value.Item2.GetData());
-                            GLFunc.DrawArrays(GLConst.GL_TRIANGLE_FAN, pair.Key, pair.Value.Item1);
+                            DrawArrays(GL_TRIANGLE_FAN, pair.Key, pair.Value.Item1);
                         }
 
                         pairs.Clear();

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static YOpenGL.GLFunc;
+using static YOpenGL.GLConst;
 
 namespace YOpenGL
 {
@@ -12,8 +14,8 @@ namespace YOpenGL
 
         internal override void Draw(Shader shader)
         {
-            GLFunc.BindVertexArray(_vao[0]);
-            GLFunc.DrawArrays(GLConst.GL_LINES, 0, _pointCount);
+            BindVertexArray(_vao[0]);
+            DrawArrays(GL_LINES, 0, _pointCount);
         }
     }
 }

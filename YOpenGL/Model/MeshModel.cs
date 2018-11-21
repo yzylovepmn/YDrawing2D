@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using static YOpenGL.GLFunc;
+using static YOpenGL.GLConst;
 
 namespace YOpenGL
 {
@@ -115,17 +117,17 @@ namespace YOpenGL
         {
             _vao = new uint[1];
             _vbo = new uint[1];
-            GLFunc.GenVertexArrays(1, _vao);
-            GLFunc.GenBuffers(1, _vbo);
+            GenVertexArrays(1, _vao);
+            GenBuffers(1, _vbo);
         }
 
         protected virtual void _BindData()
         {
-            GLFunc.BindVertexArray(_vao[0]);
-            GLFunc.BindBuffer(GLConst.GL_ARRAY_BUFFER, _vbo[0]);
-            GLFunc.BufferData(GLConst.GL_ARRAY_BUFFER, _pointCount * 2 * sizeof(float), GenVertice(_indices), GLConst.GL_STATIC_DRAW);
-            GLFunc.EnableVertexAttribArray(0);
-            GLFunc.VertexAttribPointer(0, 2, GLConst.GL_FLOAT, GLConst.GL_FALSE, 2 * sizeof(float), 0);
+            BindVertexArray(_vao[0]);
+            BindBuffer(GL_ARRAY_BUFFER, _vbo[0]);
+            BufferData(GL_ARRAY_BUFFER, _pointCount * 2 * sizeof(float), GenVertice(_indices), GL_STATIC_DRAW);
+            EnableVertexAttribArray(0);
+            VertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
         }
 
         protected virtual float[] GenVertice(List<uint> indices = null)
@@ -144,9 +146,9 @@ namespace YOpenGL
         protected virtual void _Dispose()
         {
             if (_vao != null)
-                GLFunc.DeleteVertexArrays(1, _vao);
+                DeleteVertexArrays(1, _vao);
             if (_vbo != null)
-                GLFunc.DeleteBuffers(1, _vbo);
+                DeleteBuffers(1, _vbo);
             _vao = null;
             _vbo = null;
 

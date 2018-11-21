@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static YOpenGL.GLFunc;
+using static YOpenGL.GLConst;
 
 namespace YOpenGL
 {
@@ -41,37 +43,37 @@ namespace YOpenGL
 
         public void Use()
         {
-            GLFunc.UseProgram(_id);
+            UseProgram(_id);
         }
 
         public void SetBool(string name, bool value)
         {
-            GLFunc.Uniform1i(GLFunc.GetUniformLocation(ID, name), value ? 1 : 0);
+            Uniform1i(GetUniformLocation(ID, name), value ? 1 : 0);
         }
 
         public void SetInt(string name, int value)
         {
-            GLFunc.Uniform1i(GLFunc.GetUniformLocation(ID, name), value);
+            Uniform1i(GetUniformLocation(ID, name), value);
         }
 
         public void SetFloat(string name, float value)
         {
-            GLFunc.Uniform1f(GLFunc.GetUniformLocation(ID, name), value);
+            Uniform1f(GetUniformLocation(ID, name), value);
         }
 
         public void SetVec2(string name, int count, float[] value)
         {
-            GLFunc.Uniform2fv(GLFunc.GetUniformLocation(ID, name), count, value);
+            Uniform2fv(GetUniformLocation(ID, name), count, value);
         }
 
         public void SetVec3(string name, int count, float[] value)
         {
-            GLFunc.Uniform3fv(GLFunc.GetUniformLocation(ID, name), count, value);
+            Uniform3fv(GetUniformLocation(ID, name), count, value);
         }
 
         public void SetVec4(string name, int count, float[] value)
         {
-            GLFunc.Uniform4fv(GLFunc.GetUniformLocation(ID, name), count, value);
+            Uniform4fv(GetUniformLocation(ID, name), count, value);
         }
 
         public void SetMat3(string name, MatrixF[] matrices)
@@ -79,38 +81,38 @@ namespace YOpenGL
             var data = new List<float>();
             foreach (var matrix in matrices)
                 data.AddRange(matrix.GetData());
-            GLFunc.UniformMatrix3fv(GLFunc.GetUniformLocation(ID, name), matrices.Length, GLConst.GL_FALSE, data.ToArray());
+            UniformMatrix3fv(GetUniformLocation(ID, name), matrices.Length, GL_FALSE, data.ToArray());
         }
 
         #region Static
-        public static Shader CreateShader(IEnumerable<ShaderSource> source)
+        public static Shader GenShader(IEnumerable<ShaderSource> source)
         {
-            var id = GLFunc.CreateProgram();
+            var id = CreateProgram();
             foreach (var file in source)
             {
                 uint shader = 0;
                 switch (file.Type)
                 {
                     case ShaderType.Vert:
-                        shader = GLFunc.CreateShader(GLConst.GL_VERTEX_SHADER);
+                        shader = CreateShader(GL_VERTEX_SHADER);
                         break;
                     case ShaderType.Geom:
-                        shader = GLFunc.CreateShader(GLConst.GL_GEOMETRY_SHADER);
+                        shader = CreateShader(GL_GEOMETRY_SHADER);
                         break;
                     case ShaderType.Frag:
-                        shader = GLFunc.CreateShader(GLConst.GL_FRAGMENT_SHADER);
+                        shader = CreateShader(GL_FRAGMENT_SHADER);
                         break;
                 }
                 var code = file.Code;
                 GLFunc.ShaderSource(shader, 1, new string[] { code }, null);
-                GLFunc.CompileShader(shader);
+                CompileShader(shader);
                 if (!CheckCompileErrors(shader, file.Type.ToString()))
                     return null;
 
-                GLFunc.AttachShader(id, shader);
-                GLFunc.DeleteShader(shader);
+                AttachShader(id, shader);
+                DeleteShader(shader);
             }
-            GLFunc.LinkProgram(id);
+            LinkProgram(id);
             if (!CheckCompileErrors(id, "PROGRAM"))
                 return null;
 
@@ -123,24 +125,24 @@ namespace YOpenGL
             byte[] infoLog = new byte[1024];
             if (type != "PROGRAM")
             {
-                GLFunc.GetShaderiv(id, GLConst.GL_COMPILE_STATUS, success);
+                GetShaderiv(id, GL_COMPILE_STATUS, success);
                 if (success[0] == 0)
-                    GLFunc.GetShaderInfoLog(id, 1024, null, infoLog);
+                    GetShaderInfoLog(id, 1024, null, infoLog);
             }
             else
             {
-                GLFunc.GetProgramiv(id, GLConst.GL_LINK_STATUS, success);
+                GetProgramiv(id, GL_LINK_STATUS, success);
                 if (success[0] == 0)
-                    GLFunc.GetProgramInfoLog(id, 1024, null, infoLog);
+                    GetProgramInfoLog(id, 1024, null, infoLog);
             }
-            var msg = Encoding.ASCII.GetString(infoLog);
+            //var msg = Encoding.ASCII.GetString(infoLog);
             return success[0] != 0;
         }
         #endregion
 
         public void Dispose()
         {
-            GLFunc.DeleteProgram(_id);
+            DeleteProgram(_id);
         }
     }
 }

@@ -11,6 +11,9 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
+using static YOpenGL.GLFunc;
+using static YOpenGL.GLConst;
+using static YOpenGL.GL;
 
 namespace YOpenGL
 {
@@ -277,23 +280,23 @@ namespace YOpenGL
         #region RenderFrame
         private void _DispatchFrame()
         {
-            GL.MakeSureCurrentContext(_context);
+            MakeSureCurrentContext(_context);
 
-            GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
+            BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
 
-            GLFunc.ClearColor(_red, _green, _blue, 1.0f);
-            GLFunc.Clear(GLConst.GL_COLOR_BUFFER_BIT);
+            ClearColor(_red, _green, _blue, 1.0f);
+            Clear(GL_COLOR_BUFFER_BIT);
 
-            GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, _matrix[0]);
-            GLFunc.BufferSubData(GLConst.GL_UNIFORM_BUFFER, 0, 12 * sizeof(float), _worldToNDC.GetData(true));
-            GLFunc.BufferSubData(GLConst.GL_UNIFORM_BUFFER, 12 * sizeof(float), 12 * sizeof(float), _view.GetData(true));
+            BindBuffer(GL_UNIFORM_BUFFER, _matrix[0]);
+            BufferSubData(GL_UNIFORM_BUFFER, 0, 12 * sizeof(float), _worldToNDC.GetData(true));
+            BufferSubData(GL_UNIFORM_BUFFER, 12 * sizeof(float), 12 * sizeof(float), _view.GetData(true));
             _DrawModels();
 
-            GLFunc.BindFramebuffer(GLConst.GL_READ_FRAMEBUFFER, _fbo[0]);
-            GLFunc.BindFramebuffer(GLConst.GL_DRAW_FRAMEBUFFER, 0);
-            GLFunc.BlitFramebuffer(0, 0, _viewWidth, _viewHeight, 0, 0, _viewWidth, _viewHeight, GLConst.GL_COLOR_BUFFER_BIT, GLConst.GL_NEAREST);
+            BindFramebuffer(GL_READ_FRAMEBUFFER, _fbo[0]);
+            BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+            BlitFramebuffer(0, 0, _viewWidth, _viewHeight, 0, 0, _viewWidth, _viewHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-            GLFunc.SwapBuffers(_context.HDC);
+            SwapBuffers(_context.HDC);
         }
         #endregion
 
@@ -314,14 +317,14 @@ namespace YOpenGL
             _isInit = true;
             _transformToDevice = (MatrixF)PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
 
-            _context = GL.CreateContextCurrent(Handle);
-            GLFunc.Init();
-            GLFunc.Enable(GLConst.GL_BLEND);
-            GLFunc.Enable(GLConst.GL_LINE_WIDTH);
-            GLFunc.Enable(GLConst.GL_LINE_SMOOTH);
-            GLFunc.Enable(GLConst.GL_FRAMEBUFFER_SRGB); // Gamma Correction
-            GLFunc.BlendFunc(GLConst.GL_SRC_ALPHA, GLConst.GL_ONE_MINUS_SRC_ALPHA);
-            GLFunc.StencilMask(1);
+            _context = CreateContextCurrent(Handle);
+            Init();
+            Enable(GL_BLEND);
+            Enable(GL_LINE_WIDTH);
+            Enable(GL_LINE_SMOOTH);
+            Enable(GL_FRAMEBUFFER_SRGB); // Gamma Correction
+            BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            StencilMask(1);
             _CreateResource();
 
             _timer.Start(Timeout.Infinite, Timeout.Infinite);
@@ -343,40 +346,40 @@ namespace YOpenGL
 
             // for dash line texture
             _texture_dash = new uint[1];
-            GLFunc.GenTextures(1, _texture_dash);
-            GLFunc.BindTexture(GLConst.GL_TEXTURE_1D, _texture_dash[0]);
-            GLFunc.TexParameteri(GLConst.GL_TEXTURE_1D, GLConst.GL_TEXTURE_WRAP_S, GLConst.GL_REPEAT);
-            GLFunc.TexParameteri(GLConst.GL_TEXTURE_1D, GLConst.GL_TEXTURE_WRAP_T, GLConst.GL_REPEAT);
-            GLFunc.TexParameteri(GLConst.GL_TEXTURE_1D, GLConst.GL_TEXTURE_MIN_FILTER, GLConst.GL_NEAREST);
-            GLFunc.TexParameteri(GLConst.GL_TEXTURE_1D, GLConst.GL_TEXTURE_MAG_FILTER, GLConst.GL_NEAREST);
-            GLFunc.BindTexture(GLConst.GL_TEXTURE_1D, 0);
+            GenTextures(1, _texture_dash);
+            BindTexture(GL_TEXTURE_1D, _texture_dash[0]);
+            TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            BindTexture(GL_TEXTURE_1D, 0);
 
             // for anti-aliasing
             _fbo = new uint[1];
             _texture_msaa = new uint[1];
             _rbo = new uint[1];
-            GLFunc.GenFramebuffers(1, _fbo);
-            GLFunc.BindFramebuffer(GLConst.GL_FRAMEBUFFER, _fbo[0]);
-            GLFunc.GenTextures(1, _texture_msaa);
-            GLFunc.BindTexture(GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0]);
-            GLFunc.FramebufferTexture2D(GLConst.GL_FRAMEBUFFER, GLConst.GL_COLOR_ATTACHMENT0, GLConst.GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0], 0);
-            GLFunc.TexImage2DMultisample(GLConst.GL_TEXTURE_2D_MULTISAMPLE, 4, GLConst.GL_RGB, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11), GLConst.GL_TRUE);
-            GLFunc.GenRenderbuffers(1, _rbo);
-            GLFunc.BindRenderbuffer(GLConst.GL_RENDERBUFFER, _rbo[0]);
-            GLFunc.RenderbufferStorageMultisample(GLConst.GL_RENDERBUFFER, 4, GLConst.GL_STENCIL_INDEX1, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11));
-            GLFunc.FramebufferRenderbuffer(GLConst.GL_FRAMEBUFFER, GLConst.GL_STENCIL_ATTACHMENT, GLConst.GL_RENDERBUFFER, _rbo[0]);
+            GenFramebuffers(1, _fbo);
+            BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
+            GenTextures(1, _texture_msaa);
+            BindTexture(GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0]);
+            FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0], 0);
+            TexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11), GL_TRUE);
+            GenRenderbuffers(1, _rbo);
+            BindRenderbuffer(GL_RENDERBUFFER, _rbo[0]);
+            RenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_STENCIL_INDEX1, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11));
+            FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _rbo[0]);
 
             // for transform
             _matrix = new uint[1];
-            GLFunc.GenBuffers(1, _matrix);
-            GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, _matrix[0]);
-            GLFunc.BufferData(GLConst.GL_UNIFORM_BUFFER, 24 * sizeof(float), default(byte[]), GLConst.GL_STATIC_DRAW);
-            GLFunc.BindBufferBase(GLConst.GL_UNIFORM_BUFFER, 0, _matrix[0]);
-            GLFunc.BindBuffer(GLConst.GL_UNIFORM_BUFFER, 0);
+            GenBuffers(1, _matrix);
+            BindBuffer(GL_UNIFORM_BUFFER, _matrix[0]);
+            BufferData(GL_UNIFORM_BUFFER, 24 * sizeof(float), default(byte[]), GL_STATIC_DRAW);
+            BindBufferBase(GL_UNIFORM_BUFFER, 0, _matrix[0]);
+            BindBuffer(GL_UNIFORM_BUFFER, 0);
 
             //Set binding point
             foreach (var shader in _shaders)
-                GLFunc.UniformBlockBinding(shader.ID, GLFunc.GetUniformBlockIndex(shader.ID, "Matrices"), 0);
+                UniformBlockBinding(shader.ID, GetUniformBlockIndex(shader.ID, "Matrices"), 0);
         }
 
         private void _DeleteResource()
@@ -387,13 +390,13 @@ namespace YOpenGL
             _arcshader = null;
             _fillshader = null;
 
-            GLFunc.DeleteTextures(1, _texture_dash);
+            DeleteTextures(1, _texture_dash);
 
-            GLFunc.DeleteFramebuffers(1, _fbo);
-            GLFunc.DeleteTextures(1, _texture_msaa);
-            GLFunc.DeleteRenderbuffers(1, _rbo);
+            DeleteFramebuffers(1, _fbo);
+            DeleteTextures(1, _texture_msaa);
+            DeleteRenderbuffers(1, _rbo);
 
-            GLFunc.DeleteBuffers(1, _matrix);
+            DeleteBuffers(1, _matrix);
         }
 
         private void _Destroy()
@@ -403,9 +406,9 @@ namespace YOpenGL
             _timer.Stop();
             _timer.Dispose();
 
-            GL.MakeSureCurrentContext(_context);
+            MakeSureCurrentContext(_context);
             _DeleteResource();
-            GL.DeleteContext(_context);
+            DeleteContext(_context);
             _isInit = false;
         }
         #endregion
@@ -612,11 +615,11 @@ namespace YOpenGL
 
         private void _DrawModels()
         {
-            GLFunc.Enable(GLConst.GL_STENCIL_TEST);
+            Enable(GL_STENCIL_TEST);
             _DrawSteramModelHandle(_streamModels, _fillshader);
-            GLFunc.Disable(GLConst.GL_STENCIL_TEST);
+            Disable(GL_STENCIL_TEST);
 
-            GLFunc.Enable(GLConst.GL_CULL_FACE);
+            Enable(GL_CULL_FACE);
             foreach (var pair in _fillModels)
                 _DrawFilledModelHandle(pair, _fillshader);
 
@@ -625,13 +628,13 @@ namespace YOpenGL
 
             foreach (var pair in _arcModels)
                 _DrawModelHandle(pair, _arcshader);
-            GLFunc.Disable(GLConst.GL_CULL_FACE);
+            Disable(GL_CULL_FACE);
         }
 
         private void _DrawModelHandle(KeyValuePair<PenF, List<MeshModel>> pair, Shader shader)
         {
             //Set line width
-            GLFunc.LineWidth(pair.Key.Thickness / _transformToDevice.M11);
+            LineWidth(pair.Key.Thickness / _transformToDevice.M11);
 
             shader.Use();
             shader.SetBool("dashed", pair.Key.Data != null);
@@ -640,8 +643,8 @@ namespace YOpenGL
             if (pair.Key.Data != null)
             {
                 // Set line pattern
-                GLFunc.BindTexture(GLConst.GL_TEXTURE_1D, _texture_dash[0]);
-                GLFunc.TexImage1D(GLConst.GL_TEXTURE_1D, 0, GLConst.GL_RED, pair.Key.Data.Length, 0, GLConst.GL_RED, GLConst.GL_UNSIGNED_BYTE, pair.Key.Data);
+                BindTexture(GL_TEXTURE_1D, _texture_dash[0]);
+                TexImage1D(GL_TEXTURE_1D, 0, GL_RED, pair.Key.Data.Length, 0, GL_RED, GL_UNSIGNED_BYTE, pair.Key.Data);
 
                 foreach (var model in pair.Value)
                     model.Draw(shader);
@@ -667,7 +670,7 @@ namespace YOpenGL
 
         private static Shader GenShader(string[] shaders)
         {
-            var header = GL.CreateGLSLHeader();
+            var header = CreateGLSLHeader();
             var source = new List<ShaderSource>();
             string code;
             foreach (var shader in shaders)
@@ -685,7 +688,7 @@ namespace YOpenGL
                     source.Add(new ShaderSource(type, code.Replace("#version 330 core", header)));
                 }
             }
-            return Shader.CreateShader(source);
+            return Shader.GenShader(source);
         }
         #endregion
 
@@ -737,7 +740,7 @@ namespace YOpenGL
 
         private void _OnRenderSizeChanged(float width, float height)
         {
-            GL.MakeSureCurrentContext(_context);
+            MakeSureCurrentContext(_context);
 
             _worldToNDC = new MatrixF();
             _worldToNDC.Translate(_origin.X, _origin.Y);
@@ -746,7 +749,7 @@ namespace YOpenGL
             _viewWidth = (int)(width * _transformToDevice.M11);
             _viewHeight = (int)(height * _transformToDevice.M22);
 
-            GLFunc.Viewport(0, 0, _viewWidth, _viewHeight);
+            Viewport(0, 0, _viewWidth, _viewHeight);
 
             // for dashed line
             _lineshader.Use();
