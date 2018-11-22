@@ -101,6 +101,7 @@ namespace YOpenGL
             _needUpdate = false;
 
             _BindData();
+            _AfterEnd();
         }
 
         protected virtual void _BeforeEnd()

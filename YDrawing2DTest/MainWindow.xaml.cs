@@ -41,7 +41,7 @@ namespace YDrawing2DTest
         public static DrawingPen SelectedPen = new DrawingPen(1, Colors.Blue);
 
         public static PenF GLWhitePen = new PenF(1, Colors.White);
-        public static PenF GLActivePen = new PenF(1, Colors.Yellow);
+        public static PenF GLActivePen = new PenF(1, Colors.DarkRed);
         public static PenF GLSelectedPen = new PenF(1, Colors.Blue);
         private static PresentationPanel _panel;
         public static PresentationVisual ActiveVisual
@@ -132,11 +132,14 @@ namespace YDrawing2DTest
             //_glPanel.AddVisual(new Cicle(new PointF(500, 500), 200));
             //_glPanel.AddVisual(new Cicle(new PointF(100, 500), 100));
             //_glPanel.AddVisual(new Arc(new PointF(550, 100), 10, 30, 100));
-            //_glPanel.AddVisual(new Rectangle(new RectF((SizeF)_glPanel.RenderSize)));
+            //_glPanel.AddVisual(new Rectangle(new RectF(new SizeF(100, 200))));
+            //_glPanel.AddVisual(new Rectangle(new RectF(new PointF(200, 300), new SizeF(100, 200))));
             _glPanel.MouseMove += _panel_MouseMove;
             _glPanel.MouseWheel += _panel_MouseWheel;
             _glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
             _glPanel.UpdateAll();
+
+            // ======================================================= //
             //_panel = new PresentationPanel(ActualWidth, ActualHeight, 96, 96, Colors.Black, new Point(0, 0), YDrawing2D.RenderMode.Async);
             //Content = _panel;
             //var r = new Random(5);
