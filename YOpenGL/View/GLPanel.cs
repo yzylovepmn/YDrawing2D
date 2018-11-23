@@ -194,7 +194,7 @@ namespace YOpenGL
         public GLVisual HitTest(PointF point, float sensitive = 6)
         {
             point = WorldToView(point);
-            foreach (var visual in _visuals)
+            foreach (var visual in _visuals.Where(v => v.HitTestVisible))
                 if (visual.HitTest(point, sensitive * _viewResverse.M11))
                     return visual;
             return null;

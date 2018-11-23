@@ -11,6 +11,7 @@ namespace YOpenGL
         public GLVisual()
         {
             _context = new GLDrawContext(this);
+            _hitTestVisible = true;
         }
 
         public GLPanel Panel { get { return _panel; } internal set { _panel = value; } }
@@ -18,6 +19,9 @@ namespace YOpenGL
 
         internal GLDrawContext Context { get { return _context; } }
         private GLDrawContext _context;
+
+        public bool HitTestVisible { get { return _hitTestVisible; } set { _hitTestVisible = value; } }
+        protected bool _hitTestVisible;
 
         private GLDrawContext RenderOpen()
         {
