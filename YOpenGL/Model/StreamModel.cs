@@ -27,72 +27,51 @@ namespace YOpenGL
         {
             var cnt = 0;
             var geo = (_ComplexGeometry)primitive;
-            var subgeos = new List<Tuple<int, Color>>();
             foreach (var child in geo.Children.Where(c => c.Filled))
-            {
-                var tuple = new Tuple<int, Color>(child[isOutline].Count() + 1, child.FillColor.Value);
-                subgeos.Add(tuple);
-                cnt += tuple.Item1;
-            }
+                cnt += child[isOutline].Count() + 1;
             if (_pointCount > 0 && cnt < Capacity && _pointCount + cnt > Capacity)
                 return false;
 
-            var _currentCount = _pointCount;
-            foreach (var tuple in subgeos)
-            {
-                _idx.Add(_currentCount, tuple);
-                _currentCount += tuple.Item1;
-            }
-            _flags.Add(subgeos.Count);
-            _pointCount = _currentCount;
-
-            _primitives.Add(new Tuple<IPrimitive, bool, int>(primitive, isOutline, cnt));
+            _pointCount += cnt;
+            _primitives.Add(primitive, new Tuple<bool, int>(isOutline, cnt));
             _needUpdate = true;
             return true;
         }
 
-        protected override void _DetachBefore(Tuple<IPrimitive, bool, int> tuple)
+        protected override void _BeforeEnd()
         {
-            var index = _primitives.IndexOf(tuple);
-            if (index >= 0)
+            base._BeforeEnd();
+            if (_needUpdate)
             {
-                int skipCount = 0, removeCount = _flags[index];
-                for (int i = 0; i < index; i++)
-                    skipCount += _flags[i];
-                _flags.RemoveAt(index);
-
-                var ahead = _idx.Take(skipCount);
-                var idx = new Dictionary<int, Tuple<int, Color>>();
-                foreach (var pair in _idx.ToList())
+                _idx.Clear();
+                _flags.Clear();
+                var cnt = 0;
+                foreach (var pair in _primitives)
                 {
-                    if (skipCount == 0)
+                    var geo = (_ComplexGeometry)pair.Key;
+                    var children = geo.Children.Where(c => c.Filled);
+                    foreach (var child in children)
                     {
-                        if (removeCount > 0)
-                            removeCount--;
-                        else idx.Add(pair.Key - tuple.Item3, pair.Value);
+                        var _tuple = new Tuple<int, Color>(child[pair.Value.Item1].Count() + 1, child.FillColor.Value);
+                        _idx.Add(cnt, _tuple);
+                        cnt += _tuple.Item1;
                     }
-                    else
-                    {
-                        idx.Add(pair.Key, pair.Value);
-                        skipCount--;
-                    }
+                    _flags.Add(children.Count());
                 }
-                _idx = idx;
             }
-            base._DetachBefore(tuple);
         }
 
-        protected override float[] GenVertice(List<uint> indices = null)
+        protected override float[] GenVertice()
         {
             var points = new List<PointF>();
 
-            foreach (var tuple in _primitives)
+            foreach (var pair in _primitives)
             {
-                var geo = (_ComplexGeometry)tuple.Item1;
+                var geo = (_ComplexGeometry)pair.Key;
                 foreach (var child in geo.Children.Where(c => c.Filled))
                 {
                     points.Add(new PointF());
-                    points.AddRange(child[tuple.Item2]);
+                    points.AddRange(child[pair.Value.Item1]);
                 }
             }
 

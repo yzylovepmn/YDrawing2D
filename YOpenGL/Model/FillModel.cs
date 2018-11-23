@@ -20,6 +20,7 @@ namespace YOpenGL
 
         protected override void _BeforeEnd()
         {
+            base._BeforeEnd();
             _indices = new List<uint>();
         }
 

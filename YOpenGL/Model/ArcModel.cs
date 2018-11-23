@@ -14,10 +14,11 @@ namespace YOpenGL
 
         protected override void _BindData()
         {
+            var vertice = GenVertice();
             BindVertexArray(_vao[0]);
             BindBuffer(GL_ARRAY_BUFFER, _vbo[0]);
             BufferData(GL_ARRAY_BUFFER, (_pointCount * 2 + _primitives.Count * 3) * sizeof(float), default(float[]), GL_STATIC_DRAW);
-            BufferSubData(GL_ARRAY_BUFFER, 0, _pointCount * 2 * sizeof(float), GenVertice());
+            BufferSubData(GL_ARRAY_BUFFER, 0, _pointCount * 2 * sizeof(float), vertice);
             BufferSubData(GL_ARRAY_BUFFER, _pointCount * 2 * sizeof(float), _primitives.Count * 3 * sizeof(float), GenAttribute());
             EnableVertexAttribArray(0);
             VertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
@@ -29,9 +30,9 @@ namespace YOpenGL
         {
             var attributes = new List<float>();
 
-            foreach (var tuple in _primitives)
+            foreach (var pair in _primitives)
             {
-                var arc = (_Arc)tuple.Item1;
+                var arc = (_Arc)pair.Key;
                 attributes.Add(arc.Radius);
                 if (arc.IsCicle)
                 {

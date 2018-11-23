@@ -125,10 +125,10 @@ namespace YDrawing2DTest
             for (int i = 1; i < 100000; i++)
             {
                 //_glPanel.AddVisual(new Cicle(new PointF(0, 0), i * 2));
-                _glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i + 100)));
+                //_glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i + 100)));
             }
-            //_glPanel.AddVisual(new CustomShape(new PointF(0, 0)));
-            //_glPanel.AddVisual(new Text(new PointF(100, 200)));
+            _glPanel.AddVisual(new CustomShape(new PointF(0, 0)));
+            _glPanel.AddVisual(new Text(new PointF(100, 200)));
             //_glPanel.AddVisual(new Cicle(new PointF(500, 500), 200));
             //_glPanel.AddVisual(new Cicle(new PointF(100, 500), 100));
             //_glPanel.AddVisual(new Arc(new PointF(550, 100), 10, 30, 100));

@@ -17,7 +17,7 @@ namespace YOpenGL
 
         internal bool NeedDisposed { get { return _primitives != null && _primitives.Count == 0; } }
 
-        protected List<Tuple<IPrimitive, bool, int>> _primitives;
+        protected Dictionary<IPrimitive, Tuple<bool, int>> _primitives;
         protected int _pointCount;
         protected uint[] _vao;
         protected uint[] _vbo;
@@ -29,6 +29,11 @@ namespace YOpenGL
 
         internal abstract void Draw(Shader shader);
 
+        internal virtual void InvalidatePrimitives()
+        {
+
+        }
+
         internal virtual bool TryAttachPrimitive(IPrimitive primitive, bool isOutline = true)
         {
             var cnt = primitive[isOutline].Count();
@@ -36,33 +41,23 @@ namespace YOpenGL
                 return false;
             _pointCount += cnt;
 
-            _primitives.Add(new Tuple<IPrimitive, bool, int>(primitive, isOutline, cnt));
+            _primitives.Add(primitive, new Tuple<bool, int>(isOutline, cnt));
             _needUpdate = true;
             return true;
         }
 
         internal void DetachPrimitive(IPrimitive primitive)
         {
-            var tuple = GetTuple(primitive);
-            _DetachBefore(tuple);
-            _primitives.Remove(tuple);
+            var pair = GetPair(primitive);
+            _pointCount -= pair.Value.Item2;
+            _primitives.Remove(pair.Key);
             if (_primitives.Count != 0)
                 _needUpdate = true;
         }
 
-        protected virtual void _DetachBefore(Tuple<IPrimitive, bool, int> tuple)
+        protected KeyValuePair<IPrimitive, Tuple<bool, int>> GetPair(IPrimitive primitive)
         {
-            _pointCount -= tuple.Item3;
-        }
-
-        protected Tuple<IPrimitive, bool, int> GetTuple(IPrimitive primitive)
-        {
-            foreach (var tuple in _primitives)
-            {
-                if (tuple.Item1 == primitive)
-                    return tuple;
-            }
-            return null;
+            return new KeyValuePair<IPrimitive, Tuple<bool, int>>(primitive, _primitives[primitive]);
         }
 
         internal virtual void BeginInit()
@@ -70,7 +65,7 @@ namespace YOpenGL
             _Dispose();
             _pointCount = 0;
             _needUpdate = false;
-            _primitives = new List<Tuple<IPrimitive, bool, int>>();
+            _primitives = new Dictionary<IPrimitive, Tuple<bool, int>>();
         }
 
         internal void EndInit()
@@ -106,7 +101,6 @@ namespace YOpenGL
 
         protected virtual void _BeforeEnd()
         {
-
         }
 
         protected virtual void _AfterEnd()
@@ -124,21 +118,22 @@ namespace YOpenGL
 
         protected virtual void _BindData()
         {
+            var vertice = GenVertice();
             BindVertexArray(_vao[0]);
             BindBuffer(GL_ARRAY_BUFFER, _vbo[0]);
-            BufferData(GL_ARRAY_BUFFER, _pointCount * 2 * sizeof(float), GenVertice(_indices), GL_STATIC_DRAW);
+            BufferData(GL_ARRAY_BUFFER, _pointCount * 2 * sizeof(float), vertice, GL_STATIC_DRAW);
             EnableVertexAttribArray(0);
             VertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
         }
 
-        protected virtual float[] GenVertice(List<uint> indices = null)
+        protected virtual float[] GenVertice()
         {
             var points = new List<PointF>();
 
-            foreach (var tuple in _primitives)
+            foreach (var pair in _primitives)
             {
-                indices?.AddRange(GeometryHelper.GenIndices(tuple.Item1, (uint)points.Count));
-                points.AddRange(tuple.Item1[tuple.Item2]);
+                _indices?.AddRange(GeometryHelper.GenIndices(pair.Key, (uint)points.Count));
+                points.AddRange(pair.Key[pair.Value.Item1]);
             }
 
             return points.GetData();
