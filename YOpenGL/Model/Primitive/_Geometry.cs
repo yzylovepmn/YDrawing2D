@@ -84,6 +84,13 @@ namespace YOpenGL
             return true;
         }
 
+        public bool HitTest(RectF rect)
+        {
+            if (!_HitTestOutline(rect))
+                return _HitTestFill(rect);
+            return true;
+        }
+
         internal bool _HitTestOutline(PointF p, float sensitive)
         {
             if (_pen.IsNULL) return false;
@@ -97,6 +104,22 @@ namespace YOpenGL
         {
             if (!Filled) return false;
             return GeometryHelper.Contains(this, p);
+        }
+
+        internal bool _HitTestOutline(RectF rect)
+        {
+            if (_pen.IsNULL) return false;
+            foreach (var primitive in _stream)
+                if (primitive.Bounds.IntersectsWith(rect) && primitive.HitTest(rect))
+                    return true;
+            return false;
+        }
+
+        internal bool _HitTestFill(RectF rect)
+        {
+            if (!Filled) return false;
+            return GeometryHelper.Contains(this, rect.TopLeft) || GeometryHelper.Contains(this, rect.BottomLeft)
+                   || GeometryHelper.Contains(this, rect.TopRight) || GeometryHelper.Contains(this, rect.BottomRight);
         }
 
         public void Dispose()
@@ -166,6 +189,65 @@ namespace YOpenGL
                         cnt++;
                 });
                 return cnt % 2 == 1;
+            }
+            return true;
+        }
+
+        public bool HitTest(RectF rect)
+        {
+            if (_children == null) return false;
+
+            if (_wholeFill) return true;
+
+            if (!_children.Any(child => child._HitTestOutline(rect)))
+            {
+                var flag = false;
+                var cnt = 0;
+                _children.ForEach(child =>
+                {
+                    var ret = child._HitTestFill(rect.TopLeft, 0);
+                    if (ret)
+                        cnt++;
+                });
+                flag |= cnt % 2 == 1;
+
+                if (!flag)
+                {
+                    cnt = 0;
+                    _children.ForEach(child =>
+                    {
+                        var ret = child._HitTestFill(rect.BottomLeft, 0);
+                        if (ret)
+                            cnt++;
+                    });
+                    flag |= cnt % 2 == 1;
+                }
+
+                if (!flag)
+                {
+                    cnt = 0;
+                    _children.ForEach(child =>
+                    {
+                        var ret = child._HitTestFill(rect.TopRight, 0);
+                        if (ret)
+                            cnt++;
+                    });
+                    flag |= cnt % 2 == 1;
+                }
+
+                if (!flag)
+                {
+                    cnt = 0;
+                    _children.ForEach(child =>
+                    {
+                        var ret = child._HitTestFill(rect.BottomRight, 0);
+                        if (ret)
+                            cnt++;
+                    });
+                    flag |= cnt % 2 == 1;
+                }
+
+                return flag;
             }
             return true;
         }

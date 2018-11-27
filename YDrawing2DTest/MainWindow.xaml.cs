@@ -120,6 +120,8 @@ namespace YDrawing2DTest
         }
         private static GLVisual _glselectedVisual;
 
+        private Hint _hint;
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             for (int i = 1; i < 100000; i++)
@@ -131,9 +133,12 @@ namespace YDrawing2DTest
             _glPanel.AddVisual(new Text(new PointF(100, 200)));
             //_glPanel.AddVisual(new Cicle(new PointF(500, 500), 200));
             //_glPanel.AddVisual(new Cicle(new PointF(100, 500), 100));
-            //_glPanel.AddVisual(new Arc(new PointF(550, 100), 10, 30, 100));
+            //_glPanel.AddVisual(new Arc(new PointF(550, 100), 300, 340, 100));
             //_glPanel.AddVisual(new Rectangle(new RectF(new SizeF(100, 200))));
             //_glPanel.AddVisual(new Rectangle(new RectF(new PointF(200, 300), new SizeF(100, 200))));
+
+            _hint = new Hint() { HitTestVisible = false };
+            _glPanel.AddVisual(_hint);
             _glPanel.MouseMove += _panel_MouseMove;
             _glPanel.MouseWheel += _panel_MouseWheel;
             _glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
@@ -166,9 +171,19 @@ namespace YDrawing2DTest
 
         private void _panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            _glPanel.CaptureMouse();
             p = _glPanel.GetMousePosition(e);
+            _hint.IsVisible = true;
+            _hint.Rect = new RectF(_glPanel.WorldToView(p), _glPanel.WorldToView(p));
             if (Keyboard.Modifiers == ModifierKeys.None)
                 GLSelectedVisual = _glPanel.HitTest(p);
+        }
+
+        protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+        {
+            base.OnMouseLeftButtonUp(e);
+            _glPanel.ReleaseMouseCapture();
+            _hint.IsVisible = false;
         }
 
         private void _panel_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -188,7 +203,17 @@ namespace YDrawing2DTest
                 //var visual = VisualHelper.HitTest(_panel, e.GetPosition(_panel));
                 //_panel.RemoveVisual(visual);
                 var point = _glPanel.GetMousePosition(e);
-                GLActiveVisual = _glPanel.HitTest(point);
+                if (e.LeftButton == MouseButtonState.Released)
+                    GLActiveVisual = _glPanel.HitTest(point);
+                else
+                {
+                    var rect = new RectF(point, p);
+                    var ret = _glPanel.HitTest(rect);
+                    _hint.Rect = _glPanel.WorldToView(rect);
+                    if (ret.Count() > 0)
+                        GLActiveVisual = ret.First();
+                    else GLActiveVisual = null;
+                }
             }
             if (Keyboard.Modifiers == ModifierKeys.Control && e.LeftButton == MouseButtonState.Pressed)
             {
@@ -207,6 +232,21 @@ namespace YDrawing2DTest
         }
     }
 
+    public class Hint : GLVisual
+    {
+        public RectF Rect { get { return _rect; } set { _rect = value; _panel.Update(this, true); } }
+        private RectF _rect;
+
+        public bool IsVisible { get { return _isVisible; } set { _isVisible = value; _panel.Update(this, true); } }
+        private bool _isVisible;
+
+        protected override void Draw(GLDrawContext context)
+        {
+            if (_isVisible)
+                context.DrawRectangle(MainWindow.GLSelectedPen, new Color() { A = 0x10, B = 0xf0 }, _rect);
+        }
+    }
+
     public class Text : GLVisual
     {
         public Text(PointF origin)
@@ -219,7 +259,7 @@ namespace YDrawing2DTest
         protected override void Draw(GLDrawContext context)
         {
             context.PushTranslate(_origin.X, _origin.Y);
-            context.PushRotateAt(30, 200, 200);
+            //context.PushRotateAt(30, 200, 200);
             context.PushOpacity(0.5f);
 
             var typeFace = new Typeface(new FontFamily("新宋体"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);

@@ -32,7 +32,7 @@ namespace YOpenGL
                 A = k;
                 B = -1;
                 C = b;
-                if (k < 0)
+                if (A < 0)
                 {
                     A = -A;
                     B = -B;
@@ -79,6 +79,27 @@ namespace YOpenGL
             if (B == 0)
                 return Math.Abs(p.X - Start.X) < sensitive;
             else return Math.Abs(A * p.X + B * p.Y + C) / Math.Sqrt(A * A + B * B) < sensitive;
+        }
+
+        public bool HitTest(RectF rect)
+        {
+            if (B > 0)
+            {
+                var p1 = rect.TopLeft;
+                var p2 = rect.BottomRight;
+                var v1 = A * p1.X + B * p1.Y + C;
+                var v2 = A * p2.X + B * p2.Y + C;
+                return !MathUtil.IsSameSymbol(v1, v2);
+            }
+            else if (B < 0)
+            {
+                var p1 = rect.BottomLeft;
+                var p2 = rect.TopRight;
+                var v1 = A * p1.X + B * p1.Y + C;
+                var v2 = A * p2.X + B * p2.Y + C;
+                return !MathUtil.IsSameSymbol(v1, v2);
+            }
+            return true;
         }
 
         public void Dispose()

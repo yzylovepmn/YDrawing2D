@@ -34,6 +34,318 @@ namespace YOpenGL
             return radian >= endRadian && radian <= startRadian;
         }
 
+        internal static bool IsIntersect(_Arc arc, RectF rect, float v1, float v2, float v3, float v4)
+        {
+            var start = new PointF((float)Math.Cos(arc.StartRadian) * arc.Radius + arc.Center.X, (float)Math.Sin(arc.StartRadian) * arc.Radius + arc.Center.Y);
+            var end = new PointF((float)Math.Cos(arc.EndRadian) * arc.Radius + arc.Center.X, (float)Math.Sin(arc.EndRadian) * arc.Radius + arc.Center.Y);
+
+            if (arc.StartRadian < Math.PI / 2)
+            {
+                if (arc.EndRadian < Math.PI / 2)
+                {
+                    if (arc.StartRadian < arc.EndRadian)
+                    {
+                        if (v1 < arc.Radius)
+                            return (rect.X < end.X && (rect.Bottom > end.Y || v2 > arc.Radius))
+                                    || (rect.Y < start.Y && (rect.Right > start.X || v3 > arc.Radius));
+                        return true;
+                    }
+                    else return true;
+                }
+                else if (arc.EndRadian < Math.PI)
+                {
+                    if (start.Y > end.Y)
+                    {
+                        if (v1 < arc.Radius)
+                            return v3 > arc.Radius || (v4 > arc.Radius && rect.Right > start.X) || (v2 > arc.Radius && rect.X < end.X);
+                        else
+                        {
+                            if (rect.X < arc.Center.X && rect.Y > arc.Center.Y)
+                                return rect.Y < end.Y || rect.Right > start.X;
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        if (v1 < arc.Radius)
+                            return (v2 > arc.Radius && rect.X < end.X) || (v4 > arc.Radius && rect.Right > start.X && rect.Y < start.Y) || (v3 > arc.Radius && rect.Y < start.Y);
+                        else
+                        {
+                            if (rect.X < arc.Center.X && rect.Y > arc.Center.Y)
+                                return rect.Y < end.Y;
+                            return true;
+                        }
+                    }
+                }
+                else return true;
+            }
+            else if (arc.StartRadian < Math.PI)
+            {
+                if (arc.EndRadian < Math.PI / 2)
+                    return true;
+                else if (arc.EndRadian < Math.PI)
+                {
+                    if (arc.StartRadian > arc.EndRadian)
+                        return true;
+                    else
+                    {
+                        if (v1 < arc.Radius)
+                            return v3 > arc.Radius || (v4 > arc.Radius && rect.Right > start.X) || (v2 > arc.Radius && rect.Left < end.X);
+                        else
+                        {
+                            if (rect.X < arc.Center.X && rect.Y > arc.Center.Y)
+                                return rect.Y < end.Y || (v4 > arc.Radius && rect.Right > start.X);
+                            return true;
+                        }
+                    }
+                }
+                else if (arc.EndRadian < Math.PI * 1.5)
+                {
+                    if (start.X > end.X)
+                    {
+                        if (v2 > arc.Radius)
+                        {
+                            if (rect.Bottom > arc.Center.Y && rect.X < arc.Center.X)
+                                return (v1 > arc.Radius && rect.Y < end.Y) || ((v4 > arc.Radius || rect.Bottom > start.Y) && rect.Right > start.X);
+                            else return true;
+                        }
+                        else return true;
+                    }
+                    else
+                    {
+                        if (v1 > arc.Radius)
+                        {
+                            if (rect.X < arc.Center.X && rect.Y < arc.Center.Y)
+                                return (v2 > arc.Radius && rect.Bottom > start.Y) || (rect.Right > end.X && (rect.Y < end.Y || v3 > arc.Radius));
+                            return true;
+                        }
+                        else return true;
+                    }
+                }
+                else return true;
+            }
+            else if (arc.StartRadian < Math.PI * 1.5)
+            {
+                if (arc.EndRadian < Math.PI)
+                    return true;
+                else if (arc.EndRadian < Math.PI * 1.5)
+                {
+                    if (arc.StartRadian > arc.EndRadian)
+                        return true;
+                    else
+                    {
+                        if (v1 > arc.Radius)
+                            return ((v2 > arc.Radius || rect.Left < start.X) && rect.Bottom > start.Y) || ((v3 > arc.Radius || rect.Y < end.Y) && rect.Right > end.X);
+                        else return true;
+                    }
+                }
+                else
+                {
+                    if (start.Y > end.Y)
+                    {
+                        if (v1 > arc.Radius)
+                            return (rect.Bottom > start.Y && (rect.X < start.X || v2 > arc.Radius)) || (rect.Right > end.X && v3 > arc.Radius);
+                        else return true;
+                    }
+                    else
+                    {
+                        if (v3 > arc.Radius)
+                            return (rect.X < start.X && v1 > arc.Radius) || (rect.Bottom > end.Y && (rect.Right > end.X || v4 > arc.Radius));
+                        else return true;
+                    }
+                }
+            }
+            else
+            {
+                if (arc.EndRadian < Math.PI / 2)
+                {
+                    if (start.X < end.X)
+                    {
+                        if (v3 > arc.Radius)
+                            return (rect.X < start.X && (v1 > arc.Radius || rect.Y < start.Y)) || (rect.Bottom > end.Y && v4 > arc.Radius);
+                        else return true;
+                    }
+                    else
+                    {
+                        if (v4 > arc.Radius)
+                            return (rect.X < end.X && (rect.Bottom > end.Y || v2 > arc.Radius)) || (rect.Y < start.Y && v3 > arc.Radius);
+                        else return true;
+                    }
+                }
+                else if (arc.EndRadian < Math.PI)
+                {
+                    if (v4 > arc.Radius)
+                        return (rect.X < end.X && v2 > arc.Radius) || (rect.Y < start.Y && v3 > arc.Radius);
+                    else return true;
+                }
+                else if (arc.EndRadian < Math.PI * 1.5)
+                    return true;
+                else
+                {
+                    if (arc.StartRadian > arc.EndRadian)
+                        return true;
+                    else
+                    {
+                        if (v3 > arc.Radius)
+                            return (rect.X < start.X && (rect.Y < start.Y || v1 > arc.Radius)) || (rect.Bottom > end.Y && (rect.Right > end.X || v4 > arc.Radius));
+                        else return true;
+                    }
+                }
+            }
+        }
+
+        internal static RectF CalcBounds(_Arc arc)
+        {
+            var rect = new RectF();
+            var start = new PointF((float)Math.Cos(arc.StartRadian) * arc.Radius + arc.Center.X, (float)Math.Sin(arc.StartRadian) * arc.Radius + arc.Center.Y);
+            var end = new PointF((float)Math.Cos(arc.EndRadian) * arc.Radius + arc.Center.X, (float)Math.Sin(arc.EndRadian) * arc.Radius + arc.Center.Y);
+
+            if (arc.StartRadian < Math.PI / 2)
+            {
+                if (arc.EndRadian < Math.PI / 2)
+                {
+                    if (arc.StartRadian < arc.EndRadian)
+                    {
+                        rect.X = arc.Center.X - arc.Radius;
+                        rect.Y = arc.Center.Y - arc.Radius;
+                        rect.Width = arc.Radius + arc.Radius;
+                        rect.Height = rect.Width;
+                    }
+                    else rect = new RectF(start, end);
+                }
+                else if (arc.EndRadian < Math.PI)
+                {
+                    rect.X = arc.Center.X - arc.Radius;
+                    rect.Y = arc.Center.Y - arc.Radius;
+                    rect.Width = arc.Radius + arc.Radius;
+                    rect.Height = Math.Max(start.Y, end.Y) - rect.Y;
+                }
+                else if (arc.EndRadian < Math.PI * 1.5)
+                {
+                    rect.X = end.X;
+                    rect.Y = arc.Center.Y - arc.Radius;
+                    rect.Width = arc.Radius + arc.Center.X - rect.X;
+                    rect.Height = start.Y - rect.Y;
+                }
+                else
+                {
+                    rect.X = Math.Min(end.X, start.X);
+                    rect.Y = end.Y;
+                    rect.Width = arc.Radius + arc.Center.X - rect.X;
+                    rect.Height = start.Y - rect.Y;
+                }
+            }
+            else if (arc.StartRadian < Math.PI)
+            {
+                if (arc.EndRadian < Math.PI / 2)
+                {
+                    rect.X = start.X;
+                    rect.Y = Math.Min(end.Y, start.Y);
+                    rect.Width = end.X - start.X;
+                    rect.Height = arc.Center.Y + arc.Radius - rect.Y;
+                }
+                else if (arc.EndRadian < Math.PI)
+                {
+                    if (arc.StartRadian > arc.EndRadian)
+                        rect = new RectF(start, end);
+                    else
+                    {
+                        rect.X = arc.Center.X - arc.Radius;
+                        rect.Y = arc.Center.Y - arc.Radius;
+                        rect.Width = arc.Radius + arc.Radius;
+                        rect.Height = rect.Width;
+                    }
+                }
+                else if (arc.EndRadian < Math.PI * 1.5)
+                {
+                    rect.X = Math.Min(start.X, end.X);
+                    rect.Y = arc.Center.Y - arc.Radius;
+                    rect.Width = arc.Radius + arc.Center.X - rect.X;
+                    rect.Height = arc.Radius + arc.Radius;
+                }
+                else
+                {
+                    rect.X = start.X;
+                    rect.Y = end.Y;
+                    rect.Width = arc.Radius + arc.Center.X - rect.X;
+                    rect.Height = arc.Radius + arc.Center.Y - rect.Y;
+                }
+            }
+            else if (arc.StartRadian < Math.PI * 1.5)
+            {
+                if (arc.EndRadian < Math.PI / 2)
+                {
+                    rect.X = arc.Center.X - arc.Radius;
+                    rect.Y = start.Y;
+                    rect.Width = end.X - rect.X;
+                    rect.Height = arc.Radius + arc.Center.Y - rect.Y;
+                }
+                else if (arc.EndRadian < Math.PI)
+                {
+                    rect.X = arc.Center.X - arc.Radius;
+                    rect.Y = start.Y;
+                    rect.Width = Math.Max(end.X, start.X) - rect.X;
+                    rect.Height = end.Y - rect.Y;
+                }
+                else if (arc.EndRadian < Math.PI * 1.5)
+                {
+                    if (arc.StartRadian > arc.EndRadian)
+                        rect = new RectF(start, end);
+                    else
+                    {
+                        rect.X = arc.Center.X - arc.Radius;
+                        rect.Y = arc.Center.Y - arc.Radius;
+                        rect.Width = arc.Radius + arc.Radius;
+                        rect.Height = rect.Width;
+                    }
+                }
+                else
+                {
+                    rect.X = arc.Center.X - arc.Radius;
+                    rect.Y = Math.Min(start.Y, end.Y);
+                    rect.Width = arc.Radius + arc.Radius;
+                    rect.Height = arc.Center.Y + arc.Radius - rect.Y;
+                }
+            }
+            else
+            {
+                if (arc.EndRadian < Math.PI / 2)
+                {
+                    rect.X = arc.Center.X - arc.Radius;
+                    rect.Y = arc.Center.Y - arc.Radius;
+                    rect.Width = Math.Max(start.X, end.X) - rect.X;
+                    rect.Height = arc.Radius + arc.Radius;
+                }
+                else if (arc.EndRadian < Math.PI)
+                {
+                    rect.X = arc.Center.X - arc.Radius;
+                    rect.Y = arc.Center.Y - arc.Radius;
+                    rect.Width = start.X - rect.X;
+                    rect.Height = end.Y - rect.Y;
+                }
+                else if (arc.EndRadian < Math.PI * 1.5)
+                {
+                    rect.X = end.X;
+                    rect.Y = arc.Center.Y - arc.Radius;
+                    rect.Width = start.X - rect.X;
+                    rect.Height = Math.Max(start.Y, end.Y) - rect.Y;
+                }
+                else
+                {
+                    if (arc.StartRadian > arc.EndRadian)
+                        rect = new RectF(start, end);
+                    else
+                    {
+                        rect.X = arc.Center.X - arc.Radius;
+                        rect.Y = arc.Center.Y - arc.Radius;
+                        rect.Width = arc.Radius + arc.Radius;
+                        rect.Height = rect.Width;
+                    }
+                }
+            }
+            return rect;
+        }
+
         internal static float GetRadian(PointF center, PointF p)
         {
             var vec = p - center;

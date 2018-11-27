@@ -68,6 +68,11 @@ namespace YOpenGL
                 || Math.Abs(p._y - _bounds.Top) < sensitive || Math.Abs(p._y - _bounds.Bottom) < sensitive;
         }
 
+        public bool HitTest(RectF rect)
+        {
+            return Filled ? true : !_bounds.Contains(rect);
+        }
+
         public void Dispose()
         {
             _model = null;

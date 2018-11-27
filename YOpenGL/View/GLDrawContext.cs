@@ -20,6 +20,8 @@ namespace YOpenGL
         internal GLVisual Visual { get { return _visual; } }
         private GLVisual _visual;
 
+        internal bool HasPrimitives { get { return _primitives.Count > 0; } }
+
         internal IEnumerable<IPrimitive> Primitives { get { return _primitives; } }
         private List<IPrimitive> _primitives;
 

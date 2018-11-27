@@ -13,12 +13,16 @@ namespace YOpenGL
         {
             _pen = pen;
             _fillColor = fillColor;
-            _bounds = new RectF(new PointF(center.X - radius, center.Y - radius), new PointF(center.X + radius, center.Y + radius));
+            _bounds = RectF.Empty;
 
             Center = center;
             Radius = radius;
             StartRadian = startRadian;
             EndRadian = endRadian;
+
+            if (IsCicle)
+                _bounds = new RectF(new PointF(center.X - radius, center.Y - radius), new PointF(center.X + radius, center.Y + radius));
+            else _bounds = GeometryHelper.CalcBounds(this);
         }
 
         public RectF Bounds { get { return _bounds; } }
@@ -84,6 +88,27 @@ namespace YOpenGL
                 return Math.Abs(vec.Length - Radius) < sensitive;
             }
             return false;
+        }
+
+        public bool HitTest(RectF rect)
+        {
+            rect.Intersect(_bounds);
+            var v1 = (rect.TopLeft - Center).Length;
+            var v2 = (rect.BottomLeft - Center).Length;
+            var v3 = (rect.TopRight - Center).Length;
+            var v4 = (rect.BottomRight - Center).Length;
+
+            if (v1 > Radius && v2 > Radius && v3 > Radius && v4 > Radius)
+                return (rect.Left < Center.X && rect.Right > Center.X)
+                    || (rect.Top < Center.Y && rect.Bottom > Center.Y);
+
+            if (!Filled && v1 < Radius && v2 < Radius && v3 < Radius && v4 < Radius)
+                return false;
+
+            if (!IsCicle)
+                return GeometryHelper.IsIntersect(this, rect, v1, v2, v3, v4);
+
+            return true;
         }
 
         public void Dispose()

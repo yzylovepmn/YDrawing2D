@@ -74,6 +74,14 @@ namespace YOpenGL
             return false;
         }
 
+        public bool HitTest(RectF rect)
+        {
+            foreach (var line in _innerLines)
+                if (line.Bounds.IntersectsWith(rect) && line.HitTest(rect))
+                    return true;
+            return false;
+        }
+
         public void Dispose()
         {
             _innerLines.Dispose();

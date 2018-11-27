@@ -24,6 +24,13 @@ namespace YOpenGL
             p2 = p;
         }
 
+        public static bool IsSameSymbol(float f1, float f2)
+        {
+            if (f1 == 0 || f2 == 0)
+                return true;
+            return (f1 > 0 && f2 > 0) || (f1 < 0 && f2 < 0);
+        }
+
         public static bool IsZero(double value)
         {
             return Math.Abs(value) < 10.0 * DBL_EPSILON;

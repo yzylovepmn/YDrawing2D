@@ -11,11 +11,15 @@ namespace YOpenGL
         public GLVisual()
         {
             _context = new GLDrawContext(this);
+            _bounds = RectF.Empty;
             _hitTestVisible = true;
         }
 
         public GLPanel Panel { get { return _panel; } internal set { _panel = value; } }
         protected GLPanel _panel;
+
+        public RectF Bounds { get { return _bounds; } }
+        private RectF _bounds;
 
         internal GLDrawContext Context { get { return _context; } }
         private GLDrawContext _context;
@@ -30,10 +34,19 @@ namespace YOpenGL
             return _context;
         }
 
+        private void _UpdateBounds()
+        {
+            _bounds = RectF.Empty;
+            if (_context.HasPrimitives)
+                foreach (var primitive in _context.Primitives)
+                    _bounds.Union(primitive.Bounds);
+        }
+
         internal void Update()
         {
             var context = RenderOpen();
             Draw(context);
+            _UpdateBounds();
         }
 
         internal void Reset()
@@ -77,6 +90,18 @@ namespace YOpenGL
                 if (primitive.Bounds.Contains(p, sensitive) && primitive.HitTest(p, sensitive))
                     return true;
             return false;
+        }
+
+        internal bool HitTest(RectF rect, bool isFullContain = false)
+        {
+            var ret = rect.Contains(_bounds);
+            if (!ret && !isFullContain)
+            {
+                foreach (var primitive in _context.Primitives)
+                    if (primitive.Bounds.IntersectsWith(rect) && primitive.HitTest(rect))
+                        return true;
+            }
+            return ret;
         }
 
         /// <summary>

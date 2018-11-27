@@ -50,6 +50,7 @@ namespace YOpenGL
         private ContextHandle _context;
 
         private bool _isDisposed;
+        private int _disposeFlag;
         private bool _isInit;
         private int _signal;
         private int _frameSpan;
@@ -129,12 +130,46 @@ namespace YOpenGL
         private PointF _origin;
         #endregion
 
+        #region Sync
+        private void _EnterDispose()
+        {
+            while (Interlocked.Exchange(ref _disposeFlag, 1) == 1)
+                Thread.Sleep(1);
+        }
+
+        private void _ExitDispose()
+        {
+            Interlocked.Exchange(ref _disposeFlag, 0);
+        }
+        #endregion
+
         #region Transform
         public PointF WorldToView(PointF p)
         {
             p = new PointF(p.X - _origin.X, p.Y - _origin.Y);
             p = _viewResverse.Transform(p);
             return p;
+        }
+
+        public PointF ViewToWorld(PointF p)
+        {
+            p = _view.Transform(p);
+            p = new PointF(p.X + _origin.X, p.Y + _origin.Y);
+            return p;
+        }
+
+        public RectF WorldToView(RectF rect)
+        {
+            var _rect = new RectF(rect.X - _origin.X, rect.Y - _origin.Y, rect.Width, rect.Height);
+            _rect.Transform(_viewResverse);
+            return _rect;
+        }
+
+        public RectF ViewToWorld(RectF rect)
+        {
+            rect.Transform(_view);
+            var _rect = new RectF(rect.X + _origin.X, rect.Y + _origin.Y, rect.Width, rect.Height);
+            return _rect;
         }
 
         public void ResetView()
@@ -198,6 +233,15 @@ namespace YOpenGL
                 if (visual.HitTest(point, sensitive * _viewResverse.M11))
                     return visual;
             return null;
+        }
+
+        public IEnumerable<GLVisual> HitTest(RectF rect, bool isFullContain = false)
+        {
+            rect = WorldToView(rect);
+            foreach (var visual in _visuals.Where(v => v.HitTestVisible))
+                if (visual.HitTest(rect, isFullContain))
+                    yield return visual;
+            yield break;
         }
 
         /// <summary>
@@ -401,8 +445,6 @@ namespace YOpenGL
 
         private void _Destroy()
         {
-            if (_isDisposed) return;
-
             _timer.Stop();
             _timer.Dispose();
 
@@ -427,19 +469,26 @@ namespace YOpenGL
 
         private void _AfterPainted()
         {
-            var old = Interlocked.Decrement(ref _signal);
+            _EnterDispose();
 
-            _watch.Restart();
-            var before = _watch.ElapsedMilliseconds;
-            Dispatcher.Invoke(() => { _DispatchFrame(); });
-            var span = (int)(_watch.ElapsedMilliseconds - before);
-            _watch.Stop();
+            if (!_isDisposed)
+            {
+                var old = Interlocked.Decrement(ref _signal);
 
-            if (_frameSpan > span)
-                Thread.Sleep(_frameSpan - span);
+                _watch.Restart();
+                var before = _watch.ElapsedMilliseconds;
+                Dispatcher.Invoke(() => { _DispatchFrame(); });
+                var span = (int)(_watch.ElapsedMilliseconds - before);
+                _watch.Stop();
 
-            if (Interlocked.CompareExchange(ref _signal, 0, old) != old)
-                _timer.Change(0, Timeout.Infinite);
+                if (_frameSpan > span)
+                    Thread.Sleep(_frameSpan - span);
+
+                if (Interlocked.CompareExchange(ref _signal, 0, old) != old)
+                    _timer.Change(0, Timeout.Infinite);
+            }
+
+            _ExitDispose();
         }
 
         private void _AttachVisual(GLVisual visual)
@@ -801,12 +850,16 @@ namespace YOpenGL
             base.Dispose(disposing);
             if (_isDisposed) return;
 
+            _EnterDispose();
+
+            _isDisposed = true;
             _Dispose();
             _Destroy();
 
             _timer = null;
             _watch = null;
-            _isDisposed = true;
+
+            _ExitDispose();
         }
         #endregion
     }
