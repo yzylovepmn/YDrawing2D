@@ -40,7 +40,7 @@ void main()
           EmitVertex();
         }
         gl_Position = p2;
-        _texCoord = _texCoord + 0.5 * length(winPos1-winPos0) / 16.0;
+        _texCoord = _texCoord + length(winPos1-winPos0) / 16.0;
         texCoord = _texCoord;
         EmitVertex();
         p1 = p2;
@@ -202,7 +202,7 @@ float emitpoint(vec4 p1, vec4 p2, float _texCoord, bool emitp1)
     texCoord = _texCoord;
     EmitVertex();
   }
-  _texCoord = _texCoord + 0.5 * length(winPos1-winPos0) / 16.0;
+  _texCoord = _texCoord + length(winPos1-winPos0) / 16.0;
   gl_Position = p2;
   texCoord = _texCoord;
   EmitVertex();

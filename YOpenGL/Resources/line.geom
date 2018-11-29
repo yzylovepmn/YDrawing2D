@@ -17,7 +17,7 @@ void main()
 		texCoord = 0.0;
 		EmitVertex();
 		gl_Position = gl_in[1].gl_Position;
-		texCoord = 0.5 * length(winPos1-winPos0) / 16.0;
+		texCoord = length(winPos1-winPos0) / 16.0;
 		EmitVertex();
 	}
 	else
