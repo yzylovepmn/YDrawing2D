@@ -279,7 +279,7 @@ namespace YOpenGL
             _geo._wholeFill = flag;
             _primitives.Add(_geo);
 
-            //_geo = new _ComplexGeometry() { _wholeFill = flag, _bounds = RectF.Empty };
+            _geo = null;
             _begin = null;
             _current = null;
         }
