@@ -70,6 +70,11 @@ namespace YOpenGL
             _transforms.Push(opacity);
         }
 
+        internal void PushTransform(MatrixF mat)
+        {
+            _Push(mat);
+        }
+
         internal void PushTranslate(float offsetX, float offsetY)
         {
             var matrix = new MatrixF();

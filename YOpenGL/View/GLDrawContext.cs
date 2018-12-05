@@ -34,6 +34,11 @@ namespace YOpenGL
             _transform.PushOpacity(opacity);
         }
 
+        public void PushTransform(MatrixF mat)
+        {
+            _transform.PushTransform(mat);
+        }
+
         public void PushTranslate(float offsetX, float offsetY)
         {
             _transform.PushTranslate(offsetX, offsetY);
