@@ -28,6 +28,8 @@ namespace YOpenGL
         internal float ScaleY { get { return _scaleY; } }
         private float _scaleY = 1;
 
+        internal bool IsIdentity { get { return _matrix.IsIdentity; } }
+
         #region Transform
         internal Color Transform(Color color)
         {

@@ -104,17 +104,30 @@ namespace YOpenGL
             if (!isClockwise)
                 MathUtil.Switch(ref startAngle, ref endAngle);
 
+            pen.Color = _transform.Transform(pen.Color);
+
             GeometryHelper.FormatAngle(ref startAngle);
             GeometryHelper.FormatAngle(ref endAngle);
-
-            center = _transform.Transform(center);
-            radius *= _transform.ScaleX;
 
             var startRadian = GeometryHelper.GetRadian(startAngle);
             var endRadian = GeometryHelper.GetRadian(endAngle);
 
-            pen.Color = _transform.Transform(pen.Color);
+            if (!_transform.IsIdentity)
+            {
+                radius *= _transform.ScaleX;
+                var start = new PointF(center.X + radius * (float)Math.Cos(startRadian), center.Y + radius * (float)Math.Sin(startRadian));
+                var end = new PointF(center.X + radius * (float)Math.Cos(endRadian), center.Y + radius * (float)Math.Sin(endRadian));
 
+                start = _transform.Transform(start);
+                end = _transform.Transform(end);
+
+                bool isLargeAngle;
+                if (startAngle < endAngle)
+                    isLargeAngle = endAngle - startAngle < 180;
+                else isLargeAngle = startAngle - endAngle > 180;
+
+                GeometryHelper.CalcArcRadian(start, end, radius, isLargeAngle, true, out center, out startRadian, out endRadian);
+            }
             _primitives.Add(new _Arc(center, radius, startRadian, endRadian, pen, null));
         }
 
@@ -336,6 +349,7 @@ namespace YOpenGL
         public void ArcTo(PointF point, float radius, bool isLargeAngle, bool isClockwise)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
+            point = _transform.Transform(point);
             _ArcTo(point, radius, isLargeAngle, isClockwise);
             _current = point;
         }
@@ -345,28 +359,15 @@ namespace YOpenGL
             if (point == _current.Value)
                 return;
 
-            var startP = _transform.Transform(_current.Value);
-            var endP = _transform.Transform(point);
+            var startP = _current.Value;
+            var endP = point;
             radius *= _transform.ScaleX;
 
-            var vec = endP - startP;
-            if (vec.Length <= radius * 2)
-            {
-                var normal = new VectorF(vec.Y, -vec.X);
-                normal.Normalize();
-                var center = new PointF((startP.X + endP.X) / 2, (startP.Y + endP.Y) / 2);
-                var len = normal * (float)Math.Sqrt(radius * radius - vec.LengthSquared / 4);
-                if (isLargeAngle ^ isClockwise)
-                    center += len;
-                else center -= len;
-                if (!isClockwise)
-                    MathUtil.Switch(ref startP, ref endP);
-
-                var startRadian = GeometryHelper.GetRadian(center, startP);
-                var endRadian = GeometryHelper.GetRadian(center, endP);
-
+            float startRadian, endRadian;
+            PointF center;
+            GeometryHelper.CalcArcRadian(startP, endP, radius, isLargeAngle, isClockwise, out center, out startRadian, out endRadian);
+            if (startRadian != 0 || endRadian != 0)
                 _subGeo.StreamTo(new _Arc(center, radius, startRadian, endRadian, PenF.NULL));
-            }
         }
         #endregion
         #endregion

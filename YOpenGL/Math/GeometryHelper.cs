@@ -346,6 +346,32 @@ namespace YOpenGL
             return rect;
         }
 
+        internal static void CalcArcRadian(PointF start, PointF end, float radius, bool isLargeAngle, bool isClockwise, out PointF center, out float startRadian, out float endRadian)
+        {
+            var vec = end - start;
+            if (vec.Length <= radius * 2)
+            {
+                var normal = new VectorF(vec.Y, -vec.X);
+                normal.Normalize();
+                center = new PointF((start.X + end.X) / 2, (start.Y + end.Y) / 2);
+                var len = normal * (float)Math.Sqrt(radius * radius - vec.LengthSquared / 4);
+                if (isLargeAngle ^ isClockwise)
+                    center += len;
+                else center -= len;
+                if (!isClockwise)
+                    MathUtil.Switch(ref start, ref end);
+
+                startRadian = GetRadian(center, start);
+                endRadian = GetRadian(center, end);
+            }
+            else
+            {
+                center = new PointF();
+                startRadian = 0;
+                endRadian = 0;
+            }
+        }
+
         internal static float GetRadian(PointF center, PointF p)
         {
             var vec = p - center;
@@ -665,15 +691,13 @@ namespace YOpenGL
                                     if (end.Y > point.Y)
                                     {
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius)
+                                        if (len < arc.Radius && (start.X - point.X) > (end.X - point.X))
                                         {
                                             leftpass++;
                                             toppass++;
                                             rightpass++;
                                             bottompass++;
                                         }
-                                        else if (len == arc.Radius)
-                                            return true;
                                     }
                                     else
                                     {
@@ -737,15 +761,13 @@ namespace YOpenGL
                                     {
                                         // 4 4
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius)
+                                        if (len < arc.Radius && (start.X - point.X) < (end.X - point.X))
                                         {
                                             leftpass++;
                                             toppass++;
                                             rightpass++;
                                             bottompass++;
                                         }
-                                        else if (len == arc.Radius)
-                                            return true;
                                     }
                                 }
                                 else
@@ -806,15 +828,13 @@ namespace YOpenGL
                                     if (end.Y > point.Y)
                                     {
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius)
+                                        if (len < arc.Radius && (start.X - point.X) > (end.X - point.X))
                                         {
                                             leftpass++;
                                             toppass++;
                                             rightpass++;
                                             bottompass++;
                                         }
-                                        else if (len == arc.Radius)
-                                            return true;
                                     }
                                     else
                                     {
@@ -878,15 +898,13 @@ namespace YOpenGL
                                     {
                                         // 3 3
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius)
+                                        if (len < arc.Radius && (start.X - point.X) < (end.X - point.X))
                                         {
                                             leftpass++;
                                             toppass++;
                                             rightpass++;
                                             bottompass++;
                                         }
-                                        else if (len == arc.Radius)
-                                            return true;
                                     }
                                 }
                             }
