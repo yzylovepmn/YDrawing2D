@@ -71,10 +71,22 @@ namespace YOpenGL
         #endregion
 
         #region Draw
+        public void DrawPoint(Color fillColor, PointF pos, float pointSize)
+        {
+            pointSize *= _transform.ScaleX;
+            fillColor = _transform.Transform(fillColor);
+            pos = _transform.Transform(pos);
+
+            var hpointSize = pointSize / 2;
+            _DrawRectangle(PenF.NULL, fillColor, new RectF(new PointF(pos.X - hpointSize, pos.Y - hpointSize), new SizeF(pointSize, pointSize)));
+        }
+
         public void DrawLine(PenF pen, PointF start, PointF end)
         {
             start = _transform.Transform(start);
             end = _transform.Transform(end);
+            pen.Color = _transform.Transform(pen.Color);
+
             var line = _DrawLine(pen, start, end);
             if (line != null)
                 _primitives.Add(line);
@@ -83,8 +95,6 @@ namespace YOpenGL
         private _Line _DrawLine(PenF pen, PointF start, PointF end)
         {
             if (start == end) return null;
-
-            pen.Color = _transform.Transform(pen.Color);
 
             return new _Line(start, end, pen);
         }
@@ -144,6 +154,11 @@ namespace YOpenGL
             if (fillColor.HasValue)
                 fillColor = _transform.Transform(fillColor.Value);
 
+            _DrawRectangle(pen, fillColor, rectangle);
+        }
+
+        private void _DrawRectangle(PenF pen, Color? fillColor, RectF rectangle)
+        {
             _primitives.Add(new _Rect(rectangle, pen, fillColor));
         }
 
