@@ -129,19 +129,19 @@ namespace YOpenGL
 
             if (!_transform.IsIdentity)
             {
-                radius *= _transform.ScaleX;
                 var start = new PointF(center.X + radius * (float)Math.Cos(startRadian), center.Y + radius * (float)Math.Sin(startRadian));
                 var end = new PointF(center.X + radius * (float)Math.Cos(endRadian), center.Y + radius * (float)Math.Sin(endRadian));
 
                 start = _transform.Transform(start);
                 end = _transform.Transform(end);
+                center = _transform.Transform(center);
+                radius = (start - center).Length;
 
-                bool isLargeAngle;
-                if (startAngle < endAngle)
-                    isLargeAngle = endAngle - startAngle < 180;
-                else isLargeAngle = startAngle - endAngle > 180;
+                startRadian = (float)Math.Atan2(start.Y - center.Y, start.X - center.X);
+                endRadian = (float)Math.Atan2(end.Y - center.Y, end.X - center.X);
 
-                GeometryHelper.CalcArcRadian(start, end, radius, isLargeAngle, true, out center, out startRadian, out endRadian);
+                GeometryHelper.FormatRadian(ref startRadian);
+                GeometryHelper.FormatRadian(ref endRadian);
             }
             _primitives.Add(new _Arc(center, radius, startRadian, endRadian, pen, null));
         }
