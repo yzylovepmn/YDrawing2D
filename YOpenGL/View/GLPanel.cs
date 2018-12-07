@@ -261,12 +261,18 @@ namespace YOpenGL
                 _Refresh();
         }
 
-        public void RemoveVisual(GLVisual visual)
+        /// <summary>
+        /// Remove a visual
+        /// </summary>
+        /// <param name="visual">The visual to remove</param>
+        /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
+        public void RemoveVisual(GLVisual visual, bool refresh = true)
         {
             _DetachVisual(visual);
             _visuals.Remove(visual);
             visual.Panel = null;
-            _Refresh();
+            if (refresh)
+                _Refresh();
         }
 
         public void RemoveAll()

@@ -167,14 +167,14 @@ namespace YOpenGL
         /// </summary>
         public void DrawBezier(PenF pen, int degree, IEnumerable<PointF> points)
         {
-            _primitives.Add(_DrawBezier(pen, degree, points.Select(p => _transform.Transform(p))));
+            _primitives.Add(_DrawBezier(pen, points.Select(p => _transform.Transform(p))));
         }
 
-        private _Bezier _DrawBezier(PenF pen, int degree, IEnumerable<PointF> points)
+        private _Bezier _DrawBezier(PenF pen, IEnumerable<PointF> points)
         {
             pen.Color = _transform.Transform(pen.Color);
 
-            return new _Bezier(points.ToArray(), degree, pen);
+            return new _Bezier(points.ToArray(), pen);
         }
 
         /// <summary>
@@ -344,7 +344,7 @@ namespace YOpenGL
             points = points.Select(p => _transform.Transform(p));
             _points.Add(_current.Value);
             _points.AddRange(points);
-            _subGeo.StreamTo(_DrawBezier(PenF.NULL, degree, _points));
+            _subGeo.StreamTo(_DrawBezier(PenF.NULL, _points));
             _current = points.Last();
         }
 

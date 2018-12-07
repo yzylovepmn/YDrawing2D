@@ -9,16 +9,15 @@ namespace YOpenGL
 {
     public class _Bezier : IPrimitive
     {
-        public _Bezier(PointF[] points, int degree, PenF pen)
+        public _Bezier(PointF[] points, PenF pen)
         {
             _points = points;
-            _degree = degree;
             _pen = pen;
 
             _bounds = RectF.Empty;
 
             _innerLines = default(List<_Line>);
-            _innerLines = GeometryHelper.CalcSampleLines(this);
+            _innerLines = GeometryHelper.CalcSampleLines(_points);
 
             foreach (var line in _innerLines)
                 _bounds.Union(line.Bounds);
@@ -47,8 +46,7 @@ namespace YOpenGL
         /// <summary>
         /// Degree of the bezier
         /// </summary>
-        public int Degree { get { return _degree; } }
-        private int _degree;
+        public int Degree { get { return _points.Length - 1; } }
 
         /// <summary>
         /// Points of the bezier

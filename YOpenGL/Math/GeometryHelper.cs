@@ -1035,29 +1035,44 @@ namespace YOpenGL
         #endregion
 
         #region Bezier
-        internal static List<_Line> CalcSampleLines(_Bezier bezier)
+        public static RectF CalcBounds(params PointF[] controlPoints)
         {
+            var degree = controlPoints.Length - 1;
+
+            var bound = RectF.Empty;
+
+            var samplePoints = _CalcSamplePoints(controlPoints, degree);
+
+            var flag = true;
+            var last = default(PointF);
+            foreach (var p in samplePoints)
+            {
+                if (flag)
+                {
+                    flag = false;
+                    last = p;
+                    bound.Union(p);
+                }
+                else
+                {
+                    if (last != p)
+                    {
+                        bound.Union(new RectF(last, p));
+                        last = p;
+                    }
+                }
+            }
+
+            return bound;
+        }
+
+        internal static List<_Line> CalcSampleLines(params PointF[] controlPoints)
+        {
+            var degree = controlPoints.Length - 1;
+
             var lines = new List<_Line>();
 
-            var samplePoints = new List<PointF>();
-            var i = 0.0;
-            var delta = 5f / GetLength(bezier.Points);
-
-            if (delta > 1)
-            {
-                samplePoints.Add(ComputePoint(bezier, 0));
-                samplePoints.Add(ComputePoint(bezier, 1));
-            }
-            else
-            {
-                while (i <= 1)
-                {
-                    samplePoints.Add(ComputePoint(bezier, i));
-                    i += delta;
-                }
-                if (i - delta != 1)
-                    samplePoints.Add(ComputePoint(bezier, 1));
-            }
+            var samplePoints = _CalcSamplePoints(controlPoints, degree);
 
             var flag = true;
             var last = default(PointF);
@@ -1080,16 +1095,40 @@ namespace YOpenGL
             return lines;
         }
 
-        internal static PointF ComputePoint(_Bezier bezier, double u)
+        private static IEnumerable<PointF> _CalcSamplePoints(PointF[] controlPoints, int degree)
         {
-            return CalcValue(bezier, bezier.Degree, 0, u);
+            var samplePoints = new List<PointF>();
+            var i = 0.0;
+            var delta = 5f / GetLength(controlPoints);
+
+            if (delta > 1)
+            {
+                samplePoints.Add(ComputePoint(controlPoints, degree, 0));
+                samplePoints.Add(ComputePoint(controlPoints, degree, 1));
+            }
+            else
+            {
+                while (i <= 1)
+                {
+                    samplePoints.Add(ComputePoint(controlPoints, degree, i));
+                    i += delta;
+                }
+                if (i - delta != 1)
+                    samplePoints.Add(ComputePoint(controlPoints, degree, 1));
+            }
+            return samplePoints;
         }
 
-        internal static PointF CalcValue(_Bezier bezier, int degree, int index, double u)
+        internal static PointF ComputePoint(PointF[] controlPoints, int degree, double u)
+        {
+            return CalcValue(controlPoints, degree, 0, u);
+        }
+
+        internal static PointF CalcValue(PointF[] controlPoints, int degree, int index, double u)
         {
             if (degree == 0)
-                return bezier.Points[index];
-            else return Combine(CalcValue(bezier, degree - 1, index, u), CalcValue(bezier, degree - 1, index + 1, u), u);
+                return controlPoints[index];
+            else return Combine(CalcValue(controlPoints, degree - 1, index, u), CalcValue(controlPoints, degree - 1, index + 1, u), u);
         }
 
         internal static PointF Combine(PointF p1, PointF p2, double u)
