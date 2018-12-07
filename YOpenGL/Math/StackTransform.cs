@@ -22,11 +22,9 @@ namespace YOpenGL
 
         private float _opacity;
 
-        internal float ScaleX { get { return _scaleX; } }
-        private float _scaleX = 1;
+        internal float ScaleX { get { return _matrix.ScaleX(); } }
 
-        internal float ScaleY { get { return _scaleY; } }
-        private float _scaleY = 1;
+        internal float ScaleY { get { return _matrix.ScaleY(); } }
 
         internal bool IsIdentity { get { return _matrix.IsIdentity; } }
 
@@ -86,8 +84,6 @@ namespace YOpenGL
         {
             var matrix = new MatrixF();
             matrix.Scale(scaleX, scaleY);
-            _scaleX *= scaleX;
-            _scaleY *= scaleY;
             _Push(matrix);
         }
 
@@ -95,8 +91,6 @@ namespace YOpenGL
         {
             var matrix = new MatrixF();
             matrix.ScaleAt(scaleX, scaleY, centerX, centerY);
-            _scaleX *= scaleX;
-            _scaleY *= scaleY;
             _Push(matrix);
         }
 
@@ -122,8 +116,6 @@ namespace YOpenGL
                 var m = (MatrixF)t;
                 m.Invert();
                 _matrix *= m;
-                _scaleX = _matrix.ScaleX();
-                _scaleY = _matrix.ScaleY();
             }
             if (t is float)
             {
