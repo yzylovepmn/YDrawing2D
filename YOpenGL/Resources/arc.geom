@@ -1,6 +1,6 @@
 ﻿#version 330 core
 layout(points) in;
-layout(line_strip, max_vertices=65) out;
+layout(line_strip, max_vertices=66) out;
 
 uniform vec2 screenSize;
 uniform vec2 samples[65];
@@ -62,7 +62,7 @@ void main()
     float curRadian = 0;
     float startRadian = arcParams[0].y;
     float endRadian = arcParams[0].z;
-    bool flag = false, isAfter = startRadian > endRadian, needRestart = endRadian > 0;
+    bool flag = false, isAfter = startRadian > endRadian;
     if (!isAfter)
     {
       endRadian -= 2 * pi;
@@ -131,7 +131,7 @@ void main()
         }
         curRadian += deltaRadian;
         i++;
-        if (i == 65 && needRestart)
+        if (i == 65 && !isAfter)
           i = 1;
       }
     }
@@ -161,7 +161,7 @@ void main()
         }
         curRadian += deltaRadian;
         i++;
-        if (i == 65 && needRestart)
+        if (i == 65 && !isAfter)
           i = 1;
       }
     }

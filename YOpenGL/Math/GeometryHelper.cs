@@ -420,16 +420,13 @@ namespace YOpenGL
             }
         }
 
-        internal static IEnumerable<PointF> GenArcPoints(float startRadian, float endRadian)
+        internal static IEnumerable<PointF> GenArcPoints(float startRadian, float endRadian, bool needReverse = true)
         {
             var points = new List<PointF>();
             float curRadian = 0;
             bool flag = false, isAfter = startRadian > endRadian, needRestart = endRadian > 0;
             if (!isAfter)
-            {
-                endRadian -= 2 * (float)Math.PI;
-                curRadian -= 2 * (float)Math.PI;
-            }
+                startRadian += (float)(2 * Math.PI);
             for (int i = 0; i < 65;)
             {
                 if (!flag)
@@ -463,7 +460,8 @@ namespace YOpenGL
                 if (i == 65 && needRestart)
                     i = 1;
             }
-            points.Reverse();
+            if (needReverse)
+                points.Reverse();
             return points;
         }
 

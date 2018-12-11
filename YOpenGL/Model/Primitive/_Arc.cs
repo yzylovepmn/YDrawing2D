@@ -9,7 +9,7 @@ namespace YOpenGL
 {
     public class _Arc : IPrimitive
     {
-        public _Arc(PointF center, float radius, float startRadian, float endRadian, PenF pen, Color? fillColor = null)
+        public _Arc(PointF center, float radius, float startRadian, float endRadian, PenF pen, Color? fillColor = null, bool isReverse = false)
         {
             _pen = pen;
             _fillColor = fillColor;
@@ -19,6 +19,8 @@ namespace YOpenGL
             Radius = radius;
             StartRadian = startRadian;
             EndRadian = endRadian;
+
+            _isReverse = isReverse;
 
             if (IsCicle)
                 _bounds = new RectF(new PointF(center.X - radius, center.Y - radius), new PointF(center.X + radius, center.Y + radius));
@@ -48,6 +50,7 @@ namespace YOpenGL
         private MeshModel _fillModel;
 
         private Color? _fillColor;
+        private bool _isReverse;
 
         public PointF Center;
         public float Radius;
@@ -70,7 +73,7 @@ namespace YOpenGL
                     }
                     else
                     {
-                        foreach (var point in GeometryHelper.GenArcPoints(StartRadian, EndRadian).Skip(1))
+                        foreach (var point in GeometryHelper.GenArcPoints(StartRadian, EndRadian, !_isReverse).Skip(1))
                             yield return new PointF(Center.X + point.X * Radius, Center.Y + point.Y * Radius);
                     }
                 }

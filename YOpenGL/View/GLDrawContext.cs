@@ -143,7 +143,7 @@ namespace YOpenGL
                 GeometryHelper.FormatRadian(ref startRadian);
                 GeometryHelper.FormatRadian(ref endRadian);
             }
-            _primitives.Add(new _Arc(center, radius, startRadian, endRadian, pen, null));
+            _primitives.Add(new _Arc(center, radius, startRadian, endRadian, pen, null, !isClockwise));
         }
 
         public void DrawRectangle(PenF pen, Color? fillColor, RectF rectangle)
@@ -387,7 +387,7 @@ namespace YOpenGL
             PointF center;
             GeometryHelper.CalcArcRadian(startP, endP, radius, isLargeAngle, isClockwise, out center, out startRadian, out endRadian);
             if (startRadian != 0 || endRadian != 0)
-                _subGeo.StreamTo(new _Arc(center, radius, startRadian, endRadian, PenF.NULL));
+                _subGeo.StreamTo(new _Arc(center, radius, startRadian, endRadian, PenF.NULL, null, !isClockwise));
         }
         #endregion
         #endregion
