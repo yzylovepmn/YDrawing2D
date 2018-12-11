@@ -25,7 +25,6 @@ namespace YOpenGL
     {
         Line,
         Arc,
-        Rect,
         Spline,
         Bezier,
         SimpleGeometry,

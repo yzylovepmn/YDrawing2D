@@ -78,7 +78,7 @@ namespace YOpenGL
             pos = _transform.Transform(pos);
 
             var hpointSize = pointSize / 2;
-            _DrawRectangle(PenF.NULL, fillColor, new RectF(new PointF(pos.X - hpointSize, pos.Y - hpointSize), new SizeF(pointSize, pointSize)));
+            _DrawRectangle(PenF.NULL, fillColor, new PointF(pos.X - hpointSize, pos.Y - hpointSize), new PointF(pos.X + hpointSize, pos.Y - hpointSize), new PointF(pos.X + hpointSize, pos.Y + hpointSize), new PointF(pos.X - hpointSize, pos.Y + hpointSize));
         }
 
         public void DrawLine(PenF pen, PointF start, PointF end)
@@ -148,18 +148,33 @@ namespace YOpenGL
 
         public void DrawRectangle(PenF pen, Color? fillColor, RectF rectangle)
         {
-            rectangle.Transform(_transform.Matrix);
+            var p1 = rectangle.TopLeft;
+            var p2 = rectangle.TopRight;
+            var p3 = rectangle.BottomRight;
+            var p4 = rectangle.BottomLeft;
+            p1 = _transform.Transform(p1);
+            p2 = _transform.Transform(p2);
+            p3 = _transform.Transform(p3);
+            p4 = _transform.Transform(p4);
 
             pen.Color = _transform.Transform(pen.Color);
             if (fillColor.HasValue)
                 fillColor = _transform.Transform(fillColor.Value);
 
-            _DrawRectangle(pen, fillColor, rectangle);
+            _DrawRectangle(pen, fillColor, p1, p2, p3, p4);
         }
 
-        private void _DrawRectangle(PenF pen, Color? fillColor, RectF rectangle)
+        private void _DrawRectangle(PenF pen, Color? fillColor, params PointF[] points)
         {
-            _primitives.Add(new _Rect(rectangle, pen, fillColor));
+            var geo = new _ComplexGeometry();
+            var subgeo = new _SimpleGeometry(pen, fillColor, points[0], true);
+            subgeo.StreamTo(new _Line(points[0], points[1], PenF.NULL));
+            subgeo.StreamTo(new _Line(points[1], points[2], PenF.NULL));
+            subgeo.StreamTo(new _Line(points[2], points[3], PenF.NULL));
+            subgeo.StreamTo(new _Line(points[3], points[0], PenF.NULL));
+            geo.AddChild(subgeo);
+            geo.Close();
+            _primitives.Add(geo);
         }
 
         /// <summary>

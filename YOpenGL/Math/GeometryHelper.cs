@@ -920,20 +920,8 @@ namespace YOpenGL
             {
                 case PrimitiveType.Arc:
                     return _GenCicleIndices(offset);
-                case PrimitiveType.Rect:
-                    return _GenRectIndices(offset);
             }
             return null;
-        }
-
-        private static IEnumerable<uint> _GenRectIndices(uint offset)
-        {
-            yield return offset + 0;
-            yield return offset + 1;
-            yield return offset + 2;
-            yield return offset + 0;
-            yield return offset + 2;
-            yield return offset + 3;
         }
 
         private static IEnumerable<uint> _GenCicleIndices(uint offset)
