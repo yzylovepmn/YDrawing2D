@@ -168,10 +168,10 @@ namespace YOpenGL
         {
             var geo = new _ComplexGeometry();
             var subgeo = new _SimpleGeometry(pen, fillColor, points[0], true);
-            subgeo.StreamTo(new _Line(points[0], points[1], PenF.NULL));
-            subgeo.StreamTo(new _Line(points[1], points[2], PenF.NULL));
-            subgeo.StreamTo(new _Line(points[2], points[3], PenF.NULL));
-            subgeo.StreamTo(new _Line(points[3], points[0], PenF.NULL));
+            subgeo.StreamTo(new _Line(points[0], points[1], pen));
+            subgeo.StreamTo(new _Line(points[1], points[2], pen));
+            subgeo.StreamTo(new _Line(points[2], points[3], pen));
+            subgeo.StreamTo(new _Line(points[3], points[0], pen));
             geo.AddChild(subgeo);
             geo.Close();
             _primitives.Add(geo);
