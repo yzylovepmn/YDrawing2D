@@ -231,32 +231,32 @@ namespace YOpenGL
                     if (segment is LineSegment)
                     {
                         var line = (LineSegment)segment;
-                        LineTo(_Transform(line.Point));
+                        LineTo(_Transform(line.Point), true);
                     }
                     if (segment is PolyLineSegment)
                     {
                         var line = (PolyLineSegment)segment;
-                        PolyLineTo(_Transform(line.Points.ToArray()));
+                        PolyLineTo(_Transform(line.Points.ToArray()), true);
                     }
                     if (segment is BezierSegment)
                     {
                         var bezier = (BezierSegment)segment;
-                        BezierTo(3, new List<PointF>() { _Transform(bezier.Point1), _Transform(bezier.Point2), _Transform(bezier.Point3) });
+                        BezierTo(3, new List<PointF>() { _Transform(bezier.Point1), _Transform(bezier.Point2), _Transform(bezier.Point3) }, true);
                     }
                     if (segment is QuadraticBezierSegment)
                     {
                         var bezier = (QuadraticBezierSegment)segment;
-                        BezierTo(2, new List<PointF>() { _Transform(bezier.Point1), _Transform(bezier.Point2) });
+                        BezierTo(2, new List<PointF>() { _Transform(bezier.Point1), _Transform(bezier.Point2) }, true);
                     }
                     if (segment is PolyBezierSegment)
                     {
                         var bezier = (PolyBezierSegment)segment;
-                        PolyBezierTo(3, _Transform(bezier.Points.ToArray()));
+                        PolyBezierTo(3, _Transform(bezier.Points.ToArray()), true);
                     }
                     if (segment is PolyQuadraticBezierSegment)
                     {
                         var bezier = (PolyQuadraticBezierSegment)segment;
-                        PolyBezierTo(2, _Transform(bezier.Points.ToArray()));
+                        PolyBezierTo(2, _Transform(bezier.Points.ToArray()), true);
                     }
                 }
             }
@@ -292,7 +292,7 @@ namespace YOpenGL
             if (_begin.HasValue)
             {
                 if (_subGeo.IsClosed && _begin != _current)
-                    _LineTo(_begin.Value);
+                    _LineTo(_begin.Value, true);
                 else _subGeo.UnClosedLine = _DrawLine(PenF.NULL, _current.Value, _begin.Value);
             }
 
@@ -320,7 +320,7 @@ namespace YOpenGL
                 throw new InvalidOperationException("Must call BeginFigure before call this method!");
 
             if (_subGeo.IsClosed && _begin != _current)
-                _LineTo(_begin.Value);
+                _LineTo(_begin.Value, true);
             else _subGeo.UnClosedLine = _DrawLine(PenF.NULL, _current.Value, _begin.Value);
 
             _geo.Close();
@@ -332,41 +332,41 @@ namespace YOpenGL
             _current = null;
         }
 
-        public void LineTo(PointF point)
+        public void LineTo(PointF point, bool isStroked)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
             point = _transform.Transform(point);
-            _LineTo(point);
+            _LineTo(point, isStroked);
         }
 
-        private void _LineTo(PointF point)
+        private void _LineTo(PointF point, bool isStroked)
         {
-            _subGeo.StreamTo(_DrawLine(PenF.NULL, _current.Value, point));
+            _subGeo.StreamTo(_DrawLine(isStroked ? new PenF() : PenF.NULL, _current.Value, point));
             _current = point;
         }
 
-        public void PolyLineTo(IEnumerable<PointF> points)
+        public void PolyLineTo(IEnumerable<PointF> points, bool isStroked)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
             foreach (var point in points.Select(p => _transform.Transform(p)))
-                _LineTo(point);
+                _LineTo(point, isStroked);
         }
 
-        public void BezierTo(int degree, IEnumerable<PointF> points)
+        public void BezierTo(int degree, IEnumerable<PointF> points, bool isStroked)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
             var _points = new List<PointF>();
             points = points.Select(p => _transform.Transform(p));
             _points.Add(_current.Value);
             _points.AddRange(points);
-            _subGeo.StreamTo(_DrawBezier(PenF.NULL, _points));
+            _subGeo.StreamTo(_DrawBezier(isStroked ? new PenF() : PenF.NULL, _points));
             _current = points.Last();
         }
 
         /// <summary>
         /// The points.Count() must be an integer multiple of degree
         /// </summary>
-        public void PolyBezierTo(int degree, IEnumerable<PointF> points)
+        public void PolyBezierTo(int degree, IEnumerable<PointF> points, bool isStroked)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
             var _points = new List<PointF>();
@@ -375,21 +375,21 @@ namespace YOpenGL
                 _points.Add(point);
                 if (_points.Count == degree)
                 {
-                    BezierTo(degree, _points);
+                    BezierTo(degree, _points, isStroked);
                     _points.Clear();
                 }
             }
         }
 
-        public void ArcTo(PointF point, float radius, bool isLargeAngle, bool isClockwise)
+        public void ArcTo(PointF point, float radius, bool isLargeAngle, bool isClockwise, bool isStroked)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
             point = _transform.Transform(point);
-            _ArcTo(point, radius, isLargeAngle, isClockwise);
+            _ArcTo(point, radius, isLargeAngle, isClockwise, isStroked);
             _current = point;
         }
 
-        private void _ArcTo(PointF point, float radius, bool isLargeAngle, bool isClockwise)
+        private void _ArcTo(PointF point, float radius, bool isLargeAngle, bool isClockwise, bool isStroked)
         {
             if (point == _current.Value)
                 return;
@@ -402,7 +402,7 @@ namespace YOpenGL
             PointF center;
             GeometryHelper.CalcArcRadian(startP, endP, radius, isLargeAngle, isClockwise, out center, out startRadian, out endRadian);
             if (startRadian != 0 || endRadian != 0)
-                _subGeo.StreamTo(new _Arc(center, radius, startRadian, endRadian, PenF.NULL, null, !isClockwise));
+                _subGeo.StreamTo(new _Arc(center, radius, startRadian, endRadian, isStroked ? new PenF() : PenF.NULL, null, !isClockwise));
         }
         #endregion
         #endregion

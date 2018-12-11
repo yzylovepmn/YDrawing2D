@@ -128,6 +128,14 @@ namespace YOpenGL
             }
         }
         private PointF _origin;
+
+        public float ScaleX { get { return Math.Abs(_view.M11); } }
+
+        public float ScaleY { get { return Math.Abs(_view.M22); } }
+
+        public float OffsetX { get { return _view.OffsetX; } }
+
+        public float OffsetY { get { return _view.OffsetY; } }
         #endregion
 
         #region Sync
@@ -521,16 +529,15 @@ namespace YOpenGL
         {
             if (primitive.Type == PrimitiveType.ComplexGeometry)
             {
-                foreach (var item in ((_ComplexGeometry)primitive).Children)
-                    if (!item.Pen.IsNULL)
-                        _AttachModel(item, item.Pen);
+                foreach (var child in ((_ComplexGeometry)primitive).Children.Where(c => !c.Pen.IsNULL))
+                    _AttachModel(child, child.Pen);
                 return;
             }
 
             if (primitive.Type == PrimitiveType.SimpleGeometry)
             {
-                foreach (var item in ((_SimpleGeometry)primitive).Stream)
-                    _AttachModel(item, pen);
+                foreach (var child in ((_SimpleGeometry)primitive).Stream.Where(c => !c.Pen.IsNULL))
+                    _AttachModel(child, pen);
                 return;
             }
 
