@@ -677,20 +677,20 @@ namespace YOpenGL
 
         private void _DrawModels()
         {
-            Enable(GL_STENCIL_TEST);
-            _DrawSteramModelHandle(_streamModels, _fillshader);
-            Disable(GL_STENCIL_TEST);
-
             Enable(GL_CULL_FACE);
-            foreach (var pair in _fillModels)
-                _DrawFilledModelHandle(pair, _fillshader);
-
             foreach (var pair in _lineModels)
                 _DrawModelHandle(pair, _lineshader);
 
             foreach (var pair in _arcModels)
                 _DrawModelHandle(pair, _arcshader);
+
+            foreach (var pair in _fillModels)
+                _DrawFilledModelHandle(pair, _fillshader);
             Disable(GL_CULL_FACE);
+
+            Enable(GL_STENCIL_TEST);
+            _DrawSteramModelHandle(_streamModels, _fillshader);
+            Disable(GL_STENCIL_TEST);
         }
 
         private void _DrawModelHandle(KeyValuePair<PenF, List<MeshModel>> pair, Shader shader)

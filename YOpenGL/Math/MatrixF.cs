@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Media;
+using System.Xml.Linq;
 using Float = System.Single;
 
 namespace YOpenGL
@@ -741,6 +742,30 @@ namespace YOpenGL
         public static explicit operator MatrixF(Matrix matrix)
         {
             return new MatrixF((Float)matrix.M11, (Float)matrix.M12, (Float)matrix.M21, (Float)matrix.M22, (Float)matrix.OffsetX, (Float)matrix.OffsetY);
+        }
+
+        public static XElement GetData(MatrixF m, string name)
+        {
+            var ele = new XElement(name);
+            ele.Add(new XElement("M11", m.M11));
+            ele.Add(new XElement("M12", m.M12));
+            ele.Add(new XElement("M21", m.M21));
+            ele.Add(new XElement("M22", m.M22));
+            ele.Add(new XElement("OffsetX", m.OffsetX));
+            ele.Add(new XElement("OffsetY", m.OffsetY));
+            return ele;
+        }
+
+        public static MatrixF LoadData(XElement ele)
+        {
+            var m = new MatrixF();
+            m.M11 = float.Parse(ele.Element("M11").Value);
+            m.M12 = float.Parse(ele.Element("M12").Value);
+            m.M21 = float.Parse(ele.Element("M21").Value);
+            m.M22 = float.Parse(ele.Element("M22").Value);
+            m.OffsetX = float.Parse(ele.Element("OffsetX").Value);
+            m.OffsetY = float.Parse(ele.Element("OffsetY").Value);
+            return m;
         }
 
         public static bool Equals(MatrixF matrix1, MatrixF matrix2)

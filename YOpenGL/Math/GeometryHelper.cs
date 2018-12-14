@@ -380,7 +380,7 @@ namespace YOpenGL
             return radian;
         }
 
-        internal static void FormatRadian(ref float radian)
+        public static void FormatRadian(ref float radian)
         {
             var _radian = (double)radian;
 
@@ -393,7 +393,7 @@ namespace YOpenGL
             radian = (float)_radian;
         }
 
-        internal static void FormatAngle(ref float angle)
+        public static void FormatAngle(ref float angle)
         {
             var _angle = (double)angle;
 
