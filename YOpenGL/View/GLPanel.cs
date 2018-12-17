@@ -338,6 +338,7 @@ namespace YOpenGL
         #region RenderFrame
         private void _DispatchFrame()
         {
+            if (_isDisposed) return;
             MakeSureCurrentContext(_context);
 
             BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
@@ -491,15 +492,22 @@ namespace YOpenGL
 
                 _watch.Restart();
                 var before = _watch.ElapsedMilliseconds;
+
+                _ExitDispose();
                 Dispatcher.Invoke(() => { _DispatchFrame(); });
-                var span = (int)(_watch.ElapsedMilliseconds - before);
-                _watch.Stop();
+                _EnterDispose();
 
-                if (_frameSpan > span)
-                    Thread.Sleep(_frameSpan - span);
+                if (!_isDisposed)
+                {
+                    var span = (int)(_watch.ElapsedMilliseconds - before);
+                    _watch.Stop();
 
-                if (Interlocked.CompareExchange(ref _signal, 0, old) != old)
-                    _timer.Change(0, Timeout.Infinite);
+                    if (_frameSpan > span)
+                        Thread.Sleep(_frameSpan - span);
+
+                    if (Interlocked.CompareExchange(ref _signal, 0, old) != old)
+                        _timer.Change(0, Timeout.Infinite);
+                }
             }
 
             _ExitDispose();
