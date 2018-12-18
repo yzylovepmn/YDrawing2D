@@ -936,15 +936,11 @@ namespace YOpenGL
         #endregion
 
         #region Spline
-        internal static List<_Line> CalcSampleLines(_Spline spline)
+        internal static List<_Line> CalcSampleLines(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints)
         {
             var lines = new List<_Line>();
 
-            var samplePoints = new List<PointF>();
-            if (spline.Knots.Length == 0)
-                samplePoints = spline.FitPoints.ToList();
-            else for (int i = 0; i <= (int)spline.Domain; i += 2)
-                    samplePoints.Add(ComputePoint(spline, i));
+            var samplePoints = _CalcSamplePoints(degree, knots, controlPoints, weights, fitPoints);
 
             var _samplePoints = samplePoints.ToArray();
             for (int i = 1; i < _samplePoints.Length; i++)
@@ -953,23 +949,54 @@ namespace YOpenGL
             return lines;
         }
 
-        internal static PointF ComputePoint(_Spline spline, float u)
+        private static IEnumerable<PointF> _CalcSamplePoints(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints)
         {
-            if (u > spline.Domain) throw new ArgumentOutOfRangeException();
-            int i = spline.Degree;
-            while (spline.Knots[i + 1] < u) i++;
-            int start = i - spline.Degree;
+            var samplePoints = new List<PointF>();
+
+            if (knots.Length == 0)
+                samplePoints = fitPoints.ToList();
+            else
+            {
+                var delta = 1f / GetLength(controlPoints);
+                if (delta > 1)
+                {
+                    samplePoints.Add(ComputePoint(degree, knots, controlPoints, weights, 0));
+                    samplePoints.Add(ComputePoint(degree, knots, controlPoints, weights, 1));
+                }
+                else
+                {
+                    delta = Math.Max(0.01f, delta);
+                    var i = 0f;
+                    while (i <= 1)
+                    {
+                        samplePoints.Add(ComputePoint(degree, knots, controlPoints, weights, i));
+                        i += delta;
+                    }
+                    if (i - delta != 1)
+                        samplePoints.Add(ComputePoint(degree, knots, controlPoints, weights, 1));
+                }
+            }
+
+            return samplePoints;
+        }
+
+        internal static PointF ComputePoint(int degree, float[] knots, PointF[] controlPoints, float[] weights, float u)
+        {
+            if (u > 1) throw new ArgumentOutOfRangeException();
+            int i = degree;
+            while (knots[i + 1] < u) i++;
+            int start = i - degree;
             var p = new PointF();
             float down = 0;
-            if (spline.Weights.Length > 0)
+            if (weights.Length > 0)
             {
                 for (int j = start; j <= i; j++)
                 {
-                    float value = _GetBaseFuncValue(spline, u, j, spline.Degree);
-                    float downSpan = spline.Weights[j] * value;
+                    float value = _GetBaseFuncValue(knots, u, j, degree);
+                    float downSpan = weights[j] * value;
                     down += downSpan;
-                    p.X += downSpan * spline.ControlPoints[j].X;
-                    p.Y += downSpan * spline.ControlPoints[j].Y;
+                    p.X += downSpan * controlPoints[j].X;
+                    p.Y += downSpan * controlPoints[j].Y;
                 }
                 p.X /= down;
                 p.Y /= down;
@@ -978,10 +1005,10 @@ namespace YOpenGL
             {
                 for (int j = start; j <= i; j++)
                 {
-                    float value = _GetBaseFuncValue(spline, u, j, spline.Degree);
+                    float value = _GetBaseFuncValue(knots, u, j, degree);
                     down += value;
-                    p.X += value * spline.ControlPoints[j].X;
-                    p.Y += value * spline.ControlPoints[j].Y;
+                    p.X += value * controlPoints[j].X;
+                    p.Y += value * controlPoints[j].Y;
                 }
                 p.X /= down;
                 p.Y /= down;
@@ -989,32 +1016,32 @@ namespace YOpenGL
             return p;
         }
 
-        private static float _GetBaseFuncValue(_Spline spline, float u, int pbase, int rank)
+        private static float _GetBaseFuncValue(float[] knots, float u, int pbase, int rank)
         {
             if (rank > 0)
             {
-                return _GetRatioLeft(spline, u, pbase, rank) * _GetBaseFuncValue(spline, u, pbase, rank - 1)
-                    + _GetRatioRight(spline, u, pbase, rank) * _GetBaseFuncValue(spline, u, pbase + 1, rank - 1);
+                return _GetRatioLeft(knots, u, pbase, rank) * _GetBaseFuncValue(knots, u, pbase, rank - 1)
+                    + _GetRatioRight(knots, u, pbase, rank) * _GetBaseFuncValue(knots, u, pbase + 1, rank - 1);
             }
             else
             {
-                if (u >= spline.Knots[pbase] && u <= spline.Knots[pbase + 1]) return 1;
+                if (u >= knots[pbase] && u <= knots[pbase + 1]) return 1;
                 return 0;
             }
         }
 
-        private static float _GetRatioLeft(_Spline spline, float u, int pbase, int rank)
+        private static float _GetRatioLeft(float[] knots, float u, int pbase, int rank)
         {
-            float up = u - spline.Knots[pbase];
-            float down = spline.Knots[pbase + rank] - spline.Knots[pbase];
+            float up = u - knots[pbase];
+            float down = knots[pbase + rank] - knots[pbase];
             if (down < 0.001) return 0;
             return up / down;
         }
 
-        private static float _GetRatioRight(_Spline spline, float u, int pbase, int rank)
+        private static float _GetRatioRight(float[] knots, float u, int pbase, int rank)
         {
-            float up = spline.Knots[pbase + rank + 1] - u;
-            float down = spline.Knots[pbase + rank + 1] - spline.Knots[pbase + 1];
+            float up = knots[pbase + rank + 1] - u;
+            float down = knots[pbase + rank + 1] - knots[pbase + 1];
             if (down < 0.001) return 0;
             return up / down;
         }
@@ -1085,7 +1112,7 @@ namespace YOpenGL
         {
             var samplePoints = new List<PointF>();
             var i = 0.0;
-            var delta = 5f / GetLength(controlPoints);
+            var delta = 1f / GetLength(controlPoints);
 
             if (delta > 1)
             {
@@ -1094,6 +1121,7 @@ namespace YOpenGL
             }
             else
             {
+                delta = Math.Max(0.01f, delta);
                 while (i <= 1)
                 {
                     samplePoints.Add(ComputePoint(controlPoints, degree, i));

@@ -68,7 +68,7 @@ namespace YOpenGL
                 var geo = (_ComplexGeometry)primitive;
                 foreach (var subgeo in geo.Children)
                     foreach (var item in subgeo.Stream)
-                        _Deatch(item);
+                        _Deatch(item, isReset);
             }
             if (primitive.FillModel != null)
             {

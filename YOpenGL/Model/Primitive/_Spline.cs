@@ -27,9 +27,9 @@ namespace YOpenGL
             _innerLines = default(List<_Line>);
 
             if (_domain != 0)
-                Regular(1000);
+                Regular(1);
 
-            _innerLines = GeometryHelper.CalcSampleLines(this);
+            _innerLines = GeometryHelper.CalcSampleLines(degree, knots, controlPoints, weights, fitPoints);
 
             foreach (var innerLine in _innerLines)
                 _bounds.Union(innerLine.Bounds);
