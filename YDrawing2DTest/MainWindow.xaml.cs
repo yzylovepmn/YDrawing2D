@@ -129,8 +129,8 @@ namespace YDrawing2DTest
                 //_glPanel.AddVisual(new Cicle(new PointF(0, 0), i * 2));
                 //_glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i + 100)));
             }
-            _glPanel.AddVisual(new CustomShape(new PointF(0, 0)));
-            _glPanel.AddVisual(new Text(new PointF(100, 200)));
+            //_glPanel.AddVisual(new CustomShape(new PointF(0, 0)));
+            _glPanel.AddVisual(new Text("Hello world!", new PointF(100, 200)));
             //_glPanel.AddVisual(new Cicle(new PointF(500, 500), 200));
             //_glPanel.AddVisual(new Cicle(new PointF(100, 500), 100));
             //_glPanel.AddVisual(new Arc(new PointF(550, 100), 300, 340, 100));
@@ -249,12 +249,14 @@ namespace YDrawing2DTest
 
     public class Text : GLVisual
     {
-        public Text(PointF origin)
+        public Text(string textToDraw, PointF origin)
         {
+            _text = textToDraw;
             _origin = origin;
         }
 
         private PointF _origin;
+        private string _text;
 
         protected override void Draw(GLDrawContext context)
         {
@@ -263,12 +265,11 @@ namespace YDrawing2DTest
             context.PushOpacity(0.5f);
 
             var typeFace = new Typeface(new FontFamily("新宋体"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
-            var text = "Hello world!";
             if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
-                context.DrawText(PenF.NULL, Colors.Red, new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
+                context.DrawText(PenF.NULL, Colors.Red, new FormattedText(_text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
             else if (this == MainWindow.GLSelectedVisual)
-                context.DrawText(PenF.NULL, Colors.Blue, new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
-            else context.DrawText(PenF.NULL, Colors.BurlyWood, new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
+                context.DrawText(PenF.NULL, Colors.Blue, new FormattedText(_text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
+            else context.DrawText(PenF.NULL, Colors.BurlyWood, new FormattedText(_text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
         }
     }
 
@@ -326,11 +327,24 @@ namespace YDrawing2DTest
 
         protected override void Draw(GLDrawContext context)
         {
+            Color color = Colors.Green;
+            PenF pen = MainWindow.GLWhitePen;
             if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
-                context.DrawRectangle(MainWindow.GLActivePen, Colors.Blue, _rect);
+            {
+                color = Colors.Blue;
+                pen = MainWindow.GLActivePen;
+            }
             else if (this == MainWindow.GLSelectedVisual)
-                context.DrawRectangle(MainWindow.GLSelectedPen, new Color() { R = 255, A = 64 }, _rect);
-            else context.DrawRectangle(MainWindow.GLWhitePen, Colors.Green, _rect);
+            {
+                color = new Color() { R = 255, A = 64 };
+                pen = MainWindow.GLSelectedPen;
+            }
+
+            context.DrawRectangle(pen, color, _rect);
+            //context.DrawPoint(color, _rect.BottomLeft, 20);
+            //context.DrawPoint(color, _rect.BottomRight, 160);
+            //context.DrawPoint(color, _rect.TopLeft, 160);
+            //context.DrawPoint(color, _rect.TopRight, 160);
         }
     }
 

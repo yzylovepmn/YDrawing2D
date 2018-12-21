@@ -40,6 +40,7 @@ namespace YOpenGL
             _streamModels = new List<MeshModel>();
             _lineModels = new Dictionary<PenF, List<MeshModel>>();
             _arcModels = new Dictionary<PenF, List<MeshModel>>();
+            _pointModels = new Dictionary<PointPair, List<MeshModel>>();
             _shaders = new List<Shader>();
 
             _timer = new Timer(_AfterPainted);
@@ -98,6 +99,7 @@ namespace YOpenGL
         private List<MeshModel> _streamModels;
         private Dictionary<PenF, List<MeshModel>> _lineModels;
         private Dictionary<PenF, List<MeshModel>> _arcModels;
+        private Dictionary<PointPair, List<MeshModel>> _pointModels;
 
         public Color Color
         {
@@ -180,50 +182,51 @@ namespace YOpenGL
             return _rect;
         }
 
-        public void ResetView()
+        public void ResetView(bool isRefresh = true)
         {
             _view = MatrixF.Identity;
-            _AfterTransform();
+            _AfterTransform(isRefresh);
         }
 
-        public void Scale(float scaleX, float scaleY)
+        public void Scale(float scaleX, float scaleY, bool isRefresh = true)
         {
             _view.Scale(scaleX, scaleY);
-            _AfterTransform();
+            _AfterTransform(isRefresh);
         }
 
-        public void ScaleAt(float scaleX, float scaleY, float centerX, float centerY)
+        public void ScaleAt(float scaleX, float scaleY, float centerX, float centerY, bool isRefresh = true)
         {
             centerX -= _origin.X;
             centerY -= _origin.Y;
             _view.ScaleAt(scaleX, scaleY, centerX, centerY);
-            _AfterTransform();
+            _AfterTransform(isRefresh);
         }
 
-        public void ScaleAt(PointF p, float scaleX, float scaleY)
+        public void ScaleAt(PointF p, float scaleX, float scaleY, bool isRefresh = true)
         {
-            ScaleAt(scaleX, scaleY, p.X, p.Y);
+            ScaleAt(scaleX, scaleY, p.X, p.Y, isRefresh);
         }
 
-        public void Translate(VectorF vector)
+        public void Translate(VectorF vector, bool isRefresh = true)
         {
-            Translate(vector.X, vector.Y);
+            Translate(vector.X, vector.Y, isRefresh);
         }
 
-        public void Translate(float offsetX, float offsetY)
+        public void Translate(float offsetX, float offsetY, bool isRefresh = true)
         {
             _view.Translate(offsetX, offsetY);
-            _AfterTransform();
+            _AfterTransform(isRefresh);
         }
 
-        private void _AfterTransform()
+        private void _AfterTransform(bool isRefresh = true)
         {
             var view = _view;
             _view.Invert();
             _viewResverse = _view;
             _view = view;
 
-            _Refresh(false);
+            if (isRefresh)
+                _Refresh(false);
         }
         #endregion
 
@@ -494,7 +497,7 @@ namespace YOpenGL
                 var before = _watch.ElapsedMilliseconds;
 
                 _ExitDispose();
-                Dispatcher.Invoke(() => { _DispatchFrame(); });
+                Dispatcher.Invoke(() => { _DispatchFrame(); }, DispatcherPriority.Render);
                 _EnterDispose();
 
                 if (!_isDisposed)
@@ -523,7 +526,9 @@ namespace YOpenGL
                 {
                     if (primitive.Type == PrimitiveType.ComplexGeometry)
                         _AttachStreamModel(primitive);
-                    else _AttachFillModels(primitive);
+                    else if (primitive.Type != PrimitiveType.Point)
+                        _AttachFillModels(primitive);
+                    else _AttachPointModels(primitive);
                 }
             }
         }
@@ -611,11 +616,38 @@ namespace YOpenGL
             primitive.FillModel = model;
         }
 
+        private void _AttachPointModels(IPrimitive primitive)
+        {
+            var point = primitive as _Point;
+            var model = default(MeshModel);
+            var models = _pointModels;
+            var pair = new PointPair(point.FillColor.Value, point.PointSize);
+
+            if (models.ContainsKey(pair))
+                model = models[pair].Last();
+            else
+            {
+                model = _GreateModel(point, true);
+                models.Add(pair, new List<MeshModel>() { model });
+            }
+            if (!model.TryAttachPrimitive(primitive, false))
+            {
+                model = _GreateModel(point, true);
+                models[pair].Add(model);
+                model.TryAttachPrimitive(primitive, false);
+            }
+            primitive.FillModel = model;
+        }
+
         private MeshModel _GreateModel(IPrimitive primitive, bool isFilled = false)
         {
             var model = default(MeshModel);
             if (isFilled)
-                model = new FillModel();
+            {
+                if (primitive == null)
+                    model = new FillModel();
+                else model = new PointsModel();
+            }
             else if (primitive.Type == PrimitiveType.ComplexGeometry)
                 model = new StreamModel();
             else if (primitive.Type == PrimitiveType.Arc)
@@ -672,6 +704,21 @@ namespace YOpenGL
                     _fillModels.Remove(pair.Key);
             }
 
+            foreach (var pair in _pointModels.ToList())
+            {
+                foreach (var model in pair.Value.ToList())
+                {
+                    if (model.NeedDisposed)
+                    {
+                        model.Dispose();
+                        pair.Value.Remove(model);
+                    }
+                    else model.EndInit();
+                }
+                if (pair.Value.Count == 0)
+                    _pointModels.Remove(pair.Key);
+            }
+
             foreach (var model in _streamModels.ToList())
             {
                 if (model.NeedDisposed)
@@ -694,6 +741,9 @@ namespace YOpenGL
 
             foreach (var pair in _fillModels)
                 _DrawFilledModelHandle(pair, _fillshader);
+
+            foreach (var pair in _pointModels)
+                _DrawPointModelsHandle(pair, _fillshader);
             Disable(GL_CULL_FACE);
 
             Enable(GL_STENCIL_TEST);
@@ -727,6 +777,15 @@ namespace YOpenGL
         {
             shader.Use();
             shader.SetVec4("color", 1, pair.Key.GetData());
+            foreach (var model in pair.Value)
+                model.Draw(shader);
+        }
+
+        private void _DrawPointModelsHandle(KeyValuePair<PointPair, List<MeshModel>> pair, Shader shader)
+        {
+            shader.Use();
+            shader.SetVec4("color", 1, pair.Key.Color.GetData());
+            PointSize(pair.Key.PointSize);
             foreach (var model in pair.Value)
                 model.Draw(shader);
         }
@@ -842,6 +901,7 @@ namespace YOpenGL
             _streamModels = null;
             _lineModels = null;
             _arcModels = null;
+            _pointModels = null;
         }
 
         private void _DisposeVisuals()
@@ -859,11 +919,14 @@ namespace YOpenGL
                 item?.Dispose();
             foreach (var item in _arcModels.Values)
                 item?.Dispose();
+            foreach (var item in _pointModels.Values)
+                item?.Dispose();
 
             _fillModels.Clear();
             _streamModels.Clear();
             _lineModels.Clear();
             _arcModels.Clear();
+            _pointModels.Clear();
         }
 
         protected override void Dispose(bool disposing)

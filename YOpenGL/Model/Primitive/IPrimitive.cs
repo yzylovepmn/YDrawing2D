@@ -23,6 +23,7 @@ namespace YOpenGL
 
     public enum PrimitiveType
     {
+        Point,
         Line,
         Arc,
         Spline,

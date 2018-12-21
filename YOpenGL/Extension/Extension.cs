@@ -58,8 +58,7 @@ namespace YOpenGL
 
         public static float[] GetData(this Color color)
         {
-            var maxValue = (float)byte.MaxValue;
-            return new float[] { color.R / maxValue, color.G / maxValue, color.B / maxValue, color.A / maxValue };
+            return new float[] { color.ScR, color.ScG, color.ScB, color.ScA };
         }
 
         /// <summary>

@@ -36,7 +36,7 @@ namespace YOpenGL
             _thread = new Thread(_ThreadLoop);
             _thread.SetApartmentState(ApartmentState.STA);
             _thread.IsBackground = true;
-            _thread.Priority = ThreadPriority.Normal;
+            _thread.Priority = ThreadPriority.AboveNormal;
         }
 
         private void _DisposeThread()

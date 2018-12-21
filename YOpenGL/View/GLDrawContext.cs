@@ -77,8 +77,7 @@ namespace YOpenGL
             fillColor = _transform.Transform(fillColor);
             pos = _transform.Transform(pos);
 
-            var hpointSize = pointSize / 2;
-            _DrawRectangle(PenF.NULL, fillColor, new PointF(pos.X - hpointSize, pos.Y - hpointSize), new PointF(pos.X + hpointSize, pos.Y - hpointSize), new PointF(pos.X + hpointSize, pos.Y + hpointSize), new PointF(pos.X - hpointSize, pos.Y + hpointSize));
+            _primitives.Add(new _Point(pos, pointSize, fillColor));
         }
 
         public void DrawLine(PenF pen, PointF start, PointF end)

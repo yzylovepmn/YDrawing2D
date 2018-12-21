@@ -41,7 +41,9 @@ namespace YOpenGL
                 return false;
             _pointCount += cnt;
 
-            _primitives.Add(primitive, new Tuple<bool, int>(isOutline, cnt));
+            if (primitive.Type == PrimitiveType.Line || primitive.Type == PrimitiveType.Point)
+                _primitives.Add(primitive, null);
+            else _primitives.Add(primitive, new Tuple<bool, int>(isOutline, cnt));
             _needUpdate = true;
             return true;
         }
@@ -49,7 +51,9 @@ namespace YOpenGL
         internal void DetachPrimitive(IPrimitive primitive)
         {
             var pair = GetPair(primitive);
-            _pointCount -= pair.Value.Item2;
+            if (primitive.Type == PrimitiveType.Line || primitive.Type == PrimitiveType.Point)
+                _pointCount -= primitive.Type == PrimitiveType.Line ? 2 : 1;
+            else _pointCount -= pair.Value.Item2;
             _primitives.Remove(pair.Key);
             if (_primitives.Count != 0)
                 _needUpdate = true;
@@ -133,7 +137,9 @@ namespace YOpenGL
             foreach (var pair in _primitives)
             {
                 _indices?.AddRange(GeometryHelper.GenIndices(pair.Key, (uint)points.Count));
-                points.AddRange(pair.Key[pair.Value.Item1]);
+                if (pair.Key.Type == PrimitiveType.Line || pair.Key.Type == PrimitiveType.Point)
+                    points.AddRange(pair.Key[true]);
+                else points.AddRange(pair.Key[pair.Value.Item1]);
             }
 
             return points.GetData();

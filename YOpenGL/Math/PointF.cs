@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using System.Xml.Linq;
 using Float = System.Single;
 
 namespace YOpenGL
@@ -86,6 +87,22 @@ namespace YOpenGL
         public static bool operator !=(PointF point1, PointF point2)
         {
             return !(point1 == point2);
+        }
+
+        public static XElement GetData(PointF p, string name)
+        {
+            var ele = new XElement(name);
+            ele.Add(new XElement("X", p.X));
+            ele.Add(new XElement("Y", p.Y));
+            return ele;
+        }
+
+        public static PointF LoadData(XElement ele)
+        {
+            var p = new PointF();
+            p.X = float.Parse(ele.Element("X").Value);
+            p.Y = float.Parse(ele.Element("Y").Value);
+            return p;
         }
 
         public static bool Equals(PointF point1, PointF point2)

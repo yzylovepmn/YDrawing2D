@@ -957,7 +957,7 @@ namespace YOpenGL
                 samplePoints = fitPoints.ToList();
             else
             {
-                var delta = 1f / GetLength(controlPoints);
+                var delta = 0.2f / GetLength(controlPoints);
                 if (delta > 1)
                 {
                     samplePoints.Add(ComputePoint(degree, knots, controlPoints, weights, 0));
@@ -1112,7 +1112,7 @@ namespace YOpenGL
         {
             var samplePoints = new List<PointF>();
             var i = 0.0;
-            var delta = 1f / GetLength(controlPoints);
+            var delta = 0.2f / GetLength(controlPoints);
 
             if (delta > 1)
             {
