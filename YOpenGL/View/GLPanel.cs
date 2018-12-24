@@ -446,7 +446,7 @@ namespace YOpenGL
 
         private void _DeleteResource()
         {
-            _shaders.Dispose();
+            _shaders.DisposeInner();
             _shaders.Clear();
             _lineshader = null;
             _arcshader = null;
@@ -906,21 +906,21 @@ namespace YOpenGL
 
         private void _DisposeVisuals()
         {
-            _visuals.Dispose();
+            _visuals.DisposeInner();
             _visuals.Clear();
         }
 
         private void _DisposeModels()
         {
             foreach (var item in _fillModels.Values)
-                item?.Dispose();
-            _streamModels?.Dispose();
+                item?.DisposeInner();
+            _streamModels?.DisposeInner();
             foreach (var item in _lineModels.Values)
-                item?.Dispose();
+                item?.DisposeInner();
             foreach (var item in _arcModels.Values)
-                item?.Dispose();
+                item?.DisposeInner();
             foreach (var item in _pointModels.Values)
-                item?.Dispose();
+                item?.DisposeInner();
 
             _fillModels.Clear();
             _streamModels.Clear();

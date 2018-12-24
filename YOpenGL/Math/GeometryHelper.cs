@@ -465,9 +465,14 @@ namespace YOpenGL
             return points;
         }
 
-        internal static float GetRadian(float angle)
+        public static float GetRadian(float angle)
         {
             return (float)(angle * Math.PI / 180);
+        }
+
+        public static float GetAngle(float radian)
+        {
+            return (float)(radian * 180 / Math.PI);
         }
 
         internal static float GetLength(IEnumerable<PointF> points)
@@ -936,6 +941,38 @@ namespace YOpenGL
         #endregion
 
         #region Spline
+        public static RectF CalcBounds(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints)
+        {
+            return _CalcBounds(_CalcSamplePoints(degree, knots, controlPoints, weights, fitPoints));
+        }
+
+        private static RectF _CalcBounds(IEnumerable<PointF> samplePoints)
+        {
+            var bound = RectF.Empty;
+
+            var flag = true;
+            var last = default(PointF);
+            foreach (var p in samplePoints)
+            {
+                if (flag)
+                {
+                    flag = false;
+                    last = p;
+                    bound.Union(p);
+                }
+                else
+                {
+                    if (last != p)
+                    {
+                        bound.Union(new RectF(last, p));
+                        last = p;
+                    }
+                }
+            }
+
+            return bound;
+        }
+
         internal static List<_Line> CalcSampleLines(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints)
         {
             var lines = new List<_Line>();
@@ -1051,32 +1088,7 @@ namespace YOpenGL
         public static RectF CalcBounds(params PointF[] controlPoints)
         {
             var degree = controlPoints.Length - 1;
-
-            var bound = RectF.Empty;
-
-            var samplePoints = _CalcSamplePoints(controlPoints, degree);
-
-            var flag = true;
-            var last = default(PointF);
-            foreach (var p in samplePoints)
-            {
-                if (flag)
-                {
-                    flag = false;
-                    last = p;
-                    bound.Union(p);
-                }
-                else
-                {
-                    if (last != p)
-                    {
-                        bound.Union(new RectF(last, p));
-                        last = p;
-                    }
-                }
-            }
-
-            return bound;
+            return _CalcBounds(_CalcSamplePoints(controlPoints, degree));
         }
 
         internal static List<_Line> CalcSampleLines(params PointF[] controlPoints)

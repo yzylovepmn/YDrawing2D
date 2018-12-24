@@ -41,7 +41,6 @@ namespace YOpenGL
             }
         }
 
-        public RectF Bounds { get { return _bounds; } }
         private RectF _bounds;
 
         public PenF Pen { get { return _pen; } }
@@ -74,14 +73,19 @@ namespace YOpenGL
         internal float B;
         internal float C;
 
-        public bool HitTest(PointF p, float sensitive)
+        public RectF GetBounds(float scale)
+        {
+            return _bounds;
+        }
+
+        public bool HitTest(PointF p, float sensitive, float scale)
         {
             if (B == 0)
                 return Math.Abs(p.X - Start.X) < sensitive;
             else return Math.Abs(A * p.X + B * p.Y + C) / Math.Sqrt(A * A + B * B) < sensitive;
         }
 
-        public bool HitTest(RectF rect)
+        public bool HitTest(RectF rect, float scale)
         {
             if (B > 0)
             {

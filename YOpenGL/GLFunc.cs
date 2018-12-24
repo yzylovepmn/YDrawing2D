@@ -41,6 +41,8 @@ namespace YOpenGL
         internal const string OpenGLName = "OPENGL32.DLL";
         private static bool _isInit;
 
+        internal static float[] PointSizeRange;
+
         static GLFunc()
         {
             _isInit = false;
@@ -58,6 +60,7 @@ namespace YOpenGL
             OpenGLHandle = Win32Helper.LoadLibrary(OpenGLName);
             _Init();
             _ParseVersion();
+            _CalcParams();
             Win32Helper.FreeLibrary(OpenGLHandle);
             return GL.Version >= GLVersion.MinimumSupportedVersion;
         }
@@ -776,6 +779,12 @@ namespace YOpenGL
 
             GetIntegerv(GLConst.GL_MAJOR_VERSION, ref GL.Version._major);
             GetIntegerv(GLConst.GL_MINOR_VERSION, ref GL.Version._minor);
+        }
+
+        private static void _CalcParams()
+        {
+            PointSizeRange = new float[2];
+            GetFloatv(GLConst.GL_POINT_SIZE_RANGE, PointSizeRange);
         }
 
         private static void _Init()
@@ -1555,6 +1564,18 @@ namespace YOpenGL
                 {
                     fixed(GLint* p = &param)
                         glGetIntegerv(pname, (GLvoid)p);
+                }
+            }
+        }
+
+        public static void GetFloatv(GLenum pname, GLfloat[] param)
+        {
+            if (glGetFloatv != null)
+            {
+                unsafe
+                {
+                    fixed (GLfloat* p = param)
+                        glGetFloatv(pname, (GLvoid)p);
                 }
             }
         }
@@ -3131,7 +3152,7 @@ namespace YOpenGL
     public delegate void PFNGLGETBOOLEANVPROC(GLenum pname, GLboolean[] _params);
     public delegate void PFNGLGETDOUBLEVPROC(GLenum pname, GLdouble[] _params);
     public delegate GLenum PFNGLGETERRORPROC();
-    public delegate void PFNGLGETFLOATVPROC(GLenum pname, GLfloat[] _params);
+    public delegate void PFNGLGETFLOATVPROC(GLenum pname, GLvoid _params);
     public delegate void PFNGLGETINTEGERVPROC(GLenum pname, GLvoid _params);
     public delegate void PFNGLGETTEXIMAGEPROC(GLenum target, GLint level, GLenum format, GLenum type, GLvoid pixels);
     public delegate void PFNGLGETTEXPARAMETERFVPROC(GLenum target, GLenum pname, GLfloat[] _params);

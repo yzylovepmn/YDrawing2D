@@ -23,7 +23,6 @@ namespace YOpenGL
             _stream = new List<IPrimitive>();
         }
 
-        public RectF Bounds { get { return _bounds; } }
         private RectF _bounds;
 
         public PenF Pen { get { return _pen; } }
@@ -60,7 +59,7 @@ namespace YOpenGL
         {
             if (_stream == null) return;
             foreach (var primitive in _stream)
-                _bounds.Union(primitive.Bounds);
+                _bounds.Union(primitive.GetBounds(1f));
         }
 
         public IEnumerable<PointF> this[bool isOutline]
@@ -77,45 +76,50 @@ namespace YOpenGL
             }
         }
 
-        public bool HitTest(PointF p, float sensitive)
+        public RectF GetBounds(float scale)
         {
-            if (!_HitTestOutline(p, sensitive))
-                return _HitTestFill(p, sensitive);
+            return _bounds;
+        }
+
+        public bool HitTest(PointF p, float sensitive, float scale)
+        {
+            if (!_HitTestOutline(p, sensitive, scale))
+                return _HitTestFill(p, sensitive, scale);
             return true;
         }
 
-        public bool HitTest(RectF rect)
+        public bool HitTest(RectF rect, float scale)
         {
-            if (!_HitTestOutline(rect))
-                return _HitTestFill(rect);
+            if (!_HitTestOutline(rect, scale))
+                return _HitTestFill(rect, scale);
             return true;
         }
 
-        internal bool _HitTestOutline(PointF p, float sensitive)
+        internal bool _HitTestOutline(PointF p, float sensitive, float scale)
         {
             if (_pen.IsNULL) return false;
             foreach (var primitive in _stream)
-                if (primitive.Bounds.Contains(p, sensitive) && primitive.HitTest(p, sensitive))
+                if (primitive.GetBounds(1f).Contains(p, sensitive) && primitive.HitTest(p, sensitive, scale))
                     return true;
             return false;
         }
 
-        internal bool _HitTestFill(PointF p, float sensitive)
+        internal bool _HitTestFill(PointF p, float sensitive, float scale)
         {
             if (!Filled) return false;
             return GeometryHelper.Contains(this, p);
         }
 
-        internal bool _HitTestOutline(RectF rect)
+        internal bool _HitTestOutline(RectF rect, float scale)
         {
             if (_pen.IsNULL) return false;
             foreach (var primitive in _stream)
-                if (primitive.Bounds.IntersectsWith(rect) && primitive.HitTest(rect))
+                if (primitive.GetBounds(1f).IntersectsWith(rect) && primitive.HitTest(rect, scale))
                     return true;
             return false;
         }
 
-        internal bool _HitTestFill(RectF rect)
+        internal bool _HitTestFill(RectF rect, float scale)
         {
             if (!Filled) return false;
             return GeometryHelper.Contains(this, rect.TopLeft) || GeometryHelper.Contains(this, rect.BottomLeft)
@@ -125,7 +129,7 @@ namespace YOpenGL
         public void Dispose()
         {
             UnClosedLine = null;
-            _stream.Dispose();
+            _stream.DisposeInner();
             _stream.Clear();
             _stream = null;
         }
@@ -135,7 +139,6 @@ namespace YOpenGL
     {
         public IEnumerable<PointF> this[bool isOutline] { get { yield break; } }
 
-        public RectF Bounds { get { return _bounds; } }
         internal RectF _bounds;
 
         public PenF Pen { get { return PenF.NULL; } }
@@ -169,22 +172,27 @@ namespace YOpenGL
             foreach (var child in _children)
             {
                 child.Close();
-                _bounds.Union(child.Bounds);
+                _bounds.Union(child.GetBounds(1f));
             }
         }
 
-        public bool HitTest(PointF p, float sensitive)
+        public RectF GetBounds(float scale)
+        {
+            return _bounds;
+        }
+
+        public bool HitTest(PointF p, float sensitive, float scale)
         {
             if (_children == null) return false;
 
             if (_wholeFill) return true;
 
-            if (!_children.Any(child => child._HitTestOutline(p, sensitive)))
+            if (!_children.Any(child => child._HitTestOutline(p, sensitive, scale)))
             {
                 var cnt = 0;
                 _children.ForEach(child => 
                 {
-                    var ret = child._HitTestFill(p, sensitive);
+                    var ret = child._HitTestFill(p, sensitive, scale);
                     if (ret)
                         cnt++;
                 });
@@ -193,19 +201,19 @@ namespace YOpenGL
             return true;
         }
 
-        public bool HitTest(RectF rect)
+        public bool HitTest(RectF rect, float scale)
         {
             if (_children == null) return false;
 
             if (_wholeFill) return true;
 
-            if (!_children.Any(child => child._HitTestOutline(rect)))
+            if (!_children.Any(child => child._HitTestOutline(rect, scale)))
             {
                 var flag = false;
                 var cnt = 0;
                 _children.ForEach(child =>
                 {
-                    var ret = child._HitTestFill(rect.TopLeft, 0);
+                    var ret = child._HitTestFill(rect.TopLeft, 0, scale);
                     if (ret)
                         cnt++;
                 });
@@ -216,7 +224,7 @@ namespace YOpenGL
                     cnt = 0;
                     _children.ForEach(child =>
                     {
-                        var ret = child._HitTestFill(rect.BottomLeft, 0);
+                        var ret = child._HitTestFill(rect.BottomLeft, 0, scale);
                         if (ret)
                             cnt++;
                     });
@@ -228,7 +236,7 @@ namespace YOpenGL
                     cnt = 0;
                     _children.ForEach(child =>
                     {
-                        var ret = child._HitTestFill(rect.TopRight, 0);
+                        var ret = child._HitTestFill(rect.TopRight, 0, scale);
                         if (ret)
                             cnt++;
                     });
@@ -240,7 +248,7 @@ namespace YOpenGL
                     cnt = 0;
                     _children.ForEach(child =>
                     {
-                        var ret = child._HitTestFill(rect.BottomRight, 0);
+                        var ret = child._HitTestFill(rect.BottomRight, 0, scale);
                         if (ret)
                             cnt++;
                     });
@@ -254,7 +262,7 @@ namespace YOpenGL
 
         public void Dispose()
         {
-            _children?.Dispose();
+            _children?.DisposeInner();
             _children?.Clear();
             _children = null;
 

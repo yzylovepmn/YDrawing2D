@@ -341,10 +341,10 @@ namespace YDrawing2DTest
             }
 
             context.DrawRectangle(pen, color, _rect);
-            //context.DrawPoint(color, _rect.BottomLeft, 20);
-            //context.DrawPoint(color, _rect.BottomRight, 160);
-            //context.DrawPoint(color, _rect.TopLeft, 160);
-            //context.DrawPoint(color, _rect.TopRight, 160);
+            context.DrawPoint(color, _rect.BottomLeft, 20);
+            context.DrawPoint(color, _rect.BottomRight, 160);
+            context.DrawPoint(color, _rect.TopLeft, 160);
+            context.DrawPoint(color, _rect.TopRight, 160);
         }
     }
 

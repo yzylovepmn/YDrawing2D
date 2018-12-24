@@ -73,7 +73,6 @@ namespace YOpenGL
         #region Draw
         public void DrawPoint(Color fillColor, PointF pos, float pointSize)
         {
-            pointSize *= _transform.ScaleX;
             fillColor = _transform.Transform(fillColor);
             pos = _transform.Transform(pos);
 
@@ -408,7 +407,7 @@ namespace YOpenGL
 
         private void _Clear()
         {
-            _primitives.Dispose();
+            _primitives.DisposeInner();
             _primitives.Clear();
         }
 

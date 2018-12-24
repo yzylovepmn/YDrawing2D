@@ -27,13 +27,13 @@ namespace YOpenGL
             return (float)Math.Sqrt(m.M21 * m.M21 + m.M22 * m.M22);
         }
 
-        public static void Dispose<T>(this IEnumerable<T> source) where T : IDisposable
+        internal static void DisposeInner<T>(this IEnumerable<T> source) where T : IDisposable
         {
             foreach (var item in source)
                 item.Dispose();
         }
 
-        public static int IndexOf<T>(this IEnumerable<T> source, T item)
+        internal static int IndexOfInner<T>(this IEnumerable<T> source, T item)
         {
             var index = 0;
             foreach (var _item in source)

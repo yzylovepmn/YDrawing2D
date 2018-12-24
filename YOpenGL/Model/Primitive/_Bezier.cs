@@ -20,10 +20,9 @@ namespace YOpenGL
             _innerLines = GeometryHelper.CalcSampleLines(_points);
 
             foreach (var line in _innerLines)
-                _bounds.Union(line.Bounds);
+                _bounds.Union(line.GetBounds(1f));
         }
 
-        public RectF Bounds { get { return _bounds; } }
         private RectF _bounds;
 
         public PenF Pen { get { return _pen; } }
@@ -64,25 +63,30 @@ namespace YOpenGL
             }
         }
 
-        public bool HitTest(PointF p, float sensitive)
+        public RectF GetBounds(float scale)
+        {
+            return _bounds;
+        }
+
+        public bool HitTest(PointF p, float sensitive, float scale)
         {
             foreach (var line in _innerLines)
-                if (line.Bounds.Contains(p, sensitive) && line.HitTest(p, sensitive))
+                if (line.GetBounds(scale).Contains(p, sensitive) && line.HitTest(p, sensitive, scale))
                     return true;
             return false;
         }
 
-        public bool HitTest(RectF rect)
+        public bool HitTest(RectF rect, float scale)
         {
             foreach (var line in _innerLines)
-                if (line.Bounds.IntersectsWith(rect) && line.HitTest(rect))
+                if (line.GetBounds(scale).IntersectsWith(rect) && line.HitTest(rect, scale))
                     return true;
             return false;
         }
 
         public void Dispose()
         {
-            _innerLines.Dispose();
+            _innerLines.DisposeInner();
             _innerLines.Clear();
             _innerLines = null;
 

@@ -27,7 +27,6 @@ namespace YOpenGL
             else _bounds = GeometryHelper.CalcBounds(this);
         }
 
-        public RectF Bounds { get { return _bounds; } }
         private RectF _bounds;
 
         public PenF Pen { get { return _pen; } }
@@ -80,7 +79,12 @@ namespace YOpenGL
             }
         }
 
-        public bool HitTest(PointF p, float sensitive)
+        public RectF GetBounds(float scale)
+        {
+            return _bounds;
+        }
+
+        public bool HitTest(PointF p, float sensitive, float scale)
         {
             if (IsEmpty) return false;
             if (IsCicle || GeometryHelper.IsPossibleArcContain(this, p))
@@ -93,7 +97,7 @@ namespace YOpenGL
             return false;
         }
 
-        public bool HitTest(RectF rect)
+        public bool HitTest(RectF rect, float scale)
         {
             rect.Intersect(_bounds);
             var v1 = (rect.TopLeft - Center).Length;

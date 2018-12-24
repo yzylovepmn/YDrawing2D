@@ -32,7 +32,7 @@ namespace YOpenGL
             _innerLines = GeometryHelper.CalcSampleLines(degree, knots, controlPoints, weights, fitPoints);
 
             foreach (var innerLine in _innerLines)
-                _bounds.Union(innerLine.Bounds);
+                _bounds.Union(innerLine.GetBounds(1f));
         }
 
         /// <summary>
@@ -71,7 +71,6 @@ namespace YOpenGL
         public float Domain { get { return _domain; } }
         private float _domain;
 
-        public RectF Bounds { get { return _bounds; } }
         private RectF _bounds;
 
         public PenF Pen { get { return _pen; } }
@@ -110,25 +109,30 @@ namespace YOpenGL
                 _knots[i] = (float)Math.Round(_knots[i] * _domain / oldDomain, 3);
         }
 
-        public bool HitTest(PointF p, float sensitive)
+        public RectF GetBounds(float scale)
+        {
+            return _bounds;
+        }
+
+        public bool HitTest(PointF p, float sensitive, float scale)
         {
             foreach (var line in _innerLines)
-                if (line.Bounds.Contains(p, sensitive) && line.HitTest(p, sensitive))
+                if (line.GetBounds(scale).Contains(p, sensitive) && line.HitTest(p, sensitive, scale))
                     return true;
             return false;
         }
 
-        public bool HitTest(RectF rect)
+        public bool HitTest(RectF rect, float scale)
         {
             foreach (var line in _innerLines)
-                if (line.Bounds.IntersectsWith(rect) && line.HitTest(rect))
+                if (line.GetBounds(scale).IntersectsWith(rect) && line.HitTest(rect, scale))
                     return true;
             return false;
         }
 
         public void Dispose()
         {
-            _innerLines.Dispose();
+            _innerLines.DisposeInner();
             _innerLines.Clear();
             _innerLines = null;
             _model = null;

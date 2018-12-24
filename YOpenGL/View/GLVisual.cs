@@ -36,10 +36,11 @@ namespace YOpenGL
 
         private void _UpdateBounds()
         {
+            var scale = _panel.ScaleX;
             _bounds = RectF.Empty;
             if (_context.HasPrimitives)
                 foreach (var primitive in _context.Primitives)
-                    _bounds.Union(primitive.Bounds);
+                    _bounds.Union(primitive.GetBounds(scale));
         }
 
         internal void Update()
@@ -86,8 +87,9 @@ namespace YOpenGL
 
         internal bool HitTest(PointF p, float sensitive)
         {
+            var scale = _panel.ScaleX;
             foreach (var primitive in _context.Primitives)
-                if (primitive.Bounds.Contains(p, sensitive) && primitive.HitTest(p, sensitive))
+                if (primitive.GetBounds(scale).Contains(p, sensitive) && primitive.HitTest(p, sensitive, scale))
                     return true;
             return false;
         }
@@ -97,8 +99,9 @@ namespace YOpenGL
             var ret = rect.Contains(_bounds);
             if (!ret && !isFullContain)
             {
+                var scale = _panel.ScaleX;
                 foreach (var primitive in _context.Primitives)
-                    if (primitive.Bounds.IntersectsWith(rect) && primitive.HitTest(rect))
+                    if (primitive.GetBounds(scale).IntersectsWith(rect) && primitive.HitTest(rect, scale))
                         return true;
             }
             return ret;
