@@ -962,11 +962,8 @@ namespace YOpenGL
                 }
                 else
                 {
-                    if (last != p)
-                    {
-                        bound.Union(new RectF(last, p));
-                        last = p;
-                    }
+                    bound.Union(new RectF(last, p));
+                    last = p;
                 }
             }
 
@@ -1110,11 +1107,8 @@ namespace YOpenGL
                 }
                 else
                 {
-                    if (last != p)
-                    {
-                        lines.Add(new _Line(last, p, PenF.NULL));
-                        last = p;
-                    }
+                    lines.Add(new _Line(last, p, PenF.NULL));
+                    last = p;
                 }
             }
             return lines;

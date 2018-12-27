@@ -20,7 +20,12 @@ namespace YOpenGL
             var deltaY = End.Y - Start.Y;
             var deltaX = End.X - Start.X;
             var k = deltaY / deltaX;
-            if (float.IsInfinity(k))
+            if (float.IsNaN(k))
+            {
+                A = 0;
+                B = 0;
+            }
+            else if (float.IsInfinity(k))
             {
                 A = 1;
                 B = 0;
@@ -80,13 +85,17 @@ namespace YOpenGL
 
         public bool HitTest(PointF p, float sensitive, float scale)
         {
-            if (B == 0)
+            if (A == 0 && B == 0)
+                return (p - Start).Length < sensitive;
+            else if (B == 0)
                 return Math.Abs(p.X - Start.X) < sensitive;
             else return Math.Abs(A * p.X + B * p.Y + C) / Math.Sqrt(A * A + B * B) < sensitive;
         }
 
         public bool HitTest(RectF rect, float scale)
         {
+            if (A == 0 && B == 0)
+                return true;
             if (B > 0)
             {
                 var p1 = rect.TopLeft;
