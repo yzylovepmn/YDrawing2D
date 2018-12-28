@@ -41,7 +41,7 @@ namespace YOpenGL
         public RectF GetBounds(float scale)
         {
             var pointSize = _pointSize / scale;
-            var hSize = _pointSize / 2;
+            var hSize = pointSize / 2;
             var bound = new RectF(new PointF(_point.X - hSize, _point.Y - hSize), new PointF(_point.X + hSize, _point.Y + hSize));
             return bound;
         }
