@@ -97,6 +97,34 @@ namespace YOpenGL
             return new _Line(start, end, pen);
         }
 
+        public void DrawArrow(Color fillColor, PointF origin, float height, float width, VectorF direction, bool isFixedSize)
+        {
+            fillColor = _transform.Transform(fillColor);
+            origin = _transform.Transform(origin);
+            direction = _transform.Transform(-direction);
+            direction.Normalize();
+
+            if (isFixedSize)
+                _primitives.Add(new _Arrow(origin, height, width, direction, fillColor));
+            else
+            {
+                var p1 = origin + direction * height;
+                var v = new VectorF(direction.Y, - direction.X);
+                var wd = v * width / 2;
+                var p2 = p1 + wd;
+                p1 -= wd;
+
+                var geo = new _ComplexGeometry();
+                var subgeo = new _SimpleGeometry(PenF.NULL, fillColor, origin, false);
+                subgeo.StreamTo(new _Line(origin, p1, PenF.NULL));
+                subgeo.StreamTo(new _Line(p1, p2, PenF.NULL));
+                subgeo.StreamTo(new _Line(p2, origin, PenF.NULL));
+                geo.AddChild(subgeo);
+                geo.Close();
+                _primitives.Add(geo);
+            }
+        }
+
         public void DrawCicle(PenF pen, Color? fillColor, PointF center, float radius)
         {
             center = _transform.Transform(center);
@@ -165,7 +193,7 @@ namespace YOpenGL
         private void _DrawRectangle(PenF pen, Color? fillColor, params PointF[] points)
         {
             var geo = new _ComplexGeometry();
-            var subgeo = new _SimpleGeometry(pen, fillColor, points[0], true);
+            var subgeo = new _SimpleGeometry(pen, fillColor, points[0], false);
             subgeo.StreamTo(new _Line(points[0], points[1], pen));
             subgeo.StreamTo(new _Line(points[1], points[2], pen));
             subgeo.StreamTo(new _Line(points[2], points[3], pen));

@@ -66,10 +66,12 @@
     <Compile Include="Math\StackTransform.cs" />
     <Compile Include="Math\VectorF.cs" />
     <Compile Include="Model\ArcModel.cs" />
+    <Compile Include="Model\ArrowModel.cs" />
     <Compile Include="Model\FillModel.cs" />
     <Compile Include="Model\LinesModel.cs" />
     <Compile Include="Model\MeshModel.cs" />
     <Compile Include="Model\PointsModel.cs" />
+    <Compile Include="Model\Primitive\_Arrow.cs" />
     <Compile Include="Model\Primitive\_Point.cs" />
     <Compile Include="Model\Primitive\_Spline.cs" />
     <Compile Include="Model\StreamModel.cs" />
@@ -107,6 +109,12 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\fill.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\arrow.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\arrow.geom" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

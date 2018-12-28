@@ -72,7 +72,7 @@ namespace YOpenGL
                     foreach (var p in primitive[isOutline])
                         yield return p;
                 if (!isOutline && UnClosedLine != null)
-                    yield return UnClosedLine.End;
+                    yield return UnClosedLine.Line.P2;
             }
         }
 

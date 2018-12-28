@@ -7,6 +7,76 @@ using System.Windows;
 
 namespace YOpenGL
 {
+    public struct CLine
+    {
+        public CLine(PointF p1, PointF p2)
+        {
+            P1 = p1;
+            P2 = p2;
+            GeometryHelper.CalcABC(p1, p2, out A, out B, out C);
+        }
+
+        public PointF P1;
+        public PointF P2;
+        public float A;
+        public float B;
+        public float C;
+
+        public RectF GetBounds()
+        {
+            return new RectF(P1, P2);
+        }
+
+        public bool HitTest(PointF p, float sensitive)
+        {
+            return CalcLength(p) < sensitive;
+        }
+
+        public bool HitTest(RectF rect)
+        {
+            if (A == 0 && B == 0)
+                return true;
+            if (B > 0)
+            {
+                var p1 = rect.TopLeft;
+                var p2 = rect.BottomRight;
+                var v1 = CalcSymbol(p1);
+                var v2 = CalcSymbol(p2);
+                return !MathUtil.IsSameSymbol(v1, v2);
+            }
+            else if (B < 0)
+            {
+                var p1 = rect.BottomLeft;
+                var p2 = rect.TopRight;
+                var v1 = CalcSymbol(p1);
+                var v2 = CalcSymbol(p2);
+                return !MathUtil.IsSameSymbol(v1, v2);
+            }
+            return true;
+        }
+
+        public float CalcLength(PointF p)
+        {
+            if (A == 0 && B == 0)
+                return (p - P1).Length;
+            else if (B == 0)
+                return Math.Abs(p.X - P1.X);
+            else if (A == 0)
+                return Math.Abs(p.Y - P1.Y);
+            else return Math.Abs(CalcSymbol(p)) / (float)Math.Sqrt(A * A + B * B);
+        }
+
+        public float CalcLength(float symbol)
+        {
+            return Math.Abs(symbol) / (float)Math.Sqrt(A * A + B * B);
+        }
+
+        public float CalcSymbol(PointF p)
+        {
+            return A * p.X + B * p.Y + C;
+        }
+    }
+
     public static class GeometryHelper
     {
         internal readonly static PointF[] UnitCicle;
@@ -16,6 +86,38 @@ namespace YOpenGL
         {
             DeltaRadian = GetRadian(360 / 64f);
             UnitCicle = GenCiclePoints().ToArray();
+        }
+
+        internal static void CalcABC(PointF p1, PointF p2, out float A, out float B, out float C)
+        {
+            var deltaY = p2.Y - p1.Y;
+            var deltaX = p2.X - p1.X;
+            var k = deltaY / deltaX;
+            if (float.IsNaN(k))
+            {
+                A = 0;
+                B = 0;
+                C = 0;
+            }
+            else if (float.IsInfinity(k))
+            {
+                A = 1;
+                B = 0;
+                C = -p1.X;
+            }
+            else
+            {
+                var b = p1.Y - k * p1.X;
+                A = k;
+                B = -1;
+                C = b;
+                if (A < 0)
+                {
+                    A = -A;
+                    B = -B;
+                    C = -C;
+                }
+            }
         }
 
         internal static bool IsPossibleArcContain(_Arc arc, PointF point)
@@ -523,14 +625,14 @@ namespace YOpenGL
                 {
                     case PrimitiveType.Line:
                         var line = (_Line)primitive;
-                        if (line.Start.X > point.X)
+                        if (line.Line.P1.X > point.X)
                         {
-                            if (line.Start.Y > point.Y)
+                            if (line.Line.P1.Y > point.Y)
                             {
-                                if (line.End.X > point.X)
+                                if (line.Line.P2.X > point.X)
                                 {
                                     // 1 1
-                                    if (line.End.Y > point.Y)
+                                    if (line.Line.P2.Y > point.Y)
                                         continue;
                                     else
                                     {
@@ -541,14 +643,14 @@ namespace YOpenGL
                                 else
                                 {
                                     // 1 2
-                                    if (line.End.Y > point.Y)
+                                    if (line.Line.P2.Y > point.Y)
                                     {
                                         toppass++;
                                     }
                                     else
                                     {
                                         // 1 3
-                                        var v = line.A * point.X + line.B * point.Y + line.C;
+                                        var v = line.Line.CalcSymbol(point);
                                         if (v > 0)
                                         {
                                             toppass++;
@@ -564,9 +666,9 @@ namespace YOpenGL
                             }
                             else
                             {
-                                if (line.End.X > point.X)
+                                if (line.Line.P2.X > point.X)
                                 {
-                                    if (line.End.Y > point.Y)
+                                    if (line.Line.P2.Y > point.Y)
                                     {
                                         // 4 1
                                         rightpass++;
@@ -579,10 +681,10 @@ namespace YOpenGL
                                 }
                                 else
                                 {
-                                    if (line.End.Y > point.Y)
+                                    if (line.Line.P2.Y > point.Y)
                                     {
                                         // 4 2
-                                        var v = line.A * point.X + line.B * point.Y + line.C;
+                                        var v = line.Line.CalcSymbol(point);
                                         if (v > 0)
                                         {
                                             bottompass++;
@@ -604,17 +706,17 @@ namespace YOpenGL
                         }
                         else
                         {
-                            if (line.Start.Y > point.Y)
+                            if (line.Line.P1.Y > point.Y)
                             {
-                                if (line.End.X > point.X)
+                                if (line.Line.P2.X > point.X)
                                 {
                                     // 2 1
-                                    if (line.End.Y > point.Y)
+                                    if (line.Line.P2.Y > point.Y)
                                         toppass++;
                                     else
                                     {
                                         // 2 4
-                                        var v = line.A * point.X + line.B * point.Y + line.C;
+                                        var v = line.Line.CalcSymbol(point);
                                         if (v > 0)
                                         {
                                             bottompass++;
@@ -630,7 +732,7 @@ namespace YOpenGL
                                 else
                                 {
                                     // 2 2
-                                    if (line.End.Y > point.Y)
+                                    if (line.Line.P2.Y > point.Y)
                                         continue;
                                     else
                                     {
@@ -641,12 +743,12 @@ namespace YOpenGL
                             }
                             else
                             {
-                                if (line.End.X > point.X)
+                                if (line.Line.P2.X > point.X)
                                 {
-                                    if (line.End.Y > point.Y)
+                                    if (line.Line.P2.Y > point.Y)
                                     {
                                         // 3 1
-                                        var v = line.A * point.X + line.B * point.Y + line.C;
+                                        var v = line.Line.CalcSymbol(point);
                                         if (v > 0)
                                         {
                                             toppass++;
@@ -666,7 +768,7 @@ namespace YOpenGL
                                 }
                                 else
                                 {
-                                    if (line.End.Y > point.Y)
+                                    if (line.Line.P2.Y > point.Y)
                                     {
                                         // 3 2
                                         leftpass++;

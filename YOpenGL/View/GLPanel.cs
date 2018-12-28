@@ -25,6 +25,7 @@ namespace YOpenGL
         private static readonly string[] _shaders_line = new string[] { "line.vert", "line.geom", "line.frag" };
         private static readonly string[] _shaders_arc = new string[] { "arc.vert", "arc.geom", "arc.frag" };
         private static readonly string[] _shaders_fill = new string[] { "fill.vert", "fill.frag" };
+        private static readonly string[] _shaders_arrow = new string[] { "arrow.vert", "arrow.geom", "fill.frag" };
 
         public GLPanel(PointF origin, Color color, float frameRate = 60)
         {
@@ -37,6 +38,7 @@ namespace YOpenGL
             _viewResverse = new MatrixF();
             _visuals = new List<GLVisual>();
             _fillModels = new Dictionary<Color, List<MeshModel>>();
+            _arrowModels = new Dictionary<Color, List<MeshModel>>();
             _streamModels = new List<MeshModel>();
             _lineModels = new Dictionary<PenF, List<MeshModel>>();
             _arcModels = new Dictionary<PenF, List<MeshModel>>();
@@ -69,6 +71,7 @@ namespace YOpenGL
         private Shader _lineshader;
         private Shader _arcshader;
         private Shader _fillshader;
+        private Shader _arrowShader;
         private List<Shader> _shaders;
         #endregion
 
@@ -96,6 +99,7 @@ namespace YOpenGL
         protected List<GLVisual> _visuals;
 
         private Dictionary<Color, List<MeshModel>> _fillModels;
+        private Dictionary<Color, List<MeshModel>> _arrowModels;
         private List<MeshModel> _streamModels;
         private Dictionary<PenF, List<MeshModel>> _lineModels;
         private Dictionary<PenF, List<MeshModel>> _arcModels;
@@ -397,10 +401,12 @@ namespace YOpenGL
             _lineshader = GenShader(_shaders_line);
             _arcshader = GenShader(_shaders_arc);
             _fillshader = GenShader(_shaders_fill);
+            _arrowShader = GenShader(_shaders_arrow);
 
             _shaders.Add(_lineshader);
             _shaders.Add(_arcshader);
             _shaders.Add(_fillshader);
+            _shaders.Add(_arrowShader);
 
             // for draw cicle and arc
             _arcshader.Use();
@@ -451,6 +457,7 @@ namespace YOpenGL
             _lineshader = null;
             _arcshader = null;
             _fillshader = null;
+            _arrowShader = null;
 
             DeleteTextures(1, _texture_dash);
 
@@ -526,9 +533,11 @@ namespace YOpenGL
                 {
                     if (primitive.Type == PrimitiveType.ComplexGeometry)
                         _AttachStreamModel(primitive);
-                    else if (primitive.Type != PrimitiveType.Point)
-                        _AttachFillModels(primitive);
-                    else _AttachPointModels(primitive);
+                    else if (primitive.Type == PrimitiveType.Arrow)
+                        _AttachArrowModels(primitive);
+                    else if (primitive.Type == PrimitiveType.Point)
+                        _AttachPointModels(primitive);
+                    else _AttachFillModels(primitive);
                 }
             }
         }
@@ -639,6 +648,27 @@ namespace YOpenGL
             primitive.FillModel = model;
         }
 
+        private void _AttachArrowModels(IPrimitive primitive)
+        {
+            var model = default(MeshModel);
+            var models = _arrowModels;
+
+            if (models.ContainsKey(primitive.FillColor.Value))
+                model = models[primitive.FillColor.Value].Last();
+            else
+            {
+                model = _GreateModel(primitive, true);
+                models.Add(primitive.FillColor.Value, new List<MeshModel>() { model });
+            }
+            if (!model.TryAttachPrimitive(primitive, false))
+            {
+                model = _GreateModel(primitive, true);
+                models[primitive.FillColor.Value].Add(model);
+                model.TryAttachPrimitive(primitive, false);
+            }
+            primitive.FillModel = model;
+        }
+
         private MeshModel _GreateModel(IPrimitive primitive, bool isFilled = false)
         {
             var model = default(MeshModel);
@@ -646,7 +676,9 @@ namespace YOpenGL
             {
                 if (primitive == null)
                     model = new FillModel();
-                else model = new PointsModel();
+                else if (primitive.Type == PrimitiveType.Point)
+                    model = new PointsModel();
+                else model = new ArrowModel();
             }
             else if (primitive.Type == PrimitiveType.ComplexGeometry)
                 model = new StreamModel();
@@ -704,6 +736,21 @@ namespace YOpenGL
                     _fillModels.Remove(pair.Key);
             }
 
+            foreach (var pair in _arrowModels.ToList())
+            {
+                foreach (var model in pair.Value.ToList())
+                {
+                    if (model.NeedDisposed)
+                    {
+                        model.Dispose();
+                        pair.Value.Remove(model);
+                    }
+                    else model.EndInit();
+                }
+                if (pair.Value.Count == 0)
+                    _arrowModels.Remove(pair.Key);
+            }
+
             foreach (var pair in _pointModels.ToList())
             {
                 foreach (var model in pair.Value.ToList())
@@ -741,6 +788,9 @@ namespace YOpenGL
 
             foreach (var pair in _fillModels)
                 _DrawFilledModelHandle(pair, _fillshader);
+
+            foreach (var pair in _arrowModels)
+                _DrawFilledModelHandle(pair, _arrowShader);
 
             foreach (var pair in _pointModels)
                 _DrawPointModelsHandle(pair, _fillshader);
@@ -898,6 +948,7 @@ namespace YOpenGL
 
             _DisposeModels();
             _fillModels = null;
+            _arrowModels = null;
             _streamModels = null;
             _lineModels = null;
             _arcModels = null;
@@ -914,6 +965,8 @@ namespace YOpenGL
         {
             foreach (var item in _fillModels.Values)
                 item?.DisposeInner();
+            foreach (var item in _arrowModels.Values)
+                item?.DisposeInner();
             _streamModels?.DisposeInner();
             foreach (var item in _lineModels.Values)
                 item?.DisposeInner();
@@ -923,6 +976,7 @@ namespace YOpenGL
                 item?.DisposeInner();
 
             _fillModels.Clear();
+            _arrowModels.Clear();
             _streamModels.Clear();
             _lineModels.Clear();
             _arcModels.Clear();
