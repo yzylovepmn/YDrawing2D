@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    public struct PenF
+    public struct PenF : IComparable<PenF>
     {
         public static readonly PenF NULL;
 
@@ -72,6 +72,40 @@ namespace YOpenGL
         public static bool operator !=(PenF pen1, PenF pen2)
         {
             return !(pen1 == pen2);
+        }
+
+        public int CompareTo(PenF other)
+        {
+            if (_thickness > other._thickness)
+                return -1;
+            if (_thickness < other._thickness)
+                return 1;
+            var v1 = _color.GetValue();
+            var v2 = other._color.GetValue();
+            if (v1 > v2)
+                return -1;
+            if (v1 < v2)
+                return 1;
+            if (_data == null && other._data == null)
+                return 0;
+            if (_data != null && other._data != null)
+            {
+                if (_data.Length != other._data.Length)
+                    return _data.Length - other._data.Length;
+                else
+                {
+                    for (int i = 0; i < _data.Length; i++)
+                        if (_data[i] != other._data[i])
+                            return _data[i] - other._data[i];
+                    return 0;
+                }
+            }
+            else
+            {
+                if (_data != null)
+                    return 1;
+                else return -1;
+            }
         }
 
         public override bool Equals(object obj)

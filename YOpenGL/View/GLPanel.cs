@@ -40,8 +40,8 @@ namespace YOpenGL
             _fillModels = new Dictionary<Color, List<MeshModel>>();
             _arrowModels = new Dictionary<Color, List<MeshModel>>();
             _streamModels = new List<MeshModel>();
-            _lineModels = new Dictionary<PenF, List<MeshModel>>();
-            _arcModels = new Dictionary<PenF, List<MeshModel>>();
+            _lineModels = new SortedDictionary<PenF, List<MeshModel>>();
+            _arcModels = new SortedDictionary<PenF, List<MeshModel>>();
             _pointModels = new Dictionary<PointPair, List<MeshModel>>();
             _shaders = new List<Shader>();
 
@@ -101,8 +101,8 @@ namespace YOpenGL
         private Dictionary<Color, List<MeshModel>> _fillModels;
         private Dictionary<Color, List<MeshModel>> _arrowModels;
         private List<MeshModel> _streamModels;
-        private Dictionary<PenF, List<MeshModel>> _lineModels;
-        private Dictionary<PenF, List<MeshModel>> _arcModels;
+        private SortedDictionary<PenF, List<MeshModel>> _lineModels;
+        private SortedDictionary<PenF, List<MeshModel>> _arcModels;
         private Dictionary<PointPair, List<MeshModel>> _pointModels;
 
         public Color Color
@@ -564,7 +564,7 @@ namespace YOpenGL
             }
 
             var model = default(MeshModel);
-            var models = default(Dictionary<PenF, List<MeshModel>>);
+            var models = default(SortedDictionary<PenF, List<MeshModel>>);
 
             if (primitive.Type == PrimitiveType.Arc)
                 models = _arcModels;

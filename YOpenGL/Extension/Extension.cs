@@ -61,6 +61,11 @@ namespace YOpenGL
             return new float[] { color.ScR, color.ScG, color.ScB, color.ScA };
         }
 
+        public static int GetValue(this Color color)
+        {
+            return (color.A << 24) + (color.R << 16) + (color.G << 8) + color.B;
+        }
+
         /// <summary>
         /// Base alignment of vec3 is 16 in Uniform buffer(std140), So we fill the data with 0
         /// </summary>
