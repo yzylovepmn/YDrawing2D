@@ -80,6 +80,7 @@ namespace YOpenGL
 
         internal override void Draw(Shader shader)
         {
+            if (!_hasInit) return;
             BindVertexArray(_vao[0]);
 
             var pairs = new List<KeyValuePair<int, Tuple<int, Color>>>();

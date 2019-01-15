@@ -46,6 +46,7 @@ namespace YOpenGL
 
         internal override void Draw(Shader shader)
         {
+            if (!_hasInit) return;
             BindVertexArray(_vao[0]);
             DrawElements(GL_TRIANGLES, _indexCount, GL_UNSIGNED_INT, 0);
         }

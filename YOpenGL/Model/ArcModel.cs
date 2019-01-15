@@ -52,6 +52,7 @@ namespace YOpenGL
 
         internal override void Draw(Shader shader)
         {
+            if (!_hasInit) return;
             BindVertexArray(_vao[0]);
             DrawArrays(GL_POINTS, 0, _pointCount);
         }
