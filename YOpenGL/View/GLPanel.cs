@@ -267,7 +267,7 @@ namespace YOpenGL
         public void AddVisual(GLVisual visual, bool refresh = false)
         {
             if (visual.Panel != null)
-                throw new InvalidOperationException("Visual already has a logical parent!");
+                throw new InvalidOperationException("Visual has already a logical parent!");
 
             _visuals.Add(visual);
             visual.Panel = this;
@@ -283,6 +283,7 @@ namespace YOpenGL
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
         public void RemoveVisual(GLVisual visual, bool refresh = true)
         {
+            if (visual.Panel != this) throw new InvalidOperationException("Logical parent error!");
             _DetachVisual(visual);
             _visuals.Remove(visual);
             visual.Panel = null;
@@ -309,6 +310,7 @@ namespace YOpenGL
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
         public void Update(GLVisual visual, bool refresh = false)
         {
+            if (visual.Panel == null) return;
             _Update(visual, true);
             if (refresh)
                 _Refresh();

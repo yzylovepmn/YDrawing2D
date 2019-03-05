@@ -261,7 +261,7 @@ namespace YDrawing2DTest
         protected override void Draw(GLDrawContext context)
         {
             context.PushTranslate(_origin.X, _origin.Y);
-            //context.PushRotateAt(30, 200, 200);
+            context.PushRotateAt(30, 200, 200);
             context.PushOpacity(0.5f);
 
             var typeFace = new Typeface(new FontFamily("新宋体"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);

@@ -135,7 +135,9 @@ namespace YOpenGL
                 if (success[0] == 0)
                     GetProgramInfoLog(id, 1024, null, infoLog);
             }
-            //var msg = Encoding.ASCII.GetString(infoLog);
+#if DEBUG
+            var msg = Encoding.ASCII.GetString(infoLog);
+#endif
             return success[0] != 0;
         }
         #endregion

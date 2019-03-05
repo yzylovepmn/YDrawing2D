@@ -1043,6 +1043,11 @@ namespace YOpenGL
         #endregion
 
         #region Spline
+        public static IEnumerable<PointF> CalcSamplePoints(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints)
+        {
+            return _CalcSamplePoints(degree, knots, controlPoints, weights, fitPoints);
+        }
+
         public static RectF CalcBounds(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints)
         {
             return _CalcBounds(_CalcSamplePoints(degree, knots, controlPoints, weights, fitPoints));
@@ -1184,6 +1189,11 @@ namespace YOpenGL
         #endregion
 
         #region Bezier
+        public static IEnumerable<PointF> CalcSamplePoints(PointF[] controlPoints, int degree)
+        {
+            return _CalcSamplePoints(controlPoints, degree);
+        }
+
         public static RectF CalcBounds(params PointF[] controlPoints)
         {
             var degree = controlPoints.Length - 1;
