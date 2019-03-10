@@ -1043,14 +1043,14 @@ namespace YOpenGL
         #endregion
 
         #region Spline
-        public static IEnumerable<PointF> CalcSamplePoints(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints)
+        public static IEnumerable<PointF> CalcSamplePoints(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints, float tolerance)
         {
-            return _CalcSamplePoints(degree, knots, controlPoints, weights, fitPoints);
+            return _CalcSamplePoints(degree, knots, controlPoints, weights, fitPoints, tolerance);
         }
 
-        public static RectF CalcBounds(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints)
+        public static RectF CalcBounds(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints, float tolerance)
         {
-            return _CalcBounds(_CalcSamplePoints(degree, knots, controlPoints, weights, fitPoints));
+            return _CalcBounds(_CalcSamplePoints(degree, knots, controlPoints, weights, fitPoints, tolerance));
         }
 
         private static RectF _CalcBounds(IEnumerable<PointF> samplePoints)
@@ -1077,11 +1077,11 @@ namespace YOpenGL
             return bound;
         }
 
-        internal static List<_Line> CalcSampleLines(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints)
+        internal static List<_Line> CalcSampleLines(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints, float tolerance)
         {
             var lines = new List<_Line>();
 
-            var samplePoints = _CalcSamplePoints(degree, knots, controlPoints, weights, fitPoints);
+            var samplePoints = _CalcSamplePoints(degree, knots, controlPoints, weights, fitPoints, tolerance);
 
             var _samplePoints = samplePoints.ToArray();
             for (int i = 1; i < _samplePoints.Length; i++)
@@ -1090,7 +1090,7 @@ namespace YOpenGL
             return lines;
         }
 
-        private static IEnumerable<PointF> _CalcSamplePoints(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints)
+        private static IEnumerable<PointF> _CalcSamplePoints(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints, float tolerance)
         {
             var samplePoints = new List<PointF>();
 
@@ -1098,7 +1098,7 @@ namespace YOpenGL
                 samplePoints = fitPoints.ToList();
             else
             {
-                var delta = 0.2f / GetLength(controlPoints);
+                var delta = tolerance / GetLength(controlPoints);
                 if (delta > 1)
                 {
                     samplePoints.Add(ComputePoint(degree, knots, controlPoints, weights, 0));
@@ -1106,7 +1106,7 @@ namespace YOpenGL
                 }
                 else
                 {
-                    delta = Math.Max(0.01f, delta);
+                    delta = Math.Max(tolerance / 100, delta);
                     var i = 0f;
                     while (i <= 1)
                     {
@@ -1118,7 +1118,7 @@ namespace YOpenGL
                 }
             }
 
-            return samplePoints;
+            return samplePoints.Where(p => !float.IsNaN(p.X) && !float.IsNaN(p.Y));
         }
 
         internal static PointF ComputePoint(int degree, float[] knots, PointF[] controlPoints, float[] weights, float u)
@@ -1189,24 +1189,24 @@ namespace YOpenGL
         #endregion
 
         #region Bezier
-        public static IEnumerable<PointF> CalcSamplePoints(PointF[] controlPoints, int degree)
+        public static IEnumerable<PointF> CalcSamplePoints(PointF[] controlPoints, int degree, float tolerance)
         {
-            return _CalcSamplePoints(controlPoints, degree);
+            return _CalcSamplePoints(controlPoints, degree, tolerance);
         }
 
-        public static RectF CalcBounds(params PointF[] controlPoints)
+        public static RectF CalcBounds(float tolerance, params PointF[] controlPoints)
         {
             var degree = controlPoints.Length - 1;
-            return _CalcBounds(_CalcSamplePoints(controlPoints, degree));
+            return _CalcBounds(_CalcSamplePoints(controlPoints, degree, tolerance));
         }
 
-        internal static List<_Line> CalcSampleLines(params PointF[] controlPoints)
+        internal static List<_Line> CalcSampleLines(float tolerance, params PointF[] controlPoints)
         {
             var degree = controlPoints.Length - 1;
 
             var lines = new List<_Line>();
 
-            var samplePoints = _CalcSamplePoints(controlPoints, degree);
+            var samplePoints = _CalcSamplePoints(controlPoints, degree, tolerance);
 
             var flag = true;
             var last = default(PointF);
@@ -1226,11 +1226,11 @@ namespace YOpenGL
             return lines;
         }
 
-        private static IEnumerable<PointF> _CalcSamplePoints(PointF[] controlPoints, int degree)
+        private static IEnumerable<PointF> _CalcSamplePoints(PointF[] controlPoints, int degree, float tolerance)
         {
             var samplePoints = new List<PointF>();
             var i = 0.0;
-            var delta = 0.2f / GetLength(controlPoints);
+            var delta = tolerance / GetLength(controlPoints);
 
             if (delta > 1)
             {
@@ -1239,7 +1239,7 @@ namespace YOpenGL
             }
             else
             {
-                delta = Math.Max(0.01f, delta);
+                delta = Math.Max(tolerance / 100, delta);
                 while (i <= 1)
                 {
                     samplePoints.Add(ComputePoint(controlPoints, degree, i));

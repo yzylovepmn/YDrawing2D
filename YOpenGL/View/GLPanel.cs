@@ -47,6 +47,7 @@ namespace YOpenGL
 
             _timer = new Timer(_AfterPainted);
             _watch = new Stopwatch();
+            _preference = new Preference(this);
         }
 
         #region Private Field
@@ -97,6 +98,9 @@ namespace YOpenGL
         #region Property
         public IEnumerable<GLVisual> Visuals { get { return _visuals; } }
         protected List<GLVisual> _visuals;
+
+        public Preference Preference { get { return _preference; } }
+        private Preference _preference;
 
         private Dictionary<Color, List<MeshModel>> _fillModels;
         private Dictionary<Color, List<MeshModel>> _arrowModels;
@@ -283,7 +287,8 @@ namespace YOpenGL
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
         public void RemoveVisual(GLVisual visual, bool refresh = true)
         {
-            if (visual.Panel != this) throw new InvalidOperationException("Logical parent error!");
+            if (visual.Panel != this)
+                throw new InvalidOperationException("Logical parent error!");
             _DetachVisual(visual);
             _visuals.Remove(visual);
             visual.Panel = null;
@@ -998,6 +1003,9 @@ namespace YOpenGL
 
             _timer = null;
             _watch = null;
+
+            _preference.Dispose();
+            _preference = null;
 
             _ExitDispose();
         }

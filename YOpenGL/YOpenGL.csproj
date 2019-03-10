@@ -81,6 +81,7 @@
     <Compile Include="Model\Primitive\_Geometry.cs" />
     <Compile Include="Model\Primitive\_Line.cs" />
     <Compile Include="Internel\Shader.cs" />
+    <Compile Include="Preference.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resources\Resources.cs" />
     <Compile Include="View\GLDrawContext.cs" />

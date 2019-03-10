@@ -9,7 +9,7 @@ namespace YOpenGL
 {
     public class _Bezier : IPrimitive
     {
-        public _Bezier(PointF[] points, PenF pen)
+        public _Bezier(PointF[] points, PenF pen, float tolerance)
         {
             _points = points;
             _pen = pen;
@@ -17,7 +17,7 @@ namespace YOpenGL
             _bounds = RectF.Empty;
 
             _innerLines = default(List<_Line>);
-            _innerLines = GeometryHelper.CalcSampleLines(_points);
+            _innerLines = GeometryHelper.CalcSampleLines(tolerance, _points);
 
             foreach (var line in _innerLines)
                 _bounds.Union(line.GetBounds(1f));

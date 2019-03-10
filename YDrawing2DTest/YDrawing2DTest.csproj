@@ -57,10 +57,6 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="OpenTK, Version=3.0.1.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>bin\x86\Debug\OpenTK.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -122,7 +118,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\YDrawing2D\YDrawing2D.csproj">
-      <Project>{C4F3E4BE-A797-4C92-B47A-7AE46C32642C}</Project>
+      <Project>{c4f3e4be-a797-4c92-b47a-7ae46c32642c}</Project>
       <Name>YDrawing2D</Name>
     </ProjectReference>
     <ProjectReference Include="..\YOpenGL\YOpenGL.csproj">

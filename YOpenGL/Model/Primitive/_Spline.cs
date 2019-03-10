@@ -9,7 +9,7 @@ namespace YOpenGL
 {
     public class _Spline : IPrimitive
     {
-        public _Spline(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints, PenF pen)
+        public _Spline(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints, PenF pen, float tolerance)
         {
             _degree = degree;
             _knots = knots;
@@ -29,7 +29,7 @@ namespace YOpenGL
             if (_domain != 0)
                 Regular(1);
 
-            _innerLines = GeometryHelper.CalcSampleLines(degree, knots, controlPoints, weights, fitPoints);
+            _innerLines = GeometryHelper.CalcSampleLines(degree, knots, controlPoints, weights, fitPoints, tolerance);
 
             foreach (var innerLine in _innerLines)
                 _bounds.Union(innerLine.GetBounds(1f));
