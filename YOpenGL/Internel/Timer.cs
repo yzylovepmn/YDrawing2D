@@ -84,10 +84,10 @@ namespace YOpenGL
             _period = period;
             _DisposeThread();
             _InitThread();
-            _thread.Start();
-            _stopwatch.Start();
             _isfirst = true;
             _isRunning = true;
+            _stopwatch.Start();
+            _thread.Start();
         }
 
         public void Change(int dueTime, int period)

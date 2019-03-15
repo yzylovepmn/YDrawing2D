@@ -19,7 +19,7 @@ namespace YOpenGL
         private GLPanel _target;
 
         /// <summary>
-        /// The higher the value, the higher the quality of the resulting graphics, but the rendering speed will be slower
+        /// The samller the value, the higher the quality of the resulting graphics, but the rendering speed will be slower
         /// Range : [0.001, 10]
         /// Default value : 0.2
         /// </summary>
