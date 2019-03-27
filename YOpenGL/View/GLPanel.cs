@@ -352,7 +352,7 @@ namespace YOpenGL
         #region RenderFrame
         private void _DispatchFrame()
         {
-            if (_isDisposed) return;
+            if (_isDisposed || !IsLoaded) return;
             MakeSureCurrentContext(_context);
 
             BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
@@ -400,7 +400,7 @@ namespace YOpenGL
             StencilMask(1);
             _CreateResource();
 
-            _timer.Start(Timeout.Infinite, Timeout.Infinite);
+            //_timer.Start(Timeout.Infinite, Timeout.Infinite);
         }
 
         private void _CreateResource()
@@ -505,10 +505,10 @@ namespace YOpenGL
 
             if (!_isDisposed)
             {
-                var old = Interlocked.Decrement(ref _signal);
-
                 _watch.Restart();
                 var before = _watch.ElapsedMilliseconds;
+
+                var old = Volatile.Read(ref _signal);
 
                 _ExitDispose();
                 Dispatcher.Invoke(() => { _DispatchFrame(); }, DispatcherPriority.Render);

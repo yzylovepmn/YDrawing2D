@@ -36,7 +36,7 @@ namespace YOpenGL
             _thread = new Thread(_ThreadLoop);
             _thread.SetApartmentState(ApartmentState.STA);
             _thread.IsBackground = true;
-            _thread.Priority = ThreadPriority.AboveNormal;
+            _thread.Priority = ThreadPriority.Normal;
         }
 
         private void _DisposeThread()
@@ -78,7 +78,7 @@ namespace YOpenGL
 
         public void Start(int dueTime, int period)
         {
-            if (_isDisposed) return;
+            if (_isDisposed || _isRunning) return;
 
             _dueTime = dueTime;
             _period = period;
@@ -93,6 +93,12 @@ namespace YOpenGL
         public void Change(int dueTime, int period)
         {
             if (_isDisposed) return;
+
+            if (!_isRunning)
+                Start(Timeout.Infinite, Timeout.Infinite);
+
+            while ((_thread.ThreadState & System.Threading.ThreadState.Unstarted) != 0)
+                Thread.Sleep(1);
 
             _dueTime = dueTime;
             _period = period;
