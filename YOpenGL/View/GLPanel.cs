@@ -532,6 +532,8 @@ namespace YOpenGL
 
         private void _AttachVisual(GLVisual visual)
         {
+            MakeSureCurrentContext(_context);
+
             foreach (var primitive in visual.Context.Primitives)
             {
                 if (!primitive.Pen.IsNULL || primitive.Type == PrimitiveType.ComplexGeometry)
