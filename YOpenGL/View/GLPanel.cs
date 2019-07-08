@@ -700,6 +700,8 @@ namespace YOpenGL
 
         private void _EndInitModels()
         {
+            MakeSureCurrentContext(_context);
+
             foreach (var pair in _lineModels.ToList())
             {
                 foreach (var model in pair.Value.ToList())
@@ -972,6 +974,8 @@ namespace YOpenGL
 
         private void _DisposeModels()
         {
+            MakeSureCurrentContext(_context);
+
             foreach (var item in _fillModels.Values)
                 item?.DisposeInner();
             foreach (var item in _arrowModels.Values)
