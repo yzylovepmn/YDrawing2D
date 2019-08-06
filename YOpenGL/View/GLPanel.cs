@@ -395,7 +395,7 @@ namespace YOpenGL
             Enable(GL_BLEND);
             Enable(GL_LINE_WIDTH);
             Enable(GL_LINE_SMOOTH);
-            //Enable(GL_FRAMEBUFFER_SRGB); // Gamma Correction
+            Enable(GL_FRAMEBUFFER_SRGB); // Gamma Correction
             BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             StencilMask(1);
             _CreateResource();
