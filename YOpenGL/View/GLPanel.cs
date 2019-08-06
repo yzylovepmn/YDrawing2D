@@ -115,7 +115,7 @@ namespace YOpenGL
             set
             {
                 _color = value;
-                _brush = new SolidColorBrush(_color);
+                //_brush = new SolidColorBrush(_color);
                 _red = _color.R / (float)byte.MaxValue;
                 _green = _color.G / (float)byte.MaxValue;
                 _blue = _color.B / (float)byte.MaxValue;
@@ -123,7 +123,7 @@ namespace YOpenGL
             }
         }
         private Color _color;
-        private SolidColorBrush _brush;
+        //private SolidColorBrush _brush;
         private float _red;
         private float _green;
         private float _blue;
@@ -379,7 +379,7 @@ namespace YOpenGL
         /// </summary>
         protected override void OnRender(DrawingContext drawingContext)
         {
-            drawingContext.DrawRectangle(_brush, null, new System.Windows.Rect(RenderSize));
+            drawingContext.DrawRectangle(Brushes.Transparent, null, new System.Windows.Rect(RenderSize));
         }
         #endregion
 
@@ -395,7 +395,7 @@ namespace YOpenGL
             Enable(GL_BLEND);
             Enable(GL_LINE_WIDTH);
             Enable(GL_LINE_SMOOTH);
-            Enable(GL_FRAMEBUFFER_SRGB); // Gamma Correction
+            //Enable(GL_FRAMEBUFFER_SRGB); // Gamma Correction
             BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             StencilMask(1);
             _CreateResource();
