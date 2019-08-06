@@ -192,7 +192,6 @@ namespace YDrawing2DTest
             if (e.Delta > 0)
                 _glPanel.ScaleAt(1.1f, 1.1f, p.X, p.Y);
             else _glPanel.ScaleAt(1 / 1.1f, 1 / 1.1f, p.X, p.Y);
-            _glPanel.Preference.Aliased = !_glPanel.Preference.Aliased;
         }
 
         PointF p;
