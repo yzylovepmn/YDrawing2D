@@ -116,9 +116,9 @@ namespace YOpenGL
             {
                 _color = value;
                 //_brush = new SolidColorBrush(_color);
-                _red = _color.R / (float)byte.MaxValue;
-                _green = _color.G / (float)byte.MaxValue;
-                _blue = _color.B / (float)byte.MaxValue;
+                _red = (float)Math.Pow(_color.R / (float)byte.MaxValue, 2.1);
+                _green = (float)Math.Pow(_color.G / (float)byte.MaxValue, 2.1);
+                _blue = (float)Math.Pow(_color.B / (float)byte.MaxValue, 2.1);
                 _Refresh();
             }
         }
