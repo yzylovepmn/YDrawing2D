@@ -13,6 +13,7 @@ namespace YOpenGL
             _target = target;
 
             _tolerance = 0.2f;
+            _aliased = true;
         }
 
         public GLPanel Target { get { return _target; } }
@@ -38,6 +39,22 @@ namespace YOpenGL
             }
         }
         private float _tolerance;
+
+        public bool Aliased
+        {
+            get { return _aliased; }
+            set
+            {
+                if (_aliased != value)
+                {
+                    _aliased = value;
+                    if (_aliased)
+                        _target.EnableAliased();
+                    else _target.DisableAliased();
+                }
+            }
+        }
+        private bool _aliased;
 
         public void Dispose()
         {

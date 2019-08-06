@@ -349,25 +349,79 @@ namespace YOpenGL
         }
         #endregion
 
+        #region Aliased
+        internal void EnableAliased()
+        {
+            MakeSureCurrentContext(_context);
+            _DeleteFrameBuffer();
+            _Refresh(false);
+        }
+
+        internal void DisableAliased()
+        {
+            MakeSureCurrentContext(_context);
+            _CreateFrameBuffer();
+            _Refresh(false);
+        }
+
+        private void _CreateFrameBuffer()
+        {
+            if (_fbo != null) return;
+
+            // for anti-aliasing
+            _fbo = new uint[1];
+            _texture_msaa = new uint[1];
+            _rbo = new uint[1];
+            GenFramebuffers(1, _fbo);
+            BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
+            GenTextures(1, _texture_msaa);
+            BindTexture(GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0]);
+            FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0], 0);
+            TexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11), GL_TRUE);
+            GenRenderbuffers(1, _rbo);
+            BindRenderbuffer(GL_RENDERBUFFER, _rbo[0]);
+            RenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_STENCIL_INDEX1, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11));
+            FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _rbo[0]);
+        }
+
+        private void _DeleteFrameBuffer()
+        {
+            if (_fbo == null) return;
+
+            DeleteFramebuffers(1, _fbo);
+            DeleteTextures(1, _texture_msaa);
+            DeleteRenderbuffers(1, _rbo);
+
+            _fbo = null;
+            _texture_msaa = null;
+            _rbo = null;
+        }
+        #endregion
+
         #region RenderFrame
         private void _DispatchFrame()
         {
             if (_isDisposed || !IsLoaded) return;
             MakeSureCurrentContext(_context);
 
-            BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
+            if (!_preference.Aliased)
+                BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
 
             ClearColor(_red, _green, _blue, 1.0f);
-            Clear(GL_COLOR_BUFFER_BIT);
+            ClearStencil(0);
+            Clear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
             BindBuffer(GL_UNIFORM_BUFFER, _matrix[0]);
             BufferSubData(GL_UNIFORM_BUFFER, 0, 12 * sizeof(float), _worldToNDC.GetData(true));
             BufferSubData(GL_UNIFORM_BUFFER, 12 * sizeof(float), 12 * sizeof(float), _view.GetData(true));
             _DrawModels();
 
-            BindFramebuffer(GL_READ_FRAMEBUFFER, _fbo[0]);
-            BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-            BlitFramebuffer(0, 0, _viewWidth, _viewHeight, 0, 0, _viewWidth, _viewHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            if (!_preference.Aliased)
+            {
+                BindFramebuffer(GL_READ_FRAMEBUFFER, _fbo[0]);
+                BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+                BlitFramebuffer(0, 0, _viewWidth, _viewHeight, 0, 0, _viewWidth, _viewHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            }
 
             SwapBuffers(_context.HDC);
         }
@@ -394,7 +448,7 @@ namespace YOpenGL
             Init();
             Enable(GL_BLEND);
             Enable(GL_LINE_WIDTH);
-            Enable(GL_LINE_SMOOTH);
+            //Enable(GL_LINE_SMOOTH);
             Enable(GL_FRAMEBUFFER_SRGB); // Gamma Correction
             BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             StencilMask(1);
@@ -429,20 +483,8 @@ namespace YOpenGL
             TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             BindTexture(GL_TEXTURE_1D, 0);
 
-            // for anti-aliasing
-            _fbo = new uint[1];
-            _texture_msaa = new uint[1];
-            _rbo = new uint[1];
-            GenFramebuffers(1, _fbo);
-            BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
-            GenTextures(1, _texture_msaa);
-            BindTexture(GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0]);
-            FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0], 0);
-            TexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11), GL_TRUE);
-            GenRenderbuffers(1, _rbo);
-            BindRenderbuffer(GL_RENDERBUFFER, _rbo[0]);
-            RenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_STENCIL_INDEX1, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11));
-            FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _rbo[0]);
+            if (!_preference.Aliased)
+                _CreateFrameBuffer();
 
             // for transform
             _matrix = new uint[1];
@@ -466,12 +508,8 @@ namespace YOpenGL
             _fillshader = null;
             _arrowShader = null;
 
+            _DeleteFrameBuffer();
             DeleteTextures(1, _texture_dash);
-
-            DeleteFramebuffers(1, _fbo);
-            DeleteTextures(1, _texture_msaa);
-            DeleteRenderbuffers(1, _rbo);
-
             DeleteBuffers(1, _matrix);
         }
 

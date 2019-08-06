@@ -28,7 +28,7 @@ namespace YOpenGL
             var cnt = 0;
             var geo = (_ComplexGeometry)primitive;
             foreach (var child in geo.Children.Where(c => c.Filled))
-                cnt += child[isOutline].Count() + 1;
+                cnt += child[isOutline].Count();
             if (_pointCount > 0 && cnt < Capacity && _pointCount + cnt > Capacity)
                 return false;
 
@@ -52,7 +52,7 @@ namespace YOpenGL
                     var children = geo.Children.Where(c => c.Filled);
                     foreach (var child in children)
                     {
-                        var _tuple = new Tuple<int, Color>(child[pair.Value.Item1].Count() + 1, child.FillColor.Value);
+                        var _tuple = new Tuple<int, Color>(child[pair.Value.Item1].Count(), child.FillColor.Value);
                         _idx.Add(cnt, _tuple);
                         cnt += _tuple.Item1;
                     }
@@ -69,10 +69,7 @@ namespace YOpenGL
             {
                 var geo = (_ComplexGeometry)pair.Key;
                 foreach (var child in geo.Children.Where(c => c.Filled))
-                {
-                    points.Add(new PointF());
                     points.AddRange(child[pair.Value.Item1]);
-                }
             }
 
             return points.GetData();

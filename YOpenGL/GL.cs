@@ -41,6 +41,7 @@ namespace YOpenGL
             pfd.PixelType = PixelType.RGBA;
             pfd.ColorBits = 32;
             pfd.DepthBits = 16;
+            pfd.StencilBits = 8;
 
             int pixelFormat;
             unsafe
