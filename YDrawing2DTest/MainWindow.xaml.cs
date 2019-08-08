@@ -172,11 +172,11 @@ namespace YDrawing2DTest
         private void _panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _glPanel.CaptureMouse();
-            p = _glPanel.GetMousePosition(e);
+            _pInView = _glPanel.ToView((PointF)e.GetPosition(_glPanel));
             _hint.IsVisible = true;
-            _hint.Rect = new RectF(_glPanel.WorldToView(p), _glPanel.WorldToView(p));
+            _hint.Rect = new RectF(_pInView, _pInView);
             if (Keyboard.Modifiers == ModifierKeys.None)
-                GLSelectedVisual = _glPanel.HitTest(p);
+                GLSelectedVisual = _glPanel.HitTest(_pInView);
         }
 
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
@@ -188,28 +188,30 @@ namespace YDrawing2DTest
 
         private void _panel_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            var p = _glPanel.GetMousePosition(e);
+            var pInView = _glPanel.ToView((PointF)e.GetPosition(_glPanel));
             if (e.Delta > 0)
-                _glPanel.ScaleAt(1.1f, 1.1f, p.X, p.Y);
-            else _glPanel.ScaleAt(1 / 1.1f, 1 / 1.1f, p.X, p.Y);
+                _glPanel.ScaleAt(1.1f, 1.1f, pInView.X, pInView.Y);
+            else _glPanel.ScaleAt(1 / 1.1f, 1 / 1.1f, pInView.X, pInView.Y);
         }
 
-        PointF p;
+        PointF _pInView;
+        PointF _mouseMovePoint;
         bool isfirst = true;
         private void _panel_MouseMove(object sender, MouseEventArgs e)
         {
+            var mouseP = (PointF)e.GetPosition(_glPanel);
+            var pInView = _glPanel.ToView(mouseP);
             if (Keyboard.Modifiers == ModifierKeys.None)
             {
                 //var visual = VisualHelper.HitTest(_panel, e.GetPosition(_panel));
                 //_panel.RemoveVisual(visual);
-                var point = _glPanel.GetMousePosition(e);
                 if (e.LeftButton == MouseButtonState.Released)
-                    GLActiveVisual = _glPanel.HitTest(point);
+                    GLActiveVisual = _glPanel.HitTest(pInView);
                 else
                 {
-                    var rect = new RectF(point, p);
+                    var rect = new RectF(pInView, _pInView);
                     var ret = _glPanel.HitTest(rect);
-                    _hint.Rect = _glPanel.WorldToView(rect);
+                    _hint.Rect = rect;
                     if (ret.Count() > 0)
                         GLActiveVisual = ret.First();
                     else GLActiveVisual = null;
@@ -218,17 +220,10 @@ namespace YDrawing2DTest
             if (Keyboard.Modifiers == ModifierKeys.Control && e.LeftButton == MouseButtonState.Pressed)
             {
                 if (isfirst)
-                {
                     isfirst = false;
-                    p = _glPanel.GetMousePosition(e);
-                }
-                else
-                {
-                    var _p = _glPanel.GetMousePosition(e);
-                    _glPanel.Translate(_p.X - p.X, _p.Y - p.Y);
-                    p = _p;
-                }
+                else _glPanel.Translate((mouseP.X - _mouseMovePoint.X) / _glPanel.ScaleX, -(mouseP.Y - _mouseMovePoint.Y) / _glPanel.ScaleY);
             }
+            _mouseMovePoint = mouseP;
         }
     }
 

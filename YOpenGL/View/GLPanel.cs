@@ -162,28 +162,60 @@ namespace YOpenGL
         #endregion
 
         #region Transform
-        public PointF WorldToView(PointF p)
+        private PointF _FlipY(PointF point)
+        {
+            point.Y = (float)ActualHeight - point.Y;
+            return point;
+        }
+
+        public PointF ToWpf(PointF pointInView)
+        {
+            return _FlipY(_ViewToWorld(pointInView));
+        }
+
+        public PointF ToView(PointF pointInWpf)
+        {
+            return _WorldToView(_FlipY(pointInWpf));
+        }
+
+        private RectF _FlipY(RectF rect)
+        {
+            rect.Y = (float)ActualHeight - rect.Bottom;
+            return rect;
+        }
+
+        public RectF ToWpf(RectF rectInView)
+        {
+            return _FlipY(_ViewToWorld(rectInView));
+        }
+
+        public RectF ToView(RectF rectInWpf)
+        {
+            return _WorldToView(_FlipY(rectInWpf));
+        }
+
+        private PointF _WorldToView(PointF p)
         {
             p = new PointF(p.X - _origin.X, p.Y - _origin.Y);
             p = _viewResverse.Transform(p);
             return p;
         }
 
-        public PointF ViewToWorld(PointF p)
+        private PointF _ViewToWorld(PointF p)
         {
             p = _view.Transform(p);
             p = new PointF(p.X + _origin.X, p.Y + _origin.Y);
             return p;
         }
 
-        public RectF WorldToView(RectF rect)
+        private RectF _WorldToView(RectF rect)
         {
             var _rect = new RectF(rect.X - _origin.X, rect.Y - _origin.Y, rect.Width, rect.Height);
             _rect.Transform(_viewResverse);
             return _rect;
         }
 
-        public RectF ViewToWorld(RectF rect)
+        private RectF _ViewToWorld(RectF rect)
         {
             rect.Transform(_view);
             var _rect = new RectF(rect.X + _origin.X, rect.Y + _origin.Y, rect.Width, rect.Height);
@@ -198,21 +230,18 @@ namespace YOpenGL
 
         public void Scale(float scaleX, float scaleY, bool isRefresh = true)
         {
-            _view.Scale(scaleX, scaleY);
-            _AfterTransform(isRefresh);
+            ScaleAt(scaleX, scaleY, 0, 0, isRefresh);
         }
 
         public void ScaleAt(float scaleX, float scaleY, float centerX, float centerY, bool isRefresh = true)
         {
-            centerX -= _origin.X;
-            centerY -= _origin.Y;
-            _view.ScaleAt(scaleX, scaleY, centerX, centerY);
+            _view.ScaleAtPrepend(scaleX, scaleY, centerX, centerY);
             _AfterTransform(isRefresh);
         }
 
-        public void ScaleAt(PointF p, float scaleX, float scaleY, bool isRefresh = true)
+        public void ScaleAt(PointF center, float scaleX, float scaleY, bool isRefresh = true)
         {
-            ScaleAt(scaleX, scaleY, p.X, p.Y, isRefresh);
+            ScaleAt(scaleX, scaleY, center.X, center.Y, isRefresh);
         }
 
         public void Translate(VectorF vector, bool isRefresh = true)
@@ -222,7 +251,7 @@ namespace YOpenGL
 
         public void Translate(float offsetX, float offsetY, bool isRefresh = true)
         {
-            _view.Translate(offsetX, offsetY);
+            _view.TranslatePrepend(offsetX, offsetY);
             _AfterTransform(isRefresh);
         }
 
@@ -239,15 +268,8 @@ namespace YOpenGL
         #endregion
 
         #region Visual
-        public PointF GetMousePosition(MouseEventArgs e)
-        {
-            var p = e.GetPosition(this);
-            return new PointF((float)p.X, (float)(RenderSize.Height - p.Y));
-        }
-
         public GLVisual HitTest(PointF point, float sensitive = 6)
         {
-            point = WorldToView(point);
             foreach (var visual in _visuals.Where(v => v.HitTestVisible))
                 if (visual.HitTest(point, sensitive * _viewResverse.M11))
                     return visual;
@@ -256,7 +278,6 @@ namespace YOpenGL
 
         public IEnumerable<GLVisual> HitTest(RectF rect, bool isFullContain = false)
         {
-            rect = WorldToView(rect);
             foreach (var visual in _visuals.Where(v => v.HitTestVisible))
                 if (visual.HitTest(rect, isFullContain))
                     yield return visual;
@@ -990,7 +1011,7 @@ namespace YOpenGL
         #endregion
 
         #region Dispose
-        private void _Dispose()
+        protected virtual void DisposeCore()
         {
             _DisposeVisuals();
             _visuals = null;
@@ -1034,7 +1055,7 @@ namespace YOpenGL
             _pointModels.Clear();
         }
 
-        protected override void Dispose(bool disposing)
+        protected sealed override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
             if (_isDisposed) return;
@@ -1042,7 +1063,7 @@ namespace YOpenGL
             _EnterDispose();
 
             _isDisposed = true;
-            _Dispose();
+            Dispatcher.Invoke(() => DisposeCore());
             _Destroy();
 
             _timer = null;
