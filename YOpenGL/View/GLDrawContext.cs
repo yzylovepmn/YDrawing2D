@@ -225,7 +225,7 @@ namespace YOpenGL
         {
             pen.Color = _transform.Transform(pen.Color);
 
-            _primitives.Add(new _Spline(degree, knots.ToArray(), controlPoints.Select(c => _transform.Transform(c)).ToArray(), weights.ToArray(), fitPoints.Select(f => _transform.Transform(f)).ToArray(), pen, _visual.Panel.Preference.Tolerance));
+            _primitives.Add(new _Spline(degree, knots?.ToArray(), controlPoints?.Select(c => _transform.Transform(c)).ToArray(), weights?.ToArray(), fitPoints?.Select(f => _transform.Transform(f)).ToArray(), pen, _visual.Panel.Preference.Tolerance));
         }
 
         public void DrawText(PenF pen, Color? fillColor, FormattedText textToDraw, PointF origin)

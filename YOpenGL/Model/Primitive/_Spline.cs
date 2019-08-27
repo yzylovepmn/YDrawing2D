@@ -12,10 +12,10 @@ namespace YOpenGL
         public _Spline(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints, PenF pen, float tolerance)
         {
             _degree = degree;
-            _knots = knots;
-            _controlPoints = controlPoints;
-            _weights = weights;
-            _fitPoints = fitPoints;
+            _knots = knots ?? new float[0];
+            _controlPoints = controlPoints ?? new PointF[0];
+            _weights = weights ?? new float[0];
+            _fitPoints = fitPoints ?? new PointF[0];
             _pen = pen;
 
             if (_knots?.Length > 0)
