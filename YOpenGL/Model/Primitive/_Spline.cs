@@ -18,16 +18,10 @@ namespace YOpenGL
             _fitPoints = fitPoints ?? new PointF[0];
             _pen = pen;
 
-            if (_knots?.Length > 0)
-                _domain = _knots.Last();
-            else _domain = 0;
-
-
             _bounds = RectF.Empty;
             _innerLines = default(List<_Line>);
 
-            if (_domain != 0)
-                Regular(1);
+            Regular();
 
             _innerLines = GeometryHelper.CalcSampleLines(degree, knots, controlPoints, weights, fitPoints, tolerance);
 
@@ -65,12 +59,6 @@ namespace YOpenGL
         public PointF[] FitPoints { get { return _fitPoints; } }
         private PointF[] _fitPoints;
 
-        /// <summary>
-        /// Domain of the spline
-        /// </summary>
-        public float Domain { get { return _domain; } }
-        private float _domain;
-
         private RectF _bounds;
 
         public PenF Pen { get { return _pen; } }
@@ -100,13 +88,15 @@ namespace YOpenGL
             }
         }
 
-        internal void Regular(float newDomain)
+        internal void Regular()
         {
-            if (_knots.Length == 0) return;
-            var oldDomain = _domain;
-            _domain = newDomain;
+            if (_knots == null || _knots.Length == 0) return;
+            var b = _knots[_degree];
             for (int i = 0; i < _knots.Length; i++)
-                _knots[i] = (float)Math.Round(_knots[i] * _domain / oldDomain, 3);
+                _knots[i] += b;
+            b = _knots[_knots.Length - 1 - _degree];
+            for (int i = 0; i < _knots.Length; i++)
+                _knots[i] /= b;
         }
 
         public RectF GetBounds(float scale)
