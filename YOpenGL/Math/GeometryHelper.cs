@@ -1129,7 +1129,7 @@ namespace YOpenGL
             int start = i - degree;
             var p = new PointF();
             float down = 0;
-            if (weights.Length > 0)
+            if (weights != null && weights.Length > 0)
             {
                 for (int j = start; j <= i; j++)
                 {
