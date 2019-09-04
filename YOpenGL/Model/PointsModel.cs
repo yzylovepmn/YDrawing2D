@@ -9,7 +9,7 @@ using System.Windows.Media;
 
 namespace YOpenGL
 {
-    public struct PointPair
+    public struct PointPair : IComparable<PointPair>
     {
         public PointPair(Color color, float pointSize)
         {
@@ -28,6 +28,21 @@ namespace YOpenGL
         public static bool operator !=(PointPair p1, PointPair p2)
         {
             return !(p1 == p2);
+        }
+
+        public int CompareTo(PointPair other)
+        {
+            if (PointSize > other.PointSize)
+                return -1;
+            if (PointSize < other.PointSize)
+                return 1;
+            var v1 = Color.GetValue();
+            var v2 = other.Color.GetValue();
+            if (v1 > v2)
+                return 1;
+            if (v1 < v2)
+                return -1;
+            return 0;
         }
 
         public override bool Equals(object obj)

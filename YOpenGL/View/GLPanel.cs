@@ -42,7 +42,7 @@ namespace YOpenGL
             _streamModels = new List<MeshModel>();
             _lineModels = new SortedDictionary<PenF, List<MeshModel>>();
             _arcModels = new SortedDictionary<PenF, List<MeshModel>>();
-            _pointModels = new Dictionary<PointPair, List<MeshModel>>();
+            _pointModels = new SortedDictionary<PointPair, List<MeshModel>>();
             _shaders = new List<Shader>();
 
             _timer = new Timer(_AfterPainted);
@@ -107,7 +107,7 @@ namespace YOpenGL
         private List<MeshModel> _streamModels;
         private SortedDictionary<PenF, List<MeshModel>> _lineModels;
         private SortedDictionary<PenF, List<MeshModel>> _arcModels;
-        private Dictionary<PointPair, List<MeshModel>> _pointModels;
+        private SortedDictionary<PointPair, List<MeshModel>> _pointModels;
 
         public Color Color
         {
