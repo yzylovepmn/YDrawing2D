@@ -1157,6 +1157,33 @@ namespace YOpenGL
             return p;
         }
 
+        public static VectorF ComputeVector(int k, int rank, float[] knots, PointF[] cps, float u)
+        {
+            int i = k;
+            while (knots[i + 1] < u) i++;
+
+            var vec = new VectorF();
+            for (int j = i - k + rank; j <= i; j++)
+            {
+                var scale = _GetBaseFuncValue(knots, u, j, k - rank);
+                var v = _GetDI(k , rank, j, knots, cps);
+                vec += v * scale;
+            }
+
+            return vec;
+        }
+
+        private static VectorF _GetDI(int k, int rank, int j, float[] knots, PointF[] cps)
+        {
+            var vec = new VectorF();
+
+            if (rank == 0)
+                vec = (VectorF)cps[j];
+            else vec = (k - rank + 1) * (_GetDI(k, rank - 1, j, knots, cps) - _GetDI(k, rank - 1, j - 1, knots, cps)) / (knots[j + k + 1 - rank] - knots[j]);
+
+            return vec;
+        }
+
         private static float _GetBaseFuncValue(float[] knots, float u, int pbase, int rank)
         {
             if (rank > 0)
@@ -1175,7 +1202,7 @@ namespace YOpenGL
         {
             float up = u - knots[pbase];
             float down = knots[pbase + rank] - knots[pbase];
-            if (down < 0.001) return 0;
+            if (MathUtil.IsZero(down)) return 0;
             return up / down;
         }
 
@@ -1183,7 +1210,7 @@ namespace YOpenGL
         {
             float up = knots[pbase + rank + 1] - u;
             float down = knots[pbase + rank + 1] - knots[pbase + 1];
-            if (down < 0.001) return 0;
+            if (MathUtil.IsZero(down)) return 0;
             return up / down;
         }
         #endregion
