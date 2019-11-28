@@ -5,6 +5,7 @@ using Float = System.Single;
 
 namespace YOpenGL
 {
+    [Serializable]
     public struct PointF
     {
         public PointF(Float x, Float y)

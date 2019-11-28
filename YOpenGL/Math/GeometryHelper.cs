@@ -1106,7 +1106,7 @@ namespace YOpenGL
                 }
                 else
                 {
-                    delta = Math.Max(tolerance / 100, delta);
+                    delta = Math.Max(tolerance / (8 * controlPoints.Length), delta);
                     var i = 0f;
                     while (i <= 1)
                     {
@@ -1266,7 +1266,7 @@ namespace YOpenGL
             }
             else
             {
-                delta = Math.Max(tolerance / 100, delta);
+                delta = Math.Max(tolerance / (10 * controlPoints.Length), delta);
                 while (i <= 1)
                 {
                     samplePoints.Add(ComputePoint(controlPoints, degree, i));
