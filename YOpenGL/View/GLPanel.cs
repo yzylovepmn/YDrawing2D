@@ -235,6 +235,8 @@ namespace YOpenGL
 
         public void ScaleAt(float scaleX, float scaleY, float centerX, float centerY, bool isRefresh = true)
         {
+            if (scaleX == 0 || scaleY == 0) return;
+
             _view.ScaleAtPrepend(scaleX, scaleY, centerX, centerY);
             _AfterTransform(isRefresh);
         }
