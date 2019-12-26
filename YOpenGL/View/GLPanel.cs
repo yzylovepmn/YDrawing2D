@@ -374,14 +374,16 @@ namespace YOpenGL
         internal void EnableAliased()
         {
             MakeSureCurrentContext(_context);
-            _DeleteFrameBuffer();
+            Disable(GL_LINE_SMOOTH);
+            //_DeleteFrameBuffer();
             _Refresh(false);
         }
 
         internal void DisableAliased()
         {
             MakeSureCurrentContext(_context);
-            _CreateFrameBuffer();
+            Enable(GL_LINE_SMOOTH);
+            //_CreateFrameBuffer();
             _Refresh(false);
         }
 
@@ -425,8 +427,8 @@ namespace YOpenGL
             if (_isDisposed || !IsLoaded) return;
             MakeSureCurrentContext(_context);
 
-            if (!_preference.Aliased)
-                BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
+            //if (!_preference.Aliased)
+            //    BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
 
             ClearColor(_red, _green, _blue, 1.0f);
             ClearStencil(0);
@@ -437,12 +439,12 @@ namespace YOpenGL
             BufferSubData(GL_UNIFORM_BUFFER, 12 * sizeof(float), 12 * sizeof(float), _view.GetData(true));
             _DrawModels();
 
-            if (!_preference.Aliased)
-            {
-                BindFramebuffer(GL_READ_FRAMEBUFFER, _fbo[0]);
-                BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-                BlitFramebuffer(0, 0, _viewWidth, _viewHeight, 0, 0, _viewWidth, _viewHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            }
+            //if (!_preference.Aliased)
+            //{
+            //    BindFramebuffer(GL_READ_FRAMEBUFFER, _fbo[0]);
+            //    BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+            //    BlitFramebuffer(0, 0, _viewWidth, _viewHeight, 0, 0, _viewWidth, _viewHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            //}
 
             SwapBuffers(_context.HDC);
         }
@@ -505,7 +507,10 @@ namespace YOpenGL
             BindTexture(GL_TEXTURE_1D, 0);
 
             if (!_preference.Aliased)
-                _CreateFrameBuffer();
+            {
+                //_CreateFrameBuffer();
+                Enable(GL_LINE_SMOOTH);
+            }
 
             // for transform
             _matrix = new uint[1];
@@ -529,7 +534,7 @@ namespace YOpenGL
             _fillshader = null;
             _arrowShader = null;
 
-            _DeleteFrameBuffer();
+            //_DeleteFrameBuffer();
             DeleteTextures(1, _texture_dash);
             DeleteBuffers(1, _matrix);
         }
