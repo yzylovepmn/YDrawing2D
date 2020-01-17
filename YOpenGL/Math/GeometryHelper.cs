@@ -1173,6 +1173,51 @@ namespace YOpenGL
             return vec;
         }
 
+        public static float ComputeArcLength(int k, int rank, float[] knots, PointF[] cps, float u)
+        {
+            var len = 0.0;
+            var hu = u / 2;
+            for (int i = 0; i < 5; i++)
+            {
+                var vec = ComputeVector(k, rank, knots, cps, (float)(hu * _table_x[i] + 0.5));
+                len += vec.Length * _table_w[i];
+            }
+
+            return (float)(len * hu);
+        }
+
+        public static float ComputeCurveParameter(int k, int rank, float[] knots, PointF[] cps, float s, float L)
+        {
+            var u = s / L;
+            var low = 0f;
+            var high = 1f;
+            var iterate = 5;
+            for (int i = 0; i < iterate; i++)
+            {
+                var delta = ComputeArcLength(k, rank, knots, cps, u) - s;
+                if (Math.Abs(delta) < Epsilon)
+                    return u;
+
+                var df = ComputeVector(k, rank, knots, cps, u).Length;
+                var uNext = u - delta / df;
+                if (delta > 0)
+                {
+                    high = u;
+                    if (uNext <= low)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+                else
+                {
+                    low = u;
+                    if (uNext >= high)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+            }
+            return u;
+        }
+
         private static VectorF _GetDI(int k, int rank, int j, float[] knots, PointF[] cps)
         {
             var vec = new VectorF();
@@ -1283,6 +1328,56 @@ namespace YOpenGL
             return CalcValue(controlPoints, degree, 0, u);
         }
 
+        public static VectorF ComputeVector(PointF[] cps, int degree, double u)
+        {
+            return degree * (CalcValue(cps, degree - 1, 1, u) - CalcValue(cps, degree - 1, 0, u));
+        }
+
+        public static float ComputeArcLength(PointF[] cps, int degree, double u)
+        {
+            var len = 0.0;
+            var hu = u / 2;
+            for (int i = 0; i < 5; i++)
+            {
+                var vec = ComputeVector(cps, degree, (float)(hu * _table_x[i] + 0.5));
+                len += vec.Length * _table_w[i];
+            }
+
+            return (float)(len * hu);
+        }
+
+        public static float ComputeCurveParameter(PointF[] cps, int degree, float s, float L)
+        {
+            var u = s / L;
+            var low = 0f;
+            var high = 1f;
+            var iterate = 5;
+            for (int i = 0; i < iterate; i++)
+            {
+                var delta = ComputeArcLength(cps, degree, u) - s;
+                if (Math.Abs(delta) < Epsilon)
+                    return u;
+
+                var df = ComputeVector(cps, degree, u).Length;
+                var uNext = u - delta / df;
+                if (delta > 0)
+                {
+                    high = u;
+                    if (uNext <= low)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+                else
+                {
+                    low = u;
+                    if (uNext >= high)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+            }
+            return u;
+        }
+
         internal static PointF CalcValue(PointF[] controlPoints, int degree, int index, double u)
         {
             if (degree == 0)
@@ -1296,6 +1391,12 @@ namespace YOpenGL
             var u2 = u;
             return (PointF)new Point(u1 * p1.X + u2 * p2.X, u1 * p1.Y + u2 * p2.Y);
         }
+        #endregion
+
+        #region Guass-lengendre n = 5, 代数精度为11
+        private static double[] _table_w = new double[] { 0.5688888888888889, 0.4786286704993665, 0.4786286704993665, 0.2369268850561891, 0.2369268850561891 };// Weights
+        private static double[] _table_x = new double[] { 0, -0.5384693101056831, 0.5384693101056831, -0.9061798459386640, 0.9061798459386640 };// Guass-Points
+        private static double Epsilon = 0.00000001;
         #endregion
     }
 }
