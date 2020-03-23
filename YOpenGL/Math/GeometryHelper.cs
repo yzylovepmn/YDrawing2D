@@ -1186,12 +1186,11 @@ namespace YOpenGL
             return (float)(len * hu);
         }
 
-        public static float ComputeCurveParameter(int k, int rank, float[] knots, PointF[] cps, float s, float L)
+        public static float ComputeCurveParameter(int k, int rank, float[] knots, PointF[] cps, float s, float L, int iterate = 5)
         {
             var u = s / L;
             var low = 0f;
             var high = 1f;
-            var iterate = 5;
             for (int i = 0; i < iterate; i++)
             {
                 var delta = ComputeArcLength(k, rank, knots, cps, u) - s;
@@ -1346,12 +1345,11 @@ namespace YOpenGL
             return (float)(len * hu);
         }
 
-        public static float ComputeCurveParameter(PointF[] cps, int degree, float s, float L)
+        public static float ComputeCurveParameter(PointF[] cps, int degree, float s, float L, int iterate = 5)
         {
             var u = s / L;
             var low = 0f;
             var high = 1f;
-            var iterate = 5;
             for (int i = 0; i < iterate; i++)
             {
                 var delta = ComputeArcLength(cps, degree, u) - s;
@@ -1393,10 +1391,69 @@ namespace YOpenGL
         }
         #endregion
 
+        #region Ellipse Arc
+        /// <summary>
+        /// x = lr * cos(thelta)
+        /// y = sr * sin(thelta)
+        /// </summary>
+        /// <returns></returns>
+        public static double ComputeArcLength(double lr, double sr, double startRadian, double endRadian)
+        {
+            var len = 0.0;
+            var t1 = (startRadian + endRadian) / 2;
+            var t2 = (endRadian - startRadian) / 2;
+            for (int i = 0; i < 5; i++)
+            {
+                var xi = t2 * _table_x[i] + t1;
+                len += _CalcArcFunc(lr, sr, xi) * _table_w[i];
+            }
+
+            return len * t2;
+        }
+
+        public static double ComputeArcThelta(double lr, double sr, double startRadian, double endRadian, double s, double L, int iterate = 5)
+        {
+            var u = (s / L) * (endRadian - startRadian) + startRadian;
+            var low = startRadian;
+            var high = endRadian;
+            for (int i = 0; i < iterate; i++)
+            {
+                var delta = ComputeArcLength(lr, sr, startRadian, u) - s;
+                if (Math.Abs(delta) < Epsilon)
+                    return u;
+
+                var df = _CalcArcFunc(lr, sr, u);
+                var uNext = u - delta / df;
+                if (delta > 0)
+                {
+                    high = u;
+                    if (uNext <= low)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+                else
+                {
+                    low = u;
+                    if (uNext >= high)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+            }
+            return u;
+        }
+
+        private static double _CalcArcFunc(double lr, double sr, double theta)
+        {
+            var c = Math.Cos(theta);
+            var s = Math.Sin(theta);
+            return Math.Sqrt(lr * lr * c * c + sr * sr * s * s);
+        }
+        #endregion
+
         #region Guass-lengendre n = 5, 代数精度为11
         private static double[] _table_w = new double[] { 0.5688888888888889, 0.4786286704993665, 0.4786286704993665, 0.2369268850561891, 0.2369268850561891 };// Weights
         private static double[] _table_x = new double[] { 0, -0.5384693101056831, 0.5384693101056831, -0.9061798459386640, 0.9061798459386640 };// Guass-Points
-        private static double Epsilon = 0.00000001;
+        private static double Epsilon = 0.0000001;
         #endregion
     }
 }
