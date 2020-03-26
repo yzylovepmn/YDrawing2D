@@ -1393,26 +1393,30 @@ namespace YOpenGL
 
         #region Ellipse Arc
         /// <summary>
-        /// x = lr * cos(thelta)
-        /// y = sr * sin(thelta)
+        /// x = lr * cos(theta)
+        /// y = sr * sin(theta)
         /// </summary>
         /// <returns></returns>
         public static double ComputeArcLength(double lr, double sr, double startRadian, double endRadian)
         {
             var len = 0.0;
-            var t1 = (startRadian + endRadian) / 2;
+            var t1 = (endRadian + startRadian) / 2;
             var t2 = (endRadian - startRadian) / 2;
+            var dlr = lr * lr;
+            var dsr = sr * sr;
             for (int i = 0; i < 5; i++)
             {
                 var xi = t2 * _table_x[i] + t1;
-                len += _CalcArcFunc(lr, sr, xi) * _table_w[i];
+                len += _CalcArcFunc(dlr, dsr, xi) * _table_w[i];
             }
 
             return len * t2;
         }
 
-        public static double ComputeArcThelta(double lr, double sr, double startRadian, double endRadian, double s, double L, int iterate = 5)
+        public static double ComputeArcTheta(double lr, double sr, double startRadian, double endRadian, double s, double L, int iterate = 5)
         {
+            var dlr = lr * lr;
+            var dsr = sr * sr;
             var u = (s / L) * (endRadian - startRadian) + startRadian;
             var low = startRadian;
             var high = endRadian;
@@ -1422,7 +1426,7 @@ namespace YOpenGL
                 if (Math.Abs(delta) < Epsilon)
                     return u;
 
-                var df = _CalcArcFunc(lr, sr, u);
+                var df = _CalcArcFunc(dlr, dsr, u);
                 var uNext = u - delta / df;
                 if (delta > 0)
                 {
@@ -1442,11 +1446,11 @@ namespace YOpenGL
             return u;
         }
 
-        private static double _CalcArcFunc(double lr, double sr, double theta)
+        private static double _CalcArcFunc(double dlr, double dsr, double theta)
         {
             var c = Math.Cos(theta);
             var s = Math.Sin(theta);
-            return Math.Sqrt(lr * lr * c * c + sr * sr * s * s);
+            return Math.Sqrt(dlr * c * c + dsr * s * s);
         }
         #endregion
 
