@@ -1121,19 +1121,19 @@ namespace YOpenGL
             return samplePoints.Where(p => !float.IsNaN(p.X) && !float.IsNaN(p.Y));
         }
 
-        internal static PointF ComputePoint(int degree, float[] knots, PointF[] controlPoints, float[] weights, float u)
+        internal static PointF ComputePoint(int k, float[] knots, PointF[] controlPoints, float[] weights, float u)
         {
             if (u > 1) throw new ArgumentOutOfRangeException();
-            int i = degree;
+            int i = k;
             while (knots[i + 1] < u) i++;
-            int start = i - degree;
+            int start = i - k;
             var p = new PointF();
             float down = 0;
             if (weights != null && weights.Length > 0)
             {
                 for (int j = start; j <= i; j++)
                 {
-                    float value = _GetBaseFuncValue(knots, u, j, degree);
+                    float value = _GetBaseFuncValue(knots, u, j, k);
                     float downSpan = weights[j] * value;
                     down += downSpan;
                     p.X += downSpan * controlPoints[j].X;
@@ -1144,15 +1144,16 @@ namespace YOpenGL
             }
             else
             {
-                for (int j = start; j <= i; j++)
-                {
-                    float value = _GetBaseFuncValue(knots, u, j, degree);
-                    down += value;
-                    p.X += value * controlPoints[j].X;
-                    p.Y += value * controlPoints[j].Y;
-                }
-                p.X /= down;
-                p.Y /= down;
+                //for (int j = start; j <= i; j++)
+                //{
+                //    float value = _GetBaseFuncValue(knots, u, j, degree);
+                //    down += value;
+                //    p.X += value * controlPoints[j].X;
+                //    p.Y += value * controlPoints[j].Y;
+                //}
+                //p.X /= down;
+                //p.Y /= down;
+                p = (PointF)ComputeVector(k, 0, knots, controlPoints, u);
             }
             return p;
         }
@@ -1163,14 +1164,16 @@ namespace YOpenGL
             while (knots[i + 1] < u) i++;
 
             var vec = new VectorF();
+            var w = 0f;
             for (int j = i - k + rank; j <= i; j++)
             {
                 var scale = _GetBaseFuncValue(knots, u, j, k - rank);
                 var v = _GetDI(k , rank, j, knots, cps);
                 vec += v * scale;
+                w += scale;
             }
 
-            return vec;
+            return vec / w;
         }
 
         public static float ComputeArcLength(int k, int rank, float[] knots, PointF[] cps, float u)
