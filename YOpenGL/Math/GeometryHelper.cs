@@ -1176,31 +1176,31 @@ namespace YOpenGL
             return vec / w;
         }
 
-        public static float ComputeArcLength(int k, int rank, float[] knots, PointF[] cps, float u)
+        public static float ComputeArcLength(int k, float[] knots, PointF[] cps, float u)
         {
             var len = 0.0;
             var hu = u / 2;
             for (int i = 0; i < 5; i++)
             {
-                var vec = ComputeVector(k, rank, knots, cps, (float)(hu * _table_x[i] + 0.5));
+                var vec = ComputeVector(k, 1, knots, cps, (float)(hu * _table_x[i] + hu));
                 len += vec.Length * _table_w[i];
             }
 
             return (float)(len * hu);
         }
 
-        public static float ComputeCurveParameter(int k, int rank, float[] knots, PointF[] cps, float s, float L, int iterate = 5)
+        public static float ComputeCurveParameter(int k, float[] knots, PointF[] cps, float s, float L, int iterate = 5)
         {
             var u = s / L;
             var low = 0f;
             var high = 1f;
             for (int i = 0; i < iterate; i++)
             {
-                var delta = ComputeArcLength(k, rank, knots, cps, u) - s;
+                var delta = ComputeArcLength(k, knots, cps, u) - s;
                 if (Math.Abs(delta) < Epsilon)
                     return u;
 
-                var df = ComputeVector(k, rank, knots, cps, u).Length;
+                var df = ComputeVector(k, 1, knots, cps, u).Length;
                 var uNext = u - delta / df;
                 if (delta > 0)
                 {
@@ -1341,10 +1341,10 @@ namespace YOpenGL
             var hu = u / 2;
             for (int i = 0; i < 5; i++)
             {
-                var vec = ComputeVector(cps, degree, (float)(hu * _table_x[i] + 0.5));
+                var vec = ComputeVector(cps, degree, (float)(hu * _table_x[i] + hu));
                 len += vec.Length * _table_w[i];
             }
-
+             
             return (float)(len * hu);
         }
 
@@ -1453,7 +1453,7 @@ namespace YOpenGL
         {
             var c = Math.Cos(theta);
             var s = Math.Sin(theta);
-            return Math.Sqrt(dlr * c * c + dsr * s * s);
+            return Math.Sqrt(dlr * s * s + dsr * c * c);
         }
         #endregion
 
