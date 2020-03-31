@@ -1176,27 +1176,31 @@ namespace YOpenGL
             return vec / w;
         }
 
-        public static float ComputeArcLength(int k, float[] knots, PointF[] cps, float u)
+        public static float ComputeArcLength(int k, float[] knots, PointF[] cps, double start, double end)
         {
             var len = 0.0;
-            var hu = u / 2;
+            var t1 = (end + start) / 2;
+            var t2 = (end - start) / 2;
             for (int i = 0; i < 5; i++)
             {
-                var vec = ComputeVector(k, 1, knots, cps, (float)(hu * _table_x[i] + hu));
+                var vec = ComputeVector(k, 1, knots, cps, (float)(t2 * _table_x[i] + t1));
                 len += vec.Length * _table_w[i];
             }
 
-            return (float)(len * hu);
+            return (float)(len * t2);
         }
 
-        public static float ComputeCurveParameter(int k, float[] knots, PointF[] cps, float s, float L, int iterate = 5)
+        public static float ComputeCurveParameter(int k, float[] knots, PointF[] cps, float startU, float s, float L, int iterate = 5)
         {
-            var u = s / L;
-            var low = 0f;
+            var low = startU;
             var high = 1f;
+            var u = s / L + startU;
+            if (u > high)
+                u = high;
+
             for (int i = 0; i < iterate; i++)
             {
-                var delta = ComputeArcLength(k, knots, cps, u) - s;
+                var delta = ComputeArcLength(k, knots, cps, startU, u) - s;
                 if (Math.Abs(delta) < Epsilon)
                     return u;
 
@@ -1335,27 +1339,31 @@ namespace YOpenGL
             return degree * (CalcValue(cps, degree - 1, 1, u) - CalcValue(cps, degree - 1, 0, u));
         }
 
-        public static float ComputeArcLength(PointF[] cps, int degree, double u)
+        public static float ComputeArcLength(PointF[] cps, int degree, double start, double end)
         {
             var len = 0.0;
-            var hu = u / 2;
+            var t1 = (end + start) / 2;
+            var t2 = (end - start) / 2;
             for (int i = 0; i < 5; i++)
             {
-                var vec = ComputeVector(cps, degree, (float)(hu * _table_x[i] + hu));
+                var vec = ComputeVector(cps, degree, t2 * _table_x[i] + t1);
                 len += vec.Length * _table_w[i];
             }
-             
-            return (float)(len * hu);
+
+            return (float)(len * t2);
         }
 
-        public static float ComputeCurveParameter(PointF[] cps, int degree, float s, float L, int iterate = 5)
+        public static float ComputeCurveParameter(PointF[] cps, int degree, float startU, float s, float L, int iterate = 5)
         {
-            var u = s / L;
-            var low = 0f;
+            var low = startU;
             var high = 1f;
+            var u = s / L + startU;
+            if (u > high)
+                u = high;
+
             for (int i = 0; i < iterate; i++)
             {
-                var delta = ComputeArcLength(cps, degree, u) - s;
+                var delta = ComputeArcLength(cps, degree, startU, u) - s;
                 if (Math.Abs(delta) < Epsilon)
                     return u;
 
@@ -1416,13 +1424,13 @@ namespace YOpenGL
             return len * t2;
         }
 
-        public static double ComputeArcTheta(double lr, double sr, double startRadian, double endRadian, double s, double L, int iterate = 5)
+        public static double ComputeArcTheta(double lr, double sr, double startRadian, double s, double span, double L, int iterate = 5)
         {
             var dlr = lr * lr;
             var dsr = sr * sr;
-            var u = (s / L) * (endRadian - startRadian) + startRadian;
+            var u = (s / L) * span + startRadian;
             var low = startRadian;
-            var high = endRadian;
+            var high = startRadian + span;
             for (int i = 0; i < iterate; i++)
             {
                 var delta = ComputeArcLength(lr, sr, startRadian, u) - s;
