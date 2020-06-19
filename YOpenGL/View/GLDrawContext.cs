@@ -439,7 +439,7 @@ namespace YOpenGL
             _primitives.Clear();
         }
 
-        internal void Reset()
+        internal void Clear()
         {
             _Clear();
 

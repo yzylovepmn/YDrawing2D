@@ -14,9 +14,16 @@ using System.Windows.Threading;
 using static YOpenGL.GLFunc;
 using static YOpenGL.GLConst;
 using static YOpenGL.GL;
+using System.Threading.Tasks;
 
 namespace YOpenGL
 {
+    public enum RenderMode
+    {
+        Sync, // 同步
+        Async // 异步
+    }
+
     /// <summary>
     /// The positive direction of the X axis is right(→) and the positive direction of the Y axis is up(↑);
     /// </summary>
@@ -27,11 +34,12 @@ namespace YOpenGL
         private static readonly string[] _shaders_fill = new string[] { "fill.vert", "fill.frag" };
         private static readonly string[] _shaders_arrow = new string[] { "arrow.vert", "arrow.geom", "fill.frag" };
 
-        public GLPanel(PointF origin, Color color, float frameRate = 60)
+        public GLPanel(PointF origin, Color color, float frameRate = 60, RenderMode renderMode = RenderMode.Sync)
         {
             Origin = origin;
             Color = color;
             _frameSpan = Math.Max(1, (int)(1000 / frameRate));
+            _renderMode = renderMode;
             _isInit = false;
             _isDisposed = false;
             _view = new MatrixF();
@@ -108,6 +116,9 @@ namespace YOpenGL
         private SortedDictionary<PenF, List<MeshModel>> _lineModels;
         private SortedDictionary<PenF, List<MeshModel>> _arcModels;
         private SortedDictionary<PointPair, List<MeshModel>> _pointModels;
+
+        public RenderMode RenderMode { get { return _renderMode; } }
+        private RenderMode _renderMode;
 
         public Color Color
         {
@@ -293,10 +304,14 @@ namespace YOpenGL
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
         public void AddVisual(GLVisual visual, bool refresh = false)
         {
-            if (visual.Panel != null)
-                throw new InvalidOperationException("Visual has already a logical parent!");
+            if (!visual.IsDeleted)
+            {
+                if (visual.Panel != this)
+                    throw new InvalidOperationException("Visual has already a logical parent!");
+                else throw new InvalidOperationException("Visual has already been added");
+            }
 
-            _visuals.Add(visual);
+            _AddVisual(visual);
             visual.Panel = this;
             _Update(visual);
             if (refresh)
@@ -313,8 +328,12 @@ namespace YOpenGL
             if (visual.Panel != this)
                 throw new InvalidOperationException("Logical parent error!");
             _DetachVisual(visual);
-            _visuals.Remove(visual);
-            visual.Panel = null;
+            _RemoveVisual(visual);
+            if (!visual.IsUpdating)
+            {
+                visual.Reset();
+                visual.Panel = null;
+            }
             if (refresh)
                 _Refresh();
         }
@@ -324,11 +343,30 @@ namespace YOpenGL
             _DisposeModels();
             foreach (var visual in _visuals)
             {
+                if (visual.IsUpdating) continue;
                 visual.Reset();
                 visual.Panel = null;
             }
-            _visuals.Clear();
+            _RemoveAll();
             _Refresh();
+        }
+
+        private void _AddVisual(GLVisual visual)
+        {
+            visual.IsDeleted = false;
+            _visuals.Add(visual);
+        }
+
+        private void _RemoveVisual(GLVisual visual)
+        {
+            visual.IsDeleted = true;
+            _visuals.Remove(visual);
+        }
+
+        private void _RemoveAll()
+        {
+            _visuals.ForEach(visual => visual.IsDeleted = true);
+            _visuals.Clear();
         }
 
         /// <summary>
@@ -336,30 +374,68 @@ namespace YOpenGL
         /// </summary>
         /// <param name="visual">The visual to update</param>
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
-        public void Update(GLVisual visual, bool refresh = false)
+        public async void Update(GLVisual visual, bool refresh = false)
         {
             if (visual.Panel == null) return;
-            _Update(visual, true);
-            if (refresh)
+            if (_renderMode == RenderMode.Sync)
+                _Update(visual, true);
+            else await _UpdateAsync(visual, true);
+            if (refresh || _renderMode == RenderMode.Async)
                 _Refresh();
         }
 
+        /// <param name="needDetach">whether remove current context from render buffer</param>
         private void _Update(GLVisual visual, bool needDetach = false)
         {
             if (needDetach)
                 _DetachVisual(visual);
-            visual.Update();
+            visual.Update();            // context has been swapped
+            visual.BackContext.Clear(); // so we clear back context
             _AttachVisual(visual);
+        }
+
+        /// <param name="needDetach">whether remove current context from render buffer</param>
+        private async Task _UpdateAsync(GLVisual visual, bool needDetach = false)
+        {
+            if (visual.TryEnterUpdate())
+            {
+                if (needDetach)
+                    _DetachVisual(visual); // remove current context from render buffer but not clear itself (for hittest)
+                await visual.UpdateAsync(); // context has been swapped
+                visual.BackContext.Clear(); // so we clear back context
+
+                // has been deleted when updating ? 
+                if (!visual.IsDeleted) // not deleted
+                {
+                    _AttachVisual(visual); // add current context to render buffer
+                    if (!visual.TryExitUpdate())
+                        await _UpdateAsync(visual, true);
+                }
+                else // has been  deleted
+                {
+                    visual.Reset(); // reset visual
+                    visual.Panel = null; // disconnect from panel
+                    visual.ExitUpdate(); // endup updating !!!!!
+                }
+            }
         }
 
         /// <summary>
         /// Update all visuals and refresh frame buffer
         /// </summary>
-        public void UpdateAll()
+        public async void UpdateAll()
         {
-            _DisposeModels();
-            foreach (var visual in _visuals)
-                _Update(visual);
+            _DisposeModels(); /// clear render buffer, so we do not need remove context from render buffer.<see cref="_Update(GLVisual, bool)"/> and <see cref="_UpdateAsync(GLVisual, bool)"/>
+            if (_renderMode == RenderMode.Sync)
+            {
+                foreach (var visual in _visuals)
+                    _Update(visual);
+            }
+            else
+            {
+                foreach (var visual in _visuals)
+                    await _UpdateAsync(visual);
+            }
             _Refresh();
         }
 
@@ -598,9 +674,10 @@ namespace YOpenGL
 
         private void _AttachVisual(GLVisual visual)
         {
+            var drawContext = visual.CurrentContext;
             MakeSureCurrentContext(_context);
 
-            foreach (var primitive in visual.Context.Primitives)
+            foreach (var primitive in drawContext.Primitives)
             {
                 if (!primitive.Pen.IsNULL || primitive.Type == PrimitiveType.ComplexGeometry)
                     _AttachModel(primitive, primitive.Pen);
@@ -619,7 +696,8 @@ namespace YOpenGL
 
         private void _DetachVisual(GLVisual visual)
         {
-            visual.Detach();
+            var drawContext = visual.CurrentContext;
+            visual.Detach(drawContext);
         }
 
         private void _AttachModel(IPrimitive primitive, PenF pen)
