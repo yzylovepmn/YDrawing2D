@@ -433,7 +433,7 @@ namespace YOpenGL
             }
             else
             {
-                foreach (var visual in _visuals)
+                foreach (var visual in _visuals.ToList())
                     await _UpdateAsync(visual);
             }
             _Refresh();
