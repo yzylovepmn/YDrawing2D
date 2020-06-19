@@ -154,12 +154,12 @@ namespace YOpenGL
                     foreach (var item in subgeo.Stream)
                         _Deatch(item);
             }
-            if (primitive.FillModel != null)
+            if (primitive.FillModel != null && !primitive.FillModel.IsDisposed)
             {
                 primitive.FillModel.DetachPrimitive(primitive);
                 primitive.FillModel = null;
             }
-            if (primitive.Model != null)
+            if (primitive.Model != null && !primitive.Model.IsDisposed)
             {
                 primitive.Model.DetachPrimitive(primitive);
                 primitive.Model = null;

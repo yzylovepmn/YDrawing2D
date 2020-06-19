@@ -15,6 +15,8 @@ namespace YOpenGL
             _hasInit = false;
         }
 
+        internal bool IsDisposed { get { return _primitives == null; } }
+
         internal bool NeedDisposed { get { return _primitives != null && _primitives.Count == 0; } }
 
         protected Dictionary<IPrimitive, Tuple<bool, int>> _primitives;
