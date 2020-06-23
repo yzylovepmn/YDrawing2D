@@ -435,6 +435,7 @@ namespace YOpenGL
 
         private void _Clear()
         {
+            if (_isDisposed) return;
             _primitives.DisposeInner();
             _primitives.Clear();
         }
@@ -446,8 +447,11 @@ namespace YOpenGL
             _transform.Reset();
         }
 
+        private bool _isDisposed;
         public void Dispose()
         {
+            if (_isDisposed) return;
+            _isDisposed = true;
             _Clear();
             _transform.Dispose();
             _primitives = null;

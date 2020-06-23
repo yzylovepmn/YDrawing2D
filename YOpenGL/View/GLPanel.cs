@@ -402,7 +402,7 @@ namespace YOpenGL
                 if (needDetach)
                     _DetachVisual(visual); // remove current context from render buffer but not clear itself (for hittest)
                 await visual.UpdateAsync(); // context has been swapped
-                visual.BackContext.Clear(); // so we clear back context
+                visual.BackContext?.Clear(); // so we clear back context
 
                 // has been deleted when updating ? 
                 if (!visual.IsDeleted) // not deleted

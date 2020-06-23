@@ -134,6 +134,7 @@ namespace YOpenGL
 
         internal void Reset()
         {
+            if (_isDisposed) return;
             _context1.Clear();
             _context2.Clear();
             _bounds = RectF.Empty;
@@ -194,8 +195,11 @@ namespace YOpenGL
         /// <param name="context"></param>
         protected abstract void Draw(GLDrawContext context);
 
+        protected bool _isDisposed;
         public virtual void Dispose()
         {
+            if (_isDisposed) return;
+            _isDisposed = true;
             _context1?.Dispose();
             _context1 = null;
             _context2?.Dispose();
