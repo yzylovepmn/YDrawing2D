@@ -435,13 +435,13 @@ namespace YOpenGL
 
         private void _Clear()
         {
-            if (_isDisposed) return;
             _primitives.DisposeInner();
             _primitives.Clear();
         }
 
         internal void Clear()
         {
+            if (_isDisposed) return;
             _Clear();
 
             _transform.Reset();

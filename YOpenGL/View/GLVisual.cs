@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace YOpenGL
 {
-    public abstract class GLVisual : IDisposable
+    public abstract class GLVisual
     {
         public GLVisual()
         {
@@ -196,15 +196,25 @@ namespace YOpenGL
         protected abstract void Draw(GLDrawContext context);
 
         protected bool _isDisposed;
-        public virtual void Dispose()
+        internal bool NeedDispose;
+        public virtual bool Dispose()
         {
-            if (_isDisposed) return;
+            if (IsUpdating)
+            {
+                NeedDispose = true;
+                return false;
+            }
+
+            if (_isDisposed) return false;
             _isDisposed = true;
+            NeedDispose = false;
+
             _context1?.Dispose();
             _context1 = null;
             _context2?.Dispose();
             _context2 = null;
             _panel = null;
+            return true;
         }
     }
 }

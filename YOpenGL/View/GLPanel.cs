@@ -416,6 +416,8 @@ namespace YOpenGL
                     visual.Reset(); // reset visual
                     visual.Panel = null; // disconnect from panel
                     visual.ExitUpdate(); // endup updating !!!!!
+                    if (visual.NeedDispose)
+                        visual.Dispose();
                 }
             }
         }
@@ -1112,7 +1114,8 @@ namespace YOpenGL
 
         private void _DisposeVisuals()
         {
-            _visuals.DisposeInner();
+            //_visuals.DisposeInner();
+            _visuals.ForEach(visual => visual.Dispose());
             _visuals.Clear();
         }
 
