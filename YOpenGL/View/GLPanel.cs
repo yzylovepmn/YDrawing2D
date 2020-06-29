@@ -384,6 +384,21 @@ namespace YOpenGL
                 _Refresh();
         }
 
+        /// <summary>
+        /// Update viausl
+        /// </summary>
+        /// <param name="visual">The visual to update</param>
+        /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
+        public async Task UpdateAsync(GLVisual visual, bool refresh = false)
+        {
+            if (visual.Panel == null) return;
+            if (_renderMode == RenderMode.Sync)
+                _Update(visual, true);
+            else await _UpdateAsync(visual, true);
+            if (refresh || _renderMode == RenderMode.Async)
+                _Refresh();
+        }
+
         /// <param name="needDetach">whether remove current context from render buffer</param>
         private void _Update(GLVisual visual, bool needDetach = false)
         {
