@@ -30,7 +30,7 @@ namespace YDrawing2DTest
         {
             InitializeComponent();
             Loaded += OnLoaded;
-            _glPanel = new GLPanel(new PointF(0, 0), Colors.Black, 60, YOpenGL.RenderMode.Async);
+            _glPanel = new GLPanel(new PointF(0, 0), Colors.Black, 60, YOpenGL.RenderMode.Async, ResourceMode.Normal);
             Content = _glPanel;
         }
 

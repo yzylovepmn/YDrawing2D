@@ -24,6 +24,12 @@ namespace YOpenGL
         Async // 异步
     }
 
+    public enum ResourceMode
+    {
+        Normal,
+        Global
+    }
+
     /// <summary>
     /// The positive direction of the X axis is right(→) and the positive direction of the Y axis is up(↑);
     /// </summary>
@@ -34,12 +40,14 @@ namespace YOpenGL
         private static readonly string[] _shaders_fill = new string[] { "fill.vert", "fill.frag" };
         private static readonly string[] _shaders_arrow = new string[] { "arrow.vert", "arrow.geom", "fill.frag" };
 
-        public GLPanel(PointF origin, Color color, float frameRate = 60, RenderMode renderMode = RenderMode.Sync)
+        public GLPanel(PointF origin, Color color, float frameRate = 60, RenderMode renderMode = RenderMode.Sync, ResourceMode resourceMode = ResourceMode.Global)
         {
+            Focusable = true;
             Origin = origin;
             Color = color;
             _frameSpan = Math.Max(1, (int)(1000 / frameRate));
             _renderMode = renderMode;
+            _resourceMode = resourceMode;
             _isInit = false;
             _isDisposed = false;
             _view = new MatrixF();
@@ -58,7 +66,8 @@ namespace YOpenGL
             _preference = new Preference(this);
         }
 
-        #region Private Field
+        #region Field & Property
+        internal ContextHandle Context { get { return _context; } }
         private ContextHandle _context;
 
         private bool _isDisposed;
@@ -70,6 +79,7 @@ namespace YOpenGL
         private Stopwatch _watch;
 
         #region Matrix
+        internal MatrixF TransformToDevice { get { return _transformToDevice; } }
         private MatrixF _transformToDevice;
         private MatrixF _worldToNDC;
         private MatrixF _view;
@@ -77,10 +87,18 @@ namespace YOpenGL
         #endregion
 
         #region Shader
+        internal Shader Lineshader { get { return _lineshader; } }
         private Shader _lineshader;
+
+        internal Shader Arcshader { get { return _arcshader; } }
         private Shader _arcshader;
+
+        internal Shader Fillshader { get { return _fillshader; } }
         private Shader _fillshader;
+
+        internal Shader ArrowShader { get { return _arrowShader; } }
         private Shader _arrowShader;
+
         private List<Shader> _shaders;
         #endregion
 
@@ -94,6 +112,7 @@ namespace YOpenGL
         #endregion
 
         #region Dash
+        internal uint[] Texture_Dash { get { return _texture_dash; } }
         private uint[] _texture_dash;
         #endregion
 
@@ -101,9 +120,6 @@ namespace YOpenGL
         private uint[] _matrix;
         #endregion
 
-        #endregion
-
-        #region Property
         public IEnumerable<GLVisual> Visuals { get { return _visuals; } }
         protected List<GLVisual> _visuals;
 
@@ -119,6 +135,9 @@ namespace YOpenGL
 
         public RenderMode RenderMode { get { return _renderMode; } }
         private RenderMode _renderMode;
+
+        public ResourceMode ResourceMode { get { return _resourceMode; } }
+        private ResourceMode _resourceMode;
 
         public Color Color
         {
@@ -281,6 +300,56 @@ namespace YOpenGL
         #endregion
 
         #region Visual
+        public void MoveToTop(GLVisual visual, bool refresh = false)
+        {
+            if (_resourceMode == ResourceMode.Normal)
+            {
+                _visuals.Remove(visual);
+                _visuals.Add(visual);
+
+                if (refresh)
+                    _Refresh();
+            }
+        }
+
+        public void MoveToBottom(GLVisual visual, bool refresh = false)
+        {
+            if (_resourceMode == ResourceMode.Normal)
+            {
+                _visuals.Remove(visual);
+                _visuals.Insert(0, visual);
+
+                if (refresh)
+                    _Refresh();
+            }
+        }
+
+        public void MoveOnTop(GLVisual source, GLVisual target, bool refresh = false)
+        {
+            if (_resourceMode == ResourceMode.Normal)
+            {
+                _visuals.Remove(source);
+                var index = _visuals.IndexOf(target);
+                _visuals.Insert(index + 1, source);
+
+                if (refresh)
+                    _Refresh();
+            }
+        }
+
+        public void MoveOnBottom(GLVisual source, GLVisual target, bool refresh = false)
+        {
+            if (_resourceMode == ResourceMode.Normal)
+            {
+                _visuals.Remove(source);
+                var index = _visuals.IndexOf(target);
+                _visuals.Insert(index, source);
+
+                if (refresh)
+                    _Refresh();
+            }
+        }
+
         public GLVisual HitTest(PointF point, float sensitive = 6)
         {
             foreach (var visual in _visuals.Where(v => v.HitTestVisible))
@@ -312,8 +381,27 @@ namespace YOpenGL
             }
 
             _AddVisual(visual);
-            visual.Panel = this;
             _Update(visual);
+            if (refresh)
+                _Refresh();
+        }
+
+        public void InsertVisuals(int index, IEnumerable<GLVisual> visuals, bool refresh = false)
+        {
+            foreach (var visual in visuals)
+            {
+                if (!visual.IsDeleted)
+                {
+                    if (visual.Panel != this)
+                        throw new InvalidOperationException("Visual has already a logical parent!");
+                    else throw new InvalidOperationException("Visual has already been added");
+                }
+            }
+
+            _InsertVisuals(index, visuals);
+            foreach (var visual in visuals)
+                _Update(visual);
+
             if (refresh)
                 _Refresh();
         }
@@ -354,7 +442,18 @@ namespace YOpenGL
         private void _AddVisual(GLVisual visual)
         {
             visual.IsDeleted = false;
+            visual.Panel = this;
             _visuals.Add(visual);
+        }
+
+        private void _InsertVisuals(int index, IEnumerable<GLVisual> visuals)
+        {
+            foreach (var visual in visuals)
+            {
+                visual.IsDeleted = false;
+                visual.Panel = this;
+            }
+            _visuals.InsertRange(index, visuals);
         }
 
         private void _RemoveVisual(GLVisual visual)
@@ -651,7 +750,7 @@ namespace YOpenGL
         {
             if (!_isInit) return;
 
-            if (needUpdate)
+            if (needUpdate && _resourceMode == ResourceMode.Global)
                 _EndInitModels();
 
             if (Interlocked.Increment(ref _signal) == 1)
@@ -691,30 +790,43 @@ namespace YOpenGL
 
         private void _AttachVisual(GLVisual visual)
         {
-            var drawContext = visual.CurrentContext;
-            MakeSureCurrentContext(_context);
-
-            foreach (var primitive in drawContext.Primitives)
+            if (_resourceMode == ResourceMode.Normal)
             {
-                if (!primitive.Pen.IsNULL || primitive.Type == PrimitiveType.ComplexGeometry)
-                    _AttachModel(primitive, primitive.Pen);
-                if (primitive.Filled)
+                visual.AttachData();
+                visual.EndInitModels();
+            }
+            else
+            {
+                var drawContext = visual.CurrentContext;
+                MakeSureCurrentContext(_context);
+
+                foreach (var primitive in drawContext.Primitives)
                 {
-                    if (primitive.Type == PrimitiveType.ComplexGeometry)
-                        _AttachStreamModel(primitive);
-                    else if (primitive.Type == PrimitiveType.Arrow)
-                        _AttachArrowModels(primitive);
-                    else if (primitive.Type == PrimitiveType.Point)
-                        _AttachPointModels(primitive);
-                    else _AttachFillModels(primitive);
+                    if (!primitive.Pen.IsNULL || primitive.Type == PrimitiveType.ComplexGeometry)
+                        _AttachModel(primitive, primitive.Pen);
+                    if (primitive.Filled)
+                    {
+                        if (primitive.Type == PrimitiveType.ComplexGeometry)
+                            _AttachStreamModel(primitive);
+                        else if (primitive.Type == PrimitiveType.Arrow)
+                            _AttachArrowModels(primitive);
+                        else if (primitive.Type == PrimitiveType.Point)
+                            _AttachPointModels(primitive);
+                        else _AttachFillModels(primitive);
+                    }
                 }
             }
         }
 
         private void _DetachVisual(GLVisual visual)
         {
-            var drawContext = visual.CurrentContext;
-            visual.Detach(drawContext);
+            if (_resourceMode == ResourceMode.Normal)
+                visual.DetachData();
+            else
+            {
+                var drawContext = visual.CurrentContext;
+                visual.Detach(drawContext);
+            }
         }
 
         private void _AttachModel(IPrimitive primitive, PenF pen)
@@ -951,26 +1063,34 @@ namespace YOpenGL
 
         private void _DrawModels()
         {
-            Enable(GL_CULL_FACE);
-            foreach (var pair in _lineModels)
-                _DrawModelHandle(pair, _lineshader);
+            if (_resourceMode == ResourceMode.Normal)
+            {
+                foreach (var visual in _visuals)
+                    visual.DrawModels();
+            }
+            else
+            {
+                Enable(GL_CULL_FACE);
+                foreach (var pair in _lineModels)
+                    _DrawModelHandle(pair, _lineshader);
 
-            foreach (var pair in _arcModels)
-                _DrawModelHandle(pair, _arcshader);
+                foreach (var pair in _arcModels)
+                    _DrawModelHandle(pair, _arcshader);
 
-            foreach (var pair in _fillModels)
-                _DrawFilledModelHandle(pair, _fillshader);
+                foreach (var pair in _fillModels)
+                    _DrawFilledModelHandle(pair, _fillshader);
 
-            foreach (var pair in _arrowModels)
-                _DrawFilledModelHandle(pair, _arrowShader);
+                foreach (var pair in _arrowModels)
+                    _DrawFilledModelHandle(pair, _arrowShader);
 
-            foreach (var pair in _pointModels)
-                _DrawPointModelsHandle(pair, _fillshader);
-            Disable(GL_CULL_FACE);
+                foreach (var pair in _pointModels)
+                    _DrawPointModelsHandle(pair, _fillshader);
+                Disable(GL_CULL_FACE);
 
-            Enable(GL_STENCIL_TEST);
-            _DrawSteramModelHandle(_streamModels, _fillshader);
-            Disable(GL_STENCIL_TEST);
+                Enable(GL_STENCIL_TEST);
+                _DrawSteramModelHandle(_streamModels, _fillshader);
+                Disable(GL_STENCIL_TEST);
+            }
         }
 
         private void _DrawModelHandle(KeyValuePair<PenF, List<MeshModel>> pair, Shader shader)
@@ -1044,6 +1164,12 @@ namespace YOpenGL
         #endregion
 
         #region Override
+        protected override void OnMouseDown(MouseButtonEventArgs e)
+        {
+            base.OnMouseDown(e);
+            Focus();
+        }
+
         protected override IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             if (!_isDisposed)
@@ -1115,10 +1241,10 @@ namespace YOpenGL
         #region Dispose
         protected virtual void DisposeCore()
         {
+            _DisposeModels();
             _DisposeVisuals();
             _visuals = null;
 
-            _DisposeModels();
             _fillModels = null;
             _arrowModels = null;
             _streamModels = null;
@@ -1136,26 +1262,31 @@ namespace YOpenGL
 
         private void _DisposeModels()
         {
-            MakeSureCurrentContext(_context);
+            if (_resourceMode == ResourceMode.Normal)
+                _visuals.ForEach(visual => visual.DetachData());
+            else
+            {
+                MakeSureCurrentContext(_context);
 
-            foreach (var item in _fillModels.Values)
-                item?.DisposeInner();
-            foreach (var item in _arrowModels.Values)
-                item?.DisposeInner();
-            _streamModels?.DisposeInner();
-            foreach (var item in _lineModels.Values)
-                item?.DisposeInner();
-            foreach (var item in _arcModels.Values)
-                item?.DisposeInner();
-            foreach (var item in _pointModels.Values)
-                item?.DisposeInner();
+                foreach (var item in _fillModels.Values)
+                    item?.DisposeInner();
+                foreach (var item in _arrowModels.Values)
+                    item?.DisposeInner();
+                _streamModels?.DisposeInner();
+                foreach (var item in _lineModels.Values)
+                    item?.DisposeInner();
+                foreach (var item in _arcModels.Values)
+                    item?.DisposeInner();
+                foreach (var item in _pointModels.Values)
+                    item?.DisposeInner();
 
-            _fillModels.Clear();
-            _arrowModels.Clear();
-            _streamModels.Clear();
-            _lineModels.Clear();
-            _arcModels.Clear();
-            _pointModels.Clear();
+                _fillModels.Clear();
+                _arrowModels.Clear();
+                _streamModels.Clear();
+                _lineModels.Clear();
+                _arcModels.Clear();
+                _pointModels.Clear();
+            }
         }
 
         protected sealed override void Dispose(bool disposing)
