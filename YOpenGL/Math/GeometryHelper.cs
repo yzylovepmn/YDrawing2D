@@ -796,7 +796,7 @@ namespace YOpenGL
                                     if (end.Y > point.Y)
                                     {
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius && (start.X - point.X) > (end.X - point.X))
+                                        if (len < arc.Radius)
                                         {
                                             leftpass++;
                                             toppass++;
@@ -866,7 +866,7 @@ namespace YOpenGL
                                     {
                                         // 4 4
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius && (start.X - point.X) < (end.X - point.X))
+                                        if (len < arc.Radius)
                                         {
                                             leftpass++;
                                             toppass++;
@@ -933,7 +933,7 @@ namespace YOpenGL
                                     if (end.Y > point.Y)
                                     {
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius && (start.X - point.X) > (end.X - point.X))
+                                        if (len < arc.Radius)
                                         {
                                             leftpass++;
                                             toppass++;
@@ -1003,7 +1003,7 @@ namespace YOpenGL
                                     {
                                         // 3 3
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius && (start.X - point.X) < (end.X - point.X))
+                                        if (len < arc.Radius)
                                         {
                                             leftpass++;
                                             toppass++;
