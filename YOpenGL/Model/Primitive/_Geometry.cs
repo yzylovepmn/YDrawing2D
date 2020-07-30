@@ -139,7 +139,7 @@ namespace YOpenGL
     {
         public IEnumerable<PointF> this[bool isOutline] { get { yield break; } }
 
-        internal RectF _bounds;
+        internal RectF _bounds = RectF.Empty;
 
         public PenF Pen { get { return PenF.NULL; } }
 
