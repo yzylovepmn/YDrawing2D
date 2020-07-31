@@ -795,6 +795,13 @@ namespace YOpenGL
                                     // 1 1
                                     if (end.Y > point.Y)
                                     {
+                                        if (start.X == end.X && start.Y > end.Y)
+                                            continue;
+                                        if (start.Y == end.Y && start.X < end.X)
+                                            continue;
+                                        if (start.X < end.X && start.Y > end.Y)
+                                            continue;
+
                                         var len = (point - arc.Center).Length;
                                         if (len < arc.Radius)
                                         {
@@ -864,6 +871,13 @@ namespace YOpenGL
                                     }
                                     else
                                     {
+                                        if (start.X == end.X && start.Y > end.Y)
+                                            continue;
+                                        if (start.Y == end.Y && start.X > end.X)
+                                            continue;
+                                        if (start.X > end.X && start.Y > end.Y)
+                                            continue;
+
                                         // 4 4
                                         var len = (point - arc.Center).Length;
                                         if (len < arc.Radius)
@@ -929,6 +943,13 @@ namespace YOpenGL
                                 }
                                 else
                                 {
+                                    if (start.X == end.X && start.Y < end.Y)
+                                        continue;
+                                    if (start.Y == end.Y && start.X < end.X)
+                                        continue;
+                                    if (start.X < end.X && start.Y < end.Y)
+                                        continue;
+
                                     // 2 2
                                     if (end.Y > point.Y)
                                     {
@@ -1001,6 +1022,13 @@ namespace YOpenGL
                                     }
                                     else
                                     {
+                                        if (start.X == end.X && start.Y < end.Y)
+                                            continue;
+                                        if (start.Y == end.Y && start.X > end.X)
+                                            continue;
+                                        if (start.X > end.X && start.Y < end.Y)
+                                            continue;
+
                                         // 3 3
                                         var len = (point - arc.Center).Length;
                                         if (len < arc.Radius)
