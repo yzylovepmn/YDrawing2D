@@ -41,7 +41,7 @@ namespace YOpenGL
         public GLPanel Panel { get { return _panel; } internal set { _panel = value; } }
         protected GLPanel _panel;
 
-        public RectF Bounds { get { return _bounds; } }
+        public virtual RectF Bounds { get { return _bounds; } }
         private RectF _bounds;
 
         public bool HitTestVisible { get { return _hitTestVisible; } set { _hitTestVisible = value; } }

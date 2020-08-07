@@ -88,6 +88,17 @@ namespace YOpenGL
             UnitCicle = GenCiclePoints().ToArray();
         }
 
+        /// <summary>
+        /// CounterClockwise
+        /// </summary>
+        internal static float CalcInclusionRadian(float startRadian, float endRadian)
+        {
+            var radian = Math.IEEERemainder(endRadian - startRadian, Math.PI * 2);
+            if (radian < 0)
+                radian += Math.PI * 2;
+            return (float)radian;
+        }
+
         internal static void CalcABC(PointF p1, PointF p2, out float A, out float B, out float C)
         {
             var deltaY = p2.Y - p1.Y;
@@ -784,6 +795,7 @@ namespace YOpenGL
                         break;
                     case PrimitiveType.Arc:
                         var arc = (_Arc)primitive;
+                        var isLarger = CalcInclusionRadian(arc.EndRadian, arc.StartRadian) > Math.PI;
                         var start = new PointF(arc.Center.X + arc.Radius * (float)Math.Cos(arc.StartRadian), arc.Center.Y + arc.Radius * (float)Math.Sin(arc.StartRadian));
                         var end = new PointF(arc.Center.X + arc.Radius * (float)Math.Cos(arc.EndRadian), arc.Center.Y + arc.Radius * (float)Math.Sin(arc.EndRadian));
                         if (start.X > point.X)
@@ -803,7 +815,7 @@ namespace YOpenGL
                                             continue;
 
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius)
+                                        if (len < arc.Radius && isLarger)
                                         {
                                             leftpass++;
                                             toppass++;
@@ -880,7 +892,7 @@ namespace YOpenGL
 
                                         // 4 4
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius)
+                                        if (len < arc.Radius && isLarger)
                                         {
                                             leftpass++;
                                             toppass++;
@@ -954,7 +966,7 @@ namespace YOpenGL
                                     if (end.Y > point.Y)
                                     {
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius)
+                                        if (len < arc.Radius && isLarger)
                                         {
                                             leftpass++;
                                             toppass++;
@@ -1031,7 +1043,7 @@ namespace YOpenGL
 
                                         // 3 3
                                         var len = (point - arc.Center).Length;
-                                        if (len < arc.Radius)
+                                        if (len < arc.Radius && isLarger)
                                         {
                                             leftpass++;
                                             toppass++;
