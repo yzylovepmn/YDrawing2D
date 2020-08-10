@@ -462,15 +462,16 @@ namespace YOpenGL
         internal static void CalcArcRadian(PointF start, PointF end, float radius, bool isLargeAngle, bool isClockwise, out PointF center, out float startRadian, out float endRadian)
         {
             var vec = end - start;
-            if (vec.Length <= radius * 2)
+            var len = _SelectCloser(vec.Length, radius * 2);
+            if (len <= radius * 2)
             {
                 var normal = new VectorF(vec.Y, -vec.X);
                 normal.Normalize();
                 center = new PointF((start.X + end.X) / 2, (start.Y + end.Y) / 2);
-                var len = normal * (float)Math.Sqrt(radius * radius - vec.LengthSquared / 4);
+                var lvec = normal * (float)Math.Sqrt(radius * radius - len * len / 4);
                 if (isLargeAngle ^ isClockwise)
-                    center += len;
-                else center -= len;
+                    center += lvec;
+                else center -= lvec;
                 if (!isClockwise)
                     MathUtil.Switch(ref start, ref end);
 
@@ -483,6 +484,14 @@ namespace YOpenGL
                 startRadian = 0;
                 endRadian = 0;
             }
+        }
+
+        private static float _SelectCloser(float value, float target)
+        {
+            var d = Math.Abs(value - target);
+            if (d < 0.0001f)
+                value = target;
+            return value;
         }
 
         internal static float GetRadian(PointF center, PointF p)
