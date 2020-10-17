@@ -35,6 +35,7 @@ namespace YOpenGL
     /// </summary>
     public class GLPanel : HwndHost, IDisposable
     {
+        private const string ShaderSourcePrefix = "YOpenGL._2D.Resources.";
         private static readonly string[] _shaders_line = new string[] { "line.vert", "line.geom", "line.frag" };
         private static readonly string[] _shaders_arc = new string[] { "arc.vert", "arc.geom", "arc.frag" };
         private static readonly string[] _shaders_fill = new string[] { "fill.vert", "fill.frag" };
@@ -626,7 +627,7 @@ namespace YOpenGL
 
             ClearColor(_red, _green, _blue, 1.0f);
             ClearStencil(0);
-            Clear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+            Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
             BindBuffer(GL_UNIFORM_BUFFER, _matrix[0]);
             BufferSubData(GL_UNIFORM_BUFFER, 0, 12 * sizeof(float), _worldToNDC.GetData(true));
@@ -659,9 +660,10 @@ namespace YOpenGL
         {
             if (_isInit) return;
             _isInit = true;
-            _transformToDevice = (MatrixF)PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
 
+            _transformToDevice = (MatrixF)PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
             _context = CreateContextCurrent(Handle);
+
             Init();
             Enable(GL_BLEND);
             Enable(GL_LINE_WIDTH);
@@ -676,6 +678,8 @@ namespace YOpenGL
 
         private void _CreateResource()
         {
+            MakeSureCurrentContext(_context);
+
             _lineshader = GenShader(_shaders_line);
             _arcshader = GenShader(_shaders_arc);
             _fillshader = GenShader(_shaders_fill);
@@ -1139,14 +1143,14 @@ namespace YOpenGL
                 model.Draw(shader);
         }
 
-        private static Shader GenShader(string[] shaders)
+        private Shader GenShader(string[] shaders)
         {
             var header = CreateGLSLHeader();
             var source = new List<ShaderSource>();
             string code;
             foreach (var shader in shaders)
             {
-                using (var stream = new StreamReader(YOpenGL.Resources.OpenStream(shader)))
+                using (var stream = new StreamReader(YOpenGL.Resources.OpenStream(ShaderSourcePrefix, shader)))
                 {
                     code = stream.ReadToEnd();
                     var type = default(ShaderType);
@@ -1159,7 +1163,7 @@ namespace YOpenGL
                     source.Add(new ShaderSource(type, code.Replace("#version 330 core", header)));
                 }
             }
-            return Shader.GenShader(source);
+            return Shader.GenShader(source, _context);
         }
         #endregion
 

@@ -33,7 +33,7 @@ namespace YOpenGL
 
     public class Shader : IDisposable
     {
-        public Shader(uint id)
+        internal Shader(uint id)
         {
             _id = id;
         }
@@ -85,8 +85,18 @@ namespace YOpenGL
         }
 
         #region Static
-        public static Shader GenShader(IEnumerable<ShaderSource> source)
+        public static Shader GenShader(IEnumerable<ShaderSource> source, IGLContext context)
         {
+            var shader = GenShader(source, context.Context);
+            if (shader != null)
+                context.ShaderBinding(shader);
+            return shader;
+        }
+
+        internal static Shader GenShader(IEnumerable<ShaderSource> source, ContextHandle context)
+        {
+            GL.MakeSureCurrentContext(context);
+
             var id = CreateProgram();
             foreach (var file in source)
             {

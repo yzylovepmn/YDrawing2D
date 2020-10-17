@@ -2014,6 +2014,11 @@ namespace YOpenGL
             glEnableVertexAttribArray?.Invoke(index);
         }
 
+        public static void DisableVertexAttribArray(GLuint index)
+        {
+            glDisableVertexAttribArray?.Invoke(index);
+        }
+
         public static void VertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, int pointer)
         {
             glVertexAttribPointer?.Invoke(index, size, type, normalized, stride, (GLvoid)pointer);

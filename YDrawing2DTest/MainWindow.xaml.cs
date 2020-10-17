@@ -18,6 +18,7 @@ using YDrawing2D;
 using YDrawing2D.Util;
 using YDrawing2D.View;
 using YOpenGL;
+using YOpenGL._3D;
 
 namespace YDrawing2DTest
 {
@@ -30,11 +31,29 @@ namespace YDrawing2DTest
         {
             InitializeComponent();
             Loaded += OnLoaded;
-            _glPanel = new GLPanel(new PointF(0, 0), Colors.Black, 60, YOpenGL.RenderMode.Async, ResourceMode.Normal);
-            Content = _glPanel;
+            //_glPanel = new GLPanel(new PointF(0, 0), Colors.Black, 60, YOpenGL.RenderMode.Async, ResourceMode.Normal);
+            _glPanel3D = new GLPanel3D(Colors.Black);
+            Content = _glPanel3D;
+
+            _model3D = new GLModel3D() { Mode = GLPrimitiveMode.GL_LINES };
+            _model3D.SetPoints(new List<Point3F>() { new Point3F(0, 0, 0), new Point3F(100, 0, 0), new Point3F(0, 100, 0), new Point3F(100, 100, 0), 
+                                                    new Point3F(0, 0, 100), new Point3F(100, 0, 100), new Point3F(0, 100, 100), new Point3F(100, 100, 100)});
+            //_model3D.SetNormals(new List<Vector3F>() { new Vector3F(-1, -1, -1), new Vector3F(1, 0, 0), new Vector3F(0, 1, 0), new Vector3F(0, 0, 1),
+            //                                        new Vector3F(1, 1, 0), new Vector3F(1, 0, 1), new Vector3F(0, 1, 1), new Vector3F(1, 1, 1)});
+            _model3D.SetTriangleIndices(new List<uint>() 
+            { 
+                0, 1, 1, 3, 3, 2, 2, 0,
+                4, 5, 5, 7, 7, 6, 6, 4,
+                0, 4, 1, 5, 2, 6, 3, 7
+            });
+            _glPanel3D.AddModel(_model3D);
+
+            WindowState = WindowState.Normal;
         }
 
         private static GLPanel _glPanel;
+        private static GLPanel3D _glPanel3D;
+        private static GLModel3D _model3D;
 
         public static DrawingPen WhitePen = new DrawingPen(1, Colors.White);
         public static DrawingPen ActivePen = new DrawingPen(1, Colors.Yellow);
@@ -124,49 +143,13 @@ namespace YDrawing2DTest
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            for (int i = 1; i < 100000; i++)
-            {
-                //_glPanel.AddVisual(new Cicle(new PointF(0, 0), i * 2));
-                //_glPanel.AddVisual(new Line(new PointF(0, i), new PointF(800, i + 100)));
-            }
-            //_glPanel.AddVisual(new CustomShape(new PointF(0, 0)));
-            _glPanel.AddVisual(new Text("Hello world!", new PointF(100, 200)));
-            //_glPanel.AddVisual(new Cicle(new PointF(500, 500), 200));
-            //_glPanel.AddVisual(new Cicle(new PointF(100, 500), 100));
-            //_glPanel.AddVisual(new Arc(new PointF(550, 100), 300, 340, 100));
-            //_glPanel.AddVisual(new Rectangle(new RectF(new SizeF(100, 200))));
-            //_glPanel.AddVisual(new Rectangle(new RectF(new PointF(200, 300), new SizeF(100, 200))));
-
-            _hint = new Hint() { HitTestVisible = false };
-            _glPanel.AddVisual(_hint);
-            _glPanel.MouseMove += _panel_MouseMove;
-            _glPanel.MouseWheel += _panel_MouseWheel;
-            _glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
-            _glPanel.UpdateAll();
-
-            // ======================================================= //
-            //_panel = new PresentationPanel(ActualWidth, ActualHeight, 96, 96, Colors.Black, new Point(0, 0), YDrawing2D.RenderMode.Async);
-            //Content = _panel;
-            //var r = new Random(5);
-            //for (int i = 0; i < 10000; i++)
-            //{
-            //    //_panel.AddVisual(new Line(new Point(0, i), new Point(800, i + 100)));
-            //    //_panel.AddVisual(new Line(new Point(200, 800 - i), new Point(600, 800 - i)));
-            //    //_panel.AddVisual(new Cicle(new Point(400, 400), i));
-            //    //_panel.AddVisual(new Ellipse(new Point(400, 400), 20 + i, 40 + 2 * i));
-            //    //_panel.AddVisual(new Arc(new Point(400, 400), i, i * 2, 50 + i));
-            //}
-            //_panel.AddVisual(new Line(new Point(0, 0), new Point(500, 800)), true);
-            //_panel.AddVisual(new Arc(new Point(600, 500), 30, 300, 200), true);
-            //_panel.AddVisual(new Rectangle(new Rect(new Point(100, 100), new Point(600, 500))), true);
-            //_panel.AddVisual(new Ellipse(new Point(400, 100), 200, 400), true);
-            //_panel.AddVisual(new Cicle(new Point(100, 300), 300), true);
-            //_panel.AddVisual(new CustomShape(), true);
-            //_panel.AddVisual(new Text(), true);
-            ////_panel.UpdateAll();
-            //_panel.MouseMove += _panel_MouseMove;
-            //_panel.MouseWheel += _panel_MouseWheel;
-            //_panel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
+            //_glPanel.AddVisual(new Text("Hello world!", new PointF(100, 200)));
+            //_hint = new Hint() { HitTestVisible = false };
+            //_glPanel.AddVisual(_hint);
+            //_glPanel.MouseMove += _panel_MouseMove;
+            //_glPanel.MouseWheel += _panel_MouseWheel;
+            //_glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
+            //_glPanel.UpdateAll();
         }
 
         private void _panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -179,12 +162,12 @@ namespace YDrawing2DTest
                 GLSelectedVisual = _glPanel.HitTest(_pInView);
         }
 
-        protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
-        {
-            base.OnMouseLeftButtonUp(e);
-            _glPanel.ReleaseMouseCapture();
-            _hint.IsVisible = false;
-        }
+        //protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+        //{
+        //    base.OnMouseLeftButtonUp(e);
+        //    _glPanel.ReleaseMouseCapture();
+        //    _hint.IsVisible = false;
+        //}
 
         private void _panel_MouseWheel(object sender, MouseWheelEventArgs e)
         {

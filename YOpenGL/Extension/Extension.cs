@@ -47,18 +47,48 @@ namespace YOpenGL
 
         public static float[] GetData(this IEnumerable<PointF> points)
         {
-            var data = new List<float>();
+            var data = new float[points.Count() * 2];
+            var index = 0;
             foreach (var point in points)
             {
-                data.Add(point.X);
-                data.Add(point.Y);
+                data[index++] = point.X;
+                data[index++] = point.Y;
             }
-            return data.ToArray();
+
+            return data;
         }
 
         public static float[] GetData(this Color color)
         {
             return new float[] { color.ScR, color.ScG, color.ScB, color.ScA };
+        }
+
+        public static float[] GetData(this IEnumerable<Point3F> points)
+        {
+            var data = new float[points.Count() * 3];
+            var index = 0;
+            foreach (var point in points)
+            {
+                data[index++] = point.X;
+                data[index++] = point.Y;
+                data[index++] = point.Z;
+            }
+
+            return data;
+        }
+
+        public static float[] GetData(this IEnumerable<Vector3F> vectors)
+        {
+            var data = new float[vectors.Count() * 3];
+            var index = 0;
+            foreach (var vector in vectors)
+            {
+                data[index++] = vector.X;
+                data[index++] = vector.Y;
+                data[index++] = vector.Z;
+            }
+
+            return data;
         }
 
         public static int GetValue(this Color color)
@@ -84,6 +114,17 @@ namespace YOpenGL
                     matrix.M11, matrix.M21, 0,
                     matrix.M12, matrix.M22, 0,
                     matrix.OffsetX, matrix.OffsetY, 1f
+                };
+        }
+
+        public static float[] GetData(this Matrix3F matrix)
+        {
+            return new float[]
+                {
+                    matrix.M11, matrix.M12, matrix.M13, matrix.M14,
+                    matrix.M21, matrix.M22, matrix.M23, matrix.M24,
+                    matrix.M31, matrix.M32, matrix.M33, matrix.M34,
+                    matrix.OffsetX, matrix.OffsetY, matrix.OffsetZ, matrix.M44
                 };
         }
 

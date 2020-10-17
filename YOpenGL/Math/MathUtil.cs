@@ -10,6 +10,32 @@ namespace YOpenGL
     {
         internal const double DBL_EPSILON = 2.2204460492503131e-016;
 
+        internal static double RadiansToDegrees(double radians)
+        {
+            return radians * (180.0 / Math.PI);
+        }
+
+        internal static double DegreesToRadians(double degrees)
+        {
+            return degrees * (Math.PI / 180.0);
+        }
+
+        internal static void Clamp(ref double value, double min, double max)
+        {
+            value = Math.Max(Math.Min(value, max), min);
+        }
+
+        internal static Vector3F ProjectToTrackball(PointF point, float w, float h)
+        {
+            double r = Math.Sqrt(w * w + h * h) / 2;
+            double x = (point.X - w / 2) / r;
+            double y = (h / 2 - point.Y) / r;
+            double z2 = 1 - x * x - y * y;
+            double z = z2 > 0 ? Math.Sqrt(z2) : 0;
+
+            return new Vector3F((float)x, (float)y, (float)z);
+        }
+
         public static void Switch(ref float a, ref float b)
         {
             var c = a;
@@ -34,6 +60,21 @@ namespace YOpenGL
         public static bool IsZero(double value)
         {
             return Math.Abs(value) < 10.0 * DBL_EPSILON;
+        }
+
+        public static bool IsOne(double value)
+        {
+            return Math.Abs(value - 1.0) < 10.0 * DBL_EPSILON;
+        }
+
+        public static bool AreClose(double value1, double value2)
+        {
+            //in case they are Infinities (then epsilon check does not work)
+            if (value1 == value2) return true;
+            // This computes (|value1-value2| / (|value1| + |value2| + 10.0)) < DBL_EPSILON
+            double eps = (Math.Abs(value1) + Math.Abs(value2) + 10.0) * DBL_EPSILON;
+            double delta = value1 - value2;
+            return (-eps < delta) && (eps > delta);
         }
 
         internal static void TransformRect(ref RectF rect, ref MatrixF matrix)

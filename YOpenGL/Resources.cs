@@ -9,11 +9,10 @@ namespace YOpenGL
 {
     internal static class Resources
     {
-        static readonly string Prefix = typeof(Resources).FullName + ".";
-
-        public static Stream OpenStream(string name)
+        public static Stream OpenStream(string prefix, string name)
         {
-            var stream = typeof(Resources).Assembly.GetManifestResourceStream(Prefix + name);
+            var assembly = typeof(Resources).Assembly;
+            var stream = assembly.GetManifestResourceStream(prefix + name);
             if (stream == null)
                 throw new FileNotFoundException("The resource file '" + name + "' was not found!");
             return stream;

@@ -49,6 +49,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="3D\Camera.cs" />
+    <Compile Include="3D\GLPrimitiveMode.cs" />
+    <Compile Include="3D\GLModel3D.cs" />
+    <Compile Include="3D\GLPanel3D.cs" />
+    <Compile Include="3D\Handlers\MouseEventHandler.cs" />
+    <Compile Include="3D\IGLContext.cs" />
     <Compile Include="Internel\ContextHandle.cs" />
     <Compile Include="Extension\Extension.cs" />
     <Compile Include="Math\GeometryHelper.cs" />
@@ -58,64 +64,76 @@
     <Compile Include="GLVersion.cs" />
     <Compile Include="Internel\Timer.cs" />
     <Compile Include="Math\MathUtil.cs" />
+    <Compile Include="Math\Matrix3F.cs" />
     <Compile Include="Math\MatrixF.cs" />
     <Compile Include="Math\PenF.cs" />
+    <Compile Include="Math\Point3F.cs" />
+    <Compile Include="Math\Point4F.cs" />
     <Compile Include="Math\PointF.cs" />
+    <Compile Include="Math\QuaternionF.cs" />
+    <Compile Include="Math\Rect3F.cs" />
     <Compile Include="Math\RectF.cs" />
+    <Compile Include="Math\Size3F.cs" />
     <Compile Include="Math\SizeF.cs" />
     <Compile Include="Math\StackTransform.cs" />
+    <Compile Include="Math\Vector3F.cs" />
     <Compile Include="Math\VectorF.cs" />
-    <Compile Include="Model\ArcModel.cs" />
-    <Compile Include="Model\ArrowModel.cs" />
-    <Compile Include="Model\FillModel.cs" />
-    <Compile Include="Model\LinesModel.cs" />
-    <Compile Include="Model\MeshModel.cs" />
-    <Compile Include="Model\PointsModel.cs" />
-    <Compile Include="Model\Primitive\_Arrow.cs" />
-    <Compile Include="Model\Primitive\_Point.cs" />
-    <Compile Include="Model\Primitive\_Spline.cs" />
-    <Compile Include="Model\StreamModel.cs" />
-    <Compile Include="Model\Primitive\_Arc.cs" />
-    <Compile Include="Model\Primitive\IPrimitive.cs" />
-    <Compile Include="Model\Primitive\_Bezier.cs" />
-    <Compile Include="Model\Primitive\_Geometry.cs" />
-    <Compile Include="Model\Primitive\_Line.cs" />
+    <Compile Include="2D\Model\ArcModel.cs" />
+    <Compile Include="2D\Model\ArrowModel.cs" />
+    <Compile Include="2D\Model\FillModel.cs" />
+    <Compile Include="2D\Model\LinesModel.cs" />
+    <Compile Include="2D\Model\MeshModel.cs" />
+    <Compile Include="2D\Model\PointsModel.cs" />
+    <Compile Include="2D\Model\Primitive\_Arrow.cs" />
+    <Compile Include="2D\Model\Primitive\_Point.cs" />
+    <Compile Include="2D\Model\Primitive\_Spline.cs" />
+    <Compile Include="2D\Model\StreamModel.cs" />
+    <Compile Include="2D\Model\Primitive\_Arc.cs" />
+    <Compile Include="2D\Model\Primitive\IPrimitive.cs" />
+    <Compile Include="2D\Model\Primitive\_Bezier.cs" />
+    <Compile Include="2D\Model\Primitive\_Geometry.cs" />
+    <Compile Include="2D\Model\Primitive\_Line.cs" />
     <Compile Include="Internel\Shader.cs" />
-    <Compile Include="Preference.cs" />
+    <Compile Include="2D\Preference.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Resources\Resources.cs" />
-    <Compile Include="View\GLDrawContext.cs" />
-    <Compile Include="View\GLPanel.cs" />
-    <Compile Include="View\GLVisual.cs" />
+    <Compile Include="Resources.cs" />
+    <Compile Include="2D\View\GLDrawContext.cs" />
+    <Compile Include="2D\View\GLPanel.cs" />
+    <Compile Include="2D\View\GLVisual.cs" />
     <Compile Include="Win32Helper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\line.vert" />
+    <EmbeddedResource Include="2D\Resources\line.vert" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\line.frag" />
-    <EmbeddedResource Include="Resources\line.geom" />
+    <EmbeddedResource Include="2D\Resources\line.frag" />
+    <EmbeddedResource Include="2D\Resources\line.geom" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\arc.frag" />
+    <EmbeddedResource Include="2D\Resources\arc.frag" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\arc.geom" />
+    <EmbeddedResource Include="2D\Resources\arc.geom" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\arc.vert" />
+    <EmbeddedResource Include="2D\Resources\arc.vert" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\fill.vert" />
+    <EmbeddedResource Include="2D\Resources\fill.vert" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\fill.frag" />
+    <EmbeddedResource Include="2D\Resources\fill.frag" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\arrow.vert" />
+    <EmbeddedResource Include="2D\Resources\arrow.vert" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\arrow.geom" />
+    <EmbeddedResource Include="2D\Resources\arrow.geom" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="3D\Shaders\default.frag" />
+    <EmbeddedResource Include="3D\Shaders\default.vert" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
