@@ -39,6 +39,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -55,6 +56,16 @@
     <Compile Include="3D\GLPanel3D.cs" />
     <Compile Include="3D\Handlers\MouseEventHandler.cs" />
     <Compile Include="3D\IGLContext.cs" />
+    <Compile Include="3D\Lights\AmbientLight.cs" />
+    <Compile Include="3D\Lights\DirectionLight.cs" />
+    <Compile Include="3D\Lights\Light.cs" />
+    <Compile Include="3D\Lights\PointLight.cs" />
+    <Compile Include="3D\Lights\PointLightBase.cs" />
+    <Compile Include="3D\Lights\SpotLight.cs" />
+    <Compile Include="3D\Materials\DiffuseMaterial.cs" />
+    <Compile Include="3D\Materials\EmissiveMaterial.cs" />
+    <Compile Include="3D\Materials\Material.cs" />
+    <Compile Include="3D\Materials\SpecularMaterial.cs" />
     <Compile Include="Internel\ContextHandle.cs" />
     <Compile Include="Extension\Extension.cs" />
     <Compile Include="Math\GeometryHelper.cs" />

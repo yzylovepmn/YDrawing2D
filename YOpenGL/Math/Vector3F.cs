@@ -17,6 +17,8 @@ namespace YOpenGL
             _z = z;
         }
 
+        public bool IsZero { get { return _x == 0 && _y == 0 && _z == 0; } }
+
         public Float Length
         {
             get
@@ -35,6 +37,8 @@ namespace YOpenGL
 
         public void Normalize()
         {
+            if (IsZero) return;
+
             // Computation of length can overflow easily because it
             // first computes squared length, so we first divide by
             // the largest coefficient.

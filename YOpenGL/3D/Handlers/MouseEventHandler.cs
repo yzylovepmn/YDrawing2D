@@ -135,7 +135,7 @@ namespace YOpenGL._3D
                     _rotationPoint3D = _panel.Camera.Position;
                     break;
                 default:
-                    if (_panel.RotateAroundMouseDownPoint && mouseMovePoint3D.HasValue)
+                    if (_panel.RotateAroundMousePoint && mouseMovePoint3D.HasValue)
                     {
                         _rotationPoint = mouseMovePoint;
                         _rotationPoint3D = mouseMovePoint3D.Value;

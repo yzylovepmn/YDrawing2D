@@ -35,20 +35,50 @@ namespace YDrawing2DTest
             _glPanel3D = new GLPanel3D(Colors.Black);
             Content = _glPanel3D;
 
-            _model3D = new GLModel3D() { Mode = GLPrimitiveMode.GL_LINES };
-            _model3D.SetPoints(new List<Point3F>() { new Point3F(0, 0, 0), new Point3F(100, 0, 0), new Point3F(0, 100, 0), new Point3F(100, 100, 0), 
-                                                    new Point3F(0, 0, 100), new Point3F(100, 0, 100), new Point3F(0, 100, 100), new Point3F(100, 100, 100)});
-            //_model3D.SetNormals(new List<Vector3F>() { new Vector3F(-1, -1, -1), new Vector3F(1, 0, 0), new Vector3F(0, 1, 0), new Vector3F(0, 0, 1),
-            //                                        new Vector3F(1, 1, 0), new Vector3F(1, 0, 1), new Vector3F(0, 1, 1), new Vector3F(1, 1, 1)});
-            _model3D.SetTriangleIndices(new List<uint>() 
-            { 
-                0, 1, 1, 3, 3, 2, 2, 0,
-                4, 5, 5, 7, 7, 6, 6, 4,
-                0, 4, 1, 5, 2, 6, 3, 7
-            });
-            _glPanel3D.AddModel(_model3D);
+            _InitModel();
 
             WindowState = WindowState.Normal;
+        }
+
+        private void _InitModel()
+        {
+            _model3D = new GLModel3D() { Mode = GLPrimitiveMode.GL_TRIANGLES };
+            _model3D.SetPoints(new List<Point3F>()
+            {
+                new Point3F(0, 0, 0), new Point3F(100, 0, 0), new Point3F(0, 100, 0), new Point3F(100, 100, 0),
+                new Point3F(0, 0, 0), new Point3F(0, 0, 100), new Point3F(0, 100, 0), new Point3F(0, 100, 100),
+                new Point3F(0, 0, 0), new Point3F(100, 0, 0), new Point3F(0, 0, 100), new Point3F(100, 0, 100),
+                new Point3F(100, 0, 0), new Point3F(100, 100, 100), new Point3F(100, 0, 100), new Point3F(100, 100, 0),
+                new Point3F(0, 0, 100), new Point3F(100, 0, 100), new Point3F(0, 100, 100), new Point3F(100, 100, 100),
+                new Point3F(0, 100, 0), new Point3F(0, 100, 100), new Point3F(100, 100, 0), new Point3F(100, 100, 100),
+            });
+            _model3D.SetNormals(new List<Vector3F>()
+            {
+                new Vector3F(0, 0, -1), new Vector3F(0, 0, -1), new Vector3F(0, 0, -1), new Vector3F(0, 0, -1),
+                new Vector3F(-1, 0, 0), new Vector3F(-1, 0, 0), new Vector3F(-1, 0, 0), new Vector3F(-1, 0, 0),
+                new Vector3F(0, -1, 0), new Vector3F(0, -1, 0), new Vector3F(0, -1, 0), new Vector3F(0, -1, 0),
+                new Vector3F(1, 0, 0), new Vector3F(1, 0, 0), new Vector3F(1, 0, 0), new Vector3F(1, 0, 0),
+                new Vector3F(0, 0, 1), new Vector3F(0, 0, 1), new Vector3F(0, 0, 1), new Vector3F(0, 0, 1),
+                new Vector3F(0, 1, 0), new Vector3F(0, 1, 0), new Vector3F(0, 1, 0), new Vector3F(0, 1, 0),
+            });
+            _model3D.SetTriangleIndices(new List<uint>()
+            {
+                0, 2, 1, 1, 2, 3,
+                4, 5, 6, 6, 5, 7,
+                8, 9, 10, 9, 11, 10,
+                12, 13, 14, 12, 15, 13,
+                16, 17, 18, 19, 18, 17,
+                20, 21, 22, 22, 21, 23,
+            });
+
+            //_model3D.AddMaterial(new EmissiveMaterial() { Color = Colors.Gray }, MaterialOption.Both);
+            _model3D.AddMaterial(new DiffuseMaterial() { Color = Colors.White }, MaterialOption.Both);
+            _model3D.AddMaterial(new SpecularMaterial() { Color = Colors.White }, MaterialOption.Both);
+            _glPanel3D.AddModel(_model3D);
+            _glPanel3D.AddLight(new AmbientLight(Colors.White));
+            //_glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(-1, -1, -1)));
+            _glPanel3D.AddLight(new PointLight(Colors.White, new Point3F(70, -40, 200)));
+            //_glPanel3D.AddLight(new SpotLight(Colors.White, new Point3F(50, 50, 150), new Vector3F(0, 0, -1)) { InnerConeAngle = 20, OuterConeAngle = 80 });
         }
 
         private static GLPanel _glPanel;

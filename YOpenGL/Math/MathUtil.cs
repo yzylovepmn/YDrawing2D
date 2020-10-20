@@ -25,6 +25,11 @@ namespace YOpenGL
             value = Math.Max(Math.Min(value, max), min);
         }
 
+        internal static void Clamp(ref float value, float min, float max)
+        {
+            value = Math.Max(Math.Min(value, max), min);
+        }
+
         internal static Vector3F ProjectToTrackball(PointF point, float w, float h)
         {
             double r = Math.Sqrt(w * w + h * h) / 2;

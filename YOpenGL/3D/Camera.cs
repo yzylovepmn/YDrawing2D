@@ -33,14 +33,14 @@ namespace YOpenGL._3D
     public enum CameraRotationMode
     {
         /// <summary>
-        /// Turntable is constrained to two axes of rotation (model up and right direction)
-        /// </summary>
-        Turntable,
-
-        /// <summary>
         /// Turnball using three axes (look direction, right direction and up direction (on the left/right edges)).
         /// </summary>
         Turnball,
+
+        /// <summary>
+        /// Turntable is constrained to two axes of rotation (model up and right direction)
+        /// </summary>
+        Turntable,
 
         /// <summary>
         /// Using a virtual trackball.
@@ -59,7 +59,7 @@ namespace YOpenGL._3D
 
             if (_type == CameraType.Orthographic)
                 SetOrthographicParameters(width, height, nearPlaneDistance, farPlaneDistance);
-            else SetPerspectiveParameters(45, width / height, nearPlaneDistance, farPlaneDistance);
+            else SetPerspectiveParameters((float)MathUtil.RadiansToDegrees(2 * Math.Atan(Math.Tan(MathUtil.DegreesToRadians(30 / 2.0)) * nearPlaneDistance)), width / height, nearPlaneDistance, farPlaneDistance);
 
             SetViewParameters(position, lookDirection, upDirection);
         }

@@ -6,13 +6,24 @@ using System.Threading.Tasks;
 using static YOpenGL.GLFunc;
 using static YOpenGL.GLConst;
 using static YOpenGL.GL;
+using System.ComponentModel;
 
 namespace YOpenGL._3D
 {
+    [Flags]
+    public enum MaterialOption
+    {
+        Front = 1,
+        Back = 2,
+        Both = Front | Back
+    }
+
     public class GLModel3D : IDisposable
     {
         public GLModel3D()
         {
+            _materials = new List<Material>();
+            _backMaterials = new List<Material>();
         }
 
         public GLModel3D(IEnumerable<Point3F> points, IEnumerable<Vector3F> normals, IEnumerable<PointF> textureCoordinates, IEnumerable<uint> triangleIndices)
@@ -21,6 +32,8 @@ namespace YOpenGL._3D
             _normals = normals.ToList();
             _textureCoordinates = textureCoordinates.ToList();
             _triangleIndices = triangleIndices.ToList();
+            _materials = new List<Material>();
+            _backMaterials = new List<Material>();
         }
 
         public GLPanel3D Viewport
@@ -30,7 +43,7 @@ namespace YOpenGL._3D
         }
         private GLPanel3D _viewport;
 
-        public GLPrimitiveMode Mode 
+        public GLPrimitiveMode Mode
         {
             get { return _mode; }
             set
@@ -44,12 +57,12 @@ namespace YOpenGL._3D
         public Rect3F Bounds { get { return _bounds; } }
         private Rect3F _bounds;
 
-        public Shader Shader 
+        public Shader CustomShader
         { 
-            get { return _shader; }
-            set { _shader = value; }
+            get { return _customShader; }
+            set { _customShader = value; }
         }
-        private Shader _shader;
+        private Shader _customShader;
 
         internal bool HasInit { get { return _vao != null; } }
 
@@ -68,6 +81,9 @@ namespace YOpenGL._3D
 
         public IEnumerable<uint> TriangleIndices { get { return _triangleIndices; } }
         private List<uint> _triangleIndices;
+
+        private List<Material> _materials;
+        private List<Material> _backMaterials;
 
         internal void Init()
         {
@@ -209,9 +225,122 @@ namespace YOpenGL._3D
                     _bounds.Union(point);
         }
 
+        #region Materia
+        /// <summary>
+        /// 每个种类的材质只能添加一次
+        /// </summary>
+        public void AddMaterial(Material material, MaterialOption option)
+        {
+            if ((option & MaterialOption.Front) == MaterialOption.Front)
+                _AddMaterial(material);
+            if ((option & MaterialOption.Back) == MaterialOption.Back)
+                _AddBackMaterial(material);
+            if (option != 0)
+                material.PropertyChanged += _OnMaterialChanged;
+            if (HasInit)
+                _viewport.Refresh();
+        }
+
+        private void _AddMaterial(Material material)
+        {
+            if (_materials.Contains(material)) throw new InvalidOperationException("material has been added!");
+            if (_materials.Exists(mat => mat.Type == material.Type)) throw new InvalidOperationException($"{nameof(material.Type)} material has been added!");
+            _materials.Add(material);
+        }
+
+        private void _AddBackMaterial(Material backMaterial)
+        {
+            if (_backMaterials.Contains(backMaterial)) throw new InvalidOperationException("material has been added!");
+            if (_backMaterials.Exists(mat => mat.Type == backMaterial.Type)) throw new InvalidOperationException($"{nameof(backMaterial.Type)} material has been added!");
+            _backMaterials.Add(backMaterial);
+        }
+
+        public void RemoveMaterial(Material material, MaterialOption option)
+        {
+            if ((option & MaterialOption.Front) == MaterialOption.Front)
+                _RemoveMaterial(material);
+            if ((option & MaterialOption.Back) == MaterialOption.Back)
+                _RemoveBackMaterial(material);
+            if (option != 0)
+                material.PropertyChanged -= _OnMaterialChanged;
+            if (HasInit)
+                _viewport.Refresh();
+            _viewport.Refresh();
+        }
+
+        private void _RemoveMaterial(Material material)
+        {
+            if (!_materials.Contains(material)) throw new InvalidOperationException("material does not exist!");
+            _materials.Remove(material);
+        }
+
+        private void _RemoveBackMaterial(Material backMaterial)
+        {
+            if (!_backMaterials.Contains(backMaterial)) throw new InvalidOperationException("material does not exist!");
+            _backMaterials.Remove(backMaterial);
+        }
+
+        private void _OnMaterialChanged(object sender, PropertyChangedEventArgs e)
+        {
+            _viewport.Refresh();
+        }
+
+        private void _SetMaterialData(Shader shader)
+        {
+            shader.SetBool("material.hasEmissive", false);
+            shader.SetBool("material.hasDiffuse", false);
+            shader.SetBool("material.hasSpecular", false);
+            foreach (var material in _materials)
+            {
+                var data = material.Color.GetData();
+                switch (material.Type)
+                {
+                    case MaterialType.Emissive:
+                        shader.SetVec4("material.emissive", 1, data);
+                        shader.SetBool("material.hasEmissive", true);
+                        break;
+                    case MaterialType.Diffuse:
+                        shader.SetVec4("material.diffuse", 1, data);
+                        shader.SetBool("material.hasDiffuse", true);
+                        break;
+                    case MaterialType.Specular:
+                        shader.SetVec4("material.specular", 1, data);
+                        shader.SetFloat("material.shininess", (material as SpecularMaterial).SpecularPower);
+                        shader.SetBool("material.hasSpecular", true);
+                        break;
+                }
+            }
+
+            shader.SetBool("materialBack.hasEmissive", false);
+            shader.SetBool("materialBack.hasDiffuse", false);
+            shader.SetBool("materialBack.hasSpecular", false);
+            foreach (var material in _backMaterials)
+            {
+                var data = material.Color.GetData();
+                switch (material.Type)
+                {
+                    case MaterialType.Emissive:
+                        shader.SetVec4("materialBack.emissive", 1, data);
+                        shader.SetBool("materialBack.hasEmissive", true);
+                        break;
+                    case MaterialType.Diffuse:
+                        shader.SetVec4("materialBack.diffuse", 1, data);
+                        shader.SetBool("materialBack.hasDiffuse", true);
+                        break;
+                    case MaterialType.Specular:
+                        shader.SetVec4("materialBack.specular", 1, data);
+                        shader.SetFloat("materialBack.shininess", (material as SpecularMaterial).SpecularPower);
+                        shader.SetBool("materialBack.hasSpecular", true);
+                        break;
+                }
+            }
+        }
+        #endregion
+
         #region Draw
         protected internal virtual void OnRender(Shader shader)
         {
+            _SetMaterialData(shader);
             BindVertexArray(_vao[0]);
             var hasPoints = _points != null;
             var hasIndices = _triangleIndices != null;
@@ -224,6 +353,7 @@ namespace YOpenGL._3D
 
         public void Dispose()
         {
+            _materials = null;
             _viewport = null;
         }
     }
