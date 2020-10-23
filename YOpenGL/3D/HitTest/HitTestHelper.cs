@@ -39,8 +39,8 @@ namespace YOpenGL._3D
                 }
                 if (!bounds2D.Contains(pointInWpf)) continue;
 
-                var points = model.GetDrawPoints();
-                var pointsTransformed = points.Select(p => p * transform).ToArray();
+                var points = model.GetDrawPoints().ToArray();
+                var pointsTransformed = new LazyArray<Point3F>(points, p => p * transform);// points.Select(p => p * transform).ToArray();
                 switch (model.Mode)
                 {
                     case GLPrimitiveMode.GL_POINTS:
@@ -207,7 +207,7 @@ namespace YOpenGL._3D
                 else if (hitTestMode == RectHitTestMode.Intersect)
                 {
                     if (!rectInWpf.IntersectsWith(bounds2D)) continue;
-                    var pointsTransformed = model.GetDrawPoints().Select(p => p * transform).ToArray();
+                    var pointsTransformed = new LazyArray<Point3F>(model.GetDrawPoints(), p => p * transform);//model.GetDrawPoints().Select(p => p * transform).ToArray();
                     switch (model.Mode)
                     {
                         case GLPrimitiveMode.GL_POINTS:

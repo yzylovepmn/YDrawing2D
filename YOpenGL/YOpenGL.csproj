@@ -77,6 +77,7 @@
     <Compile Include="3D\Materials\SpecularMaterial.cs" />
     <Compile Include="3D\Math3DHelper.cs" />
     <Compile Include="3D\Models\RectSelector.cs" />
+    <Compile Include="3D\Util\LazyArray.cs" />
     <Compile Include="Internel\ContextHandle.cs" />
     <Compile Include="Extension\Extension.cs" />
     <Compile Include="Math\GeometryHelper.cs" />

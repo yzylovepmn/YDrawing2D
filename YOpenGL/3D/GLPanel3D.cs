@@ -48,6 +48,9 @@ namespace YOpenGL._3D
             _lights = new List<Light>();
             _mouseEventHandler = new MouseEventHandler(this);
             _zoomExtentWhenLoaded = true;
+            _isRotateEnable = true;
+            _isTranslateEnable = true;
+            _isZoomEnable = true;
             _zoomSensitivity = 1;
             _rotationSensitivity = 1;
             _modelUpDirection = new Vector3F(0, 0, 1);
@@ -146,6 +149,27 @@ namespace YOpenGL._3D
 
         public bool RotateAroundMouse { get { return _rotateAroundMouse; } set { _rotateAroundMouse = value; } }
         private bool _rotateAroundMouse;
+
+        public bool IsTranslateEnable
+        {
+            get { return _isTranslateEnable; }
+            set { _isTranslateEnable = value; }
+        }
+        private bool _isTranslateEnable;
+
+        public bool IsRotateEnable
+        {
+            get { return _isRotateEnable; }
+            set { _isRotateEnable = value; }
+        }
+        private bool _isRotateEnable;
+
+        public bool IsZoomEnable
+        {
+            get { return _isZoomEnable; }
+            set { _isZoomEnable = value; }
+        }
+        private bool _isZoomEnable;
         #endregion
 
         #region Models
@@ -753,7 +777,7 @@ namespace YOpenGL._3D
             FitView(center, radius, lookDirection, upDirection);
         }
 
-        public void FitView(
+        internal void FitView(
             Point3F center,
             float radius,
             Vector3F lookDirection,
@@ -810,6 +834,7 @@ namespace YOpenGL._3D
 
         public void Zoom(float delta, PointF zoomAround)
         {
+            if (!_isZoomEnable) return;
             var zoomAround3D = PointInWpfToPoint3D(zoomAround);
             if (zoomAround3D.HasValue)
                 Zoom(delta, zoomAround3D.Value);
@@ -911,7 +936,7 @@ namespace YOpenGL._3D
         /// </summary>
         public void Translate(Vector3F delta)
         {
-            if (_camera.Mode == CameraMode.FixedPosition) return;
+            if (_camera.Mode == CameraMode.FixedPosition || !_isTranslateEnable) return;
 
             _camera.SetViewParameters(_camera.Position + delta);
         }
@@ -921,6 +946,8 @@ namespace YOpenGL._3D
         /// </summary>
         public void Translate(VectorF delta)
         {
+            if (_camera.Mode == CameraMode.FixedPosition || !_isTranslateEnable) return;
+
             var transform = _camera.GetTotalTransform();
             transform.Append(GetNDCToWPF());
             var transformedPosition = _camera.Target * transform;
@@ -939,6 +966,8 @@ namespace YOpenGL._3D
         #region Rotate
         public void RotateTrackball(PointF p1, PointF p2, Point3F rotateAround)
         {
+            if (!_isRotateEnable) return;
+
             // http://viewport3d.com/trackball.htm
             // http://www.codeplex.com/3DTools/Thread/View.aspx?ThreadId=22310
             Vector3F v1 = MathUtil.ProjectToTrackball(p1, ViewWidth, ViewHeight);
@@ -986,6 +1015,8 @@ namespace YOpenGL._3D
 
         public void RotateTurntable(VectorF delta, Point3F rotateAround)
         {
+            if (!_isRotateEnable) return;
+
             Vector3F relativeTarget = rotateAround - _camera.Target;
             Vector3F relativePosition = rotateAround - _camera.Position;
 
@@ -1022,6 +1053,8 @@ namespace YOpenGL._3D
 
         public void RotateTurnball(PointF p1, PointF p2, Point3F rotateAround)
         {
+            if (!_isRotateEnable) return;
+
             VectorF delta = p2 - p1;
 
             Vector3F relativeTarget = rotateAround - _camera.Target;

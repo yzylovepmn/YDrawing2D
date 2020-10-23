@@ -416,16 +416,16 @@ namespace YOpenGL._3D
         }
         #endregion
 
-        public Point3F[] GetDrawPoints()
+        public IEnumerable<Point3F> GetDrawPoints()
         {
             if (_points == null) return null;
-            if (_indices == null) return _points.ToArray();
+            if (_indices == null) return _points;
 
             var points = new List<Point3F>();
             foreach (var index in _indices)
                 if (index < _points.Count)
                     points.Add(_points[(int)index]);
-            return points.ToArray();
+            return points;
         }
 
         public void Dispose()

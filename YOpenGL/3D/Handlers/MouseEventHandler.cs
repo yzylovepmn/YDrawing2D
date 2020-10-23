@@ -58,7 +58,7 @@ namespace YOpenGL._3D
             if (e.LeftButton == MouseButtonState.Pressed)
             {
                 // Translate
-                if (Keyboard.Modifiers == ModifierKeys.Shift)
+                if (Keyboard.Modifiers == ModifierKeys.Shift && _panel.IsTranslateEnable)
                 {
                     if (mouseMovePoint3D.HasValue && _lastPoint3D.HasValue)
                     {
@@ -67,7 +67,7 @@ namespace YOpenGL._3D
                     }
                 }
                 // Rotate
-                if (Keyboard.Modifiers == ModifierKeys.Control)
+                if (Keyboard.Modifiers == ModifierKeys.Control && _panel.IsRotateEnable)
                 {
                     rotateStatus = true;
                     if (!_isRotating)
@@ -86,7 +86,7 @@ namespace YOpenGL._3D
 
         private void _OnMouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if (_lastPoint3D.HasValue)
+            if (_lastPoint3D.HasValue && _panel.IsZoomEnable)
                 _panel.Zoom(-e.Delta / 2000.0f, _lastPoint3D.Value);
         }
 
