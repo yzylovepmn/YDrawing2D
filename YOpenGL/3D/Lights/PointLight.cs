@@ -24,7 +24,7 @@ namespace YOpenGL._3D
             Diffuse = diffuse;
             Specular = specular;
 
-            Range = 1000;
+            Range = float.PositiveInfinity;
             ConstantAttenuation = 1;
             LinearAttenuation = 0.007f;
             QuadraticAttenuation = 0.0002f;

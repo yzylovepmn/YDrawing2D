@@ -55,6 +55,15 @@
     <Compile Include="3D\GLModel3D.cs" />
     <Compile Include="3D\GLPanel3D.cs" />
     <Compile Include="3D\Handlers\MouseEventHandler.cs" />
+    <Compile Include="3D\HitTest\HitResult.cs" />
+    <Compile Include="3D\HitTest\HitTestHelper.cs" />
+    <Compile Include="3D\HitTest\Mesh\IMesh.cs" />
+    <Compile Include="3D\HitTest\Mesh\LineMesh.cs" />
+    <Compile Include="3D\HitTest\Mesh\MeshType.cs" />
+    <Compile Include="3D\HitTest\Mesh\PointMesh.cs" />
+    <Compile Include="3D\HitTest\Mesh\TriangleMesh.cs" />
+    <Compile Include="3D\HitTest\RectHitResult.cs" />
+    <Compile Include="3D\HitTest\RectHitTestMode.cs" />
     <Compile Include="3D\IGLContext.cs" />
     <Compile Include="3D\Lights\AmbientLight.cs" />
     <Compile Include="3D\Lights\DirectionLight.cs" />
@@ -66,6 +75,8 @@
     <Compile Include="3D\Materials\EmissiveMaterial.cs" />
     <Compile Include="3D\Materials\Material.cs" />
     <Compile Include="3D\Materials\SpecularMaterial.cs" />
+    <Compile Include="3D\Math3DHelper.cs" />
+    <Compile Include="3D\Models\RectSelector.cs" />
     <Compile Include="Internel\ContextHandle.cs" />
     <Compile Include="Extension\Extension.cs" />
     <Compile Include="Math\GeometryHelper.cs" />
@@ -74,6 +85,8 @@
     <Compile Include="GL.cs" />
     <Compile Include="GLVersion.cs" />
     <Compile Include="Internel\Timer.cs" />
+    <Compile Include="Math\Geometry\Line.cs" />
+    <Compile Include="Math\Geometry\Triangle.cs" />
     <Compile Include="Math\MathUtil.cs" />
     <Compile Include="Math\Matrix3F.cs" />
     <Compile Include="Math\MatrixF.cs" />

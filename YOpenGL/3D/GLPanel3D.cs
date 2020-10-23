@@ -26,10 +26,11 @@ namespace YOpenGL._3D
         private const string ShaderSourcePrefix = "YOpenGL._3D.Shaders.";
         private static readonly string[] _defaultShadeSource = new string[] { "default.vert", "default.frag" };
 
-        private const int AmbientLightSize = 4 * 10 * sizeof(float);
-        private const int DirLightSize = 12 * 10 * sizeof(float);
-        private const int PointLightSize = 16 * 10 * sizeof(float);
-        private const int SpotLightSize = 24 * 10 * sizeof(float);
+        private const int LightsCount = 10;
+        private const int AmbientLightSize = 4 * LightsCount * sizeof(float);
+        private const int DirLightSize = 12 * LightsCount * sizeof(float);
+        private const int PointLightSize = 16 * LightsCount * sizeof(float);
+        private const int SpotLightSize = 24 * LightsCount * sizeof(float);
         private const int AmbientLightOffset = 0;
         private const int DirLightOffset = AmbientLightOffset + AmbientLightSize;
         private const int PointLightOffset = DirLightOffset + DirLightSize;
@@ -42,15 +43,20 @@ namespace YOpenGL._3D
             _watch = new Stopwatch();
             _frameSpan = Math.Max(1, (int)(1000 / frameRate));
             _camera = new Camera(this, CameraType.Perspective, 1000, 800, 1, float.PositiveInfinity, new Point3F(0, 0, 1), new Vector3F(0, 0, -1), new Vector3F(0, 1, 0));
+            _selector = new RectSelector(this);
             _models = new List<GLModel3D>();
             _lights = new List<Light>();
             _mouseEventHandler = new MouseEventHandler(this);
+            _zoomExtentWhenLoaded = true;
             _zoomSensitivity = 1;
             _rotationSensitivity = 1;
             _modelUpDirection = new Vector3F(0, 0, 1);
 
             BackgroundColor = backgroundColor;
             Focusable = true;
+
+            _camera.PropertyChanged += _OnCameraPropertyChanged;
+            Loaded += _OnLoaded;
         }
 
         #region Field & Property
@@ -86,9 +92,14 @@ namespace YOpenGL._3D
         public Shader DefaultShader { get { return _defaultShader; } }
         private Shader _defaultShader;
 
+        public RectSelector Selector { get { return _selector; } }
+        private RectSelector _selector;
+
         private MouseEventHandler _mouseEventHandler;
 
+        internal bool IsInit { get { return _isInit; } }
         private bool _isInit;
+
         private int _signal;
         private int _frameSpan;
         private Timer _timer;
@@ -103,13 +114,21 @@ namespace YOpenGL._3D
 
         #region Buffer Object
         private uint[] _uniformBlockObj;
+
+        internal uint TransformBlock { get { return _uniformBlockObj[0]; } }
+
+        internal uint LightsBlock { get { return _uniformBlockObj[1]; } }
         #endregion
+
         public Vector3F ModelUpDirection
         {
             get { return _modelUpDirection; }
             set { _modelUpDirection = value; }
         }
         private Vector3F _modelUpDirection;
+
+        public bool ZoomExtentWhenLoaded { get { return _zoomExtentWhenLoaded; } set { _zoomExtentWhenLoaded = value; } }
+        private bool _zoomExtentWhenLoaded;
 
         public float ZoomSensitivity
         { 
@@ -125,8 +144,8 @@ namespace YOpenGL._3D
         }
         private float _rotationSensitivity;
 
-        public bool RotateAroundMousePoint { get { return _rotateAroundMousePoint; } set { _rotateAroundMousePoint = value; } }
-        private bool _rotateAroundMousePoint;
+        public bool RotateAroundMouse { get { return _rotateAroundMouse; } set { _rotateAroundMouse = value; } }
+        private bool _rotateAroundMouse;
         #endregion
 
         #region Models
@@ -187,7 +206,7 @@ namespace YOpenGL._3D
         public void AddLight(Light light)
         {
             if (_lights.Contains(light)) throw new InvalidOperationException("light has been added!");
-            if (_lights.Count(l => l.Type == light.Type) == 10) throw new InvalidOperationException("max light number is 10");
+            if (_lights.Count(l => l.Type == light.Type) == LightsCount) throw new InvalidOperationException($"max light number is {LightsCount}");
 
             _lights.Add(light);
             light.PropertyChanged += _OnLightPropertyChanged;
@@ -210,8 +229,40 @@ namespace YOpenGL._3D
 
         private void _OnLightPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            _UpdateLights();
+            _UpdateLight(sender as Light);
             _Refresh();
+        }
+
+        private void _UpdateLight(Light light)
+        {
+            if (!_isInit) return;
+
+            var lightsData = light.GetData();
+            var offset = 0;
+            var size = 0;
+            var index = _lights.Where(l => l.Type == light.Type).IndexOfInner(light);
+            switch (light.Type)
+            {
+                case LightType.Ambient:
+                    size = AmbientLightSize / LightsCount;
+                    offset = AmbientLightOffset + size * index;
+                    break;
+                case LightType.Direction:
+                    size = DirLightSize / LightsCount;
+                    offset = DirLightOffset + size * index;
+                    break;
+                case LightType.Point:
+                    size = PointLightSize / LightsCount;
+                    offset = PointLightOffset + size * index;
+                    break;
+                case LightType.Spot:
+                    size = SpotLightSize / LightsCount;
+                    offset = SpotLightOffset + size * index;
+                    break;
+            }
+            MakeSureCurrentContext();
+            BindBuffer(GL_UNIFORM_BUFFER, LightsBlock);
+            BufferSubData(GL_UNIFORM_BUFFER, offset, size, lightsData.ToArray());
         }
 
         private void _UpdateLights()
@@ -251,7 +302,8 @@ namespace YOpenGL._3D
                 }
             }
 
-            BindBuffer(GL_UNIFORM_BUFFER, _uniformBlockObj[1]);
+            MakeSureCurrentContext();
+            BindBuffer(GL_UNIFORM_BUFFER, LightsBlock);
             BufferSubData(GL_UNIFORM_BUFFER, AmbientLightOffset, ambientLightsData.Count * sizeof(float), ambientLightsData.ToArray());
             BufferSubData(GL_UNIFORM_BUFFER, DirLightOffset, dirLightsData.Count * sizeof(float), dirLightsData.ToArray());
             BufferSubData(GL_UNIFORM_BUFFER, PointLightOffset, pointLightsData.Count * sizeof(float), pointLightsData.ToArray());
@@ -280,6 +332,7 @@ namespace YOpenGL._3D
             _CreateResource();
             _InitModels();
             _UpdateLights();
+            _OnCameraPropertyChanged(null, EventArgs.Empty);
         }
 
         private void _CreateResource()
@@ -294,17 +347,31 @@ namespace YOpenGL._3D
             GenBuffers(2, _uniformBlockObj);
 
             // transform uniform Block
-            BindBuffer(GL_UNIFORM_BUFFER, _uniformBlockObj[0]);
-            BufferData(GL_UNIFORM_BUFFER, _GetUniformBlockSize(TransformUniformBlockName), default(float[]), GL_STATIC_DRAW);
-            BindBufferBase(GL_UNIFORM_BUFFER, 0, _uniformBlockObj[0]);
+            BindBuffer(GL_UNIFORM_BUFFER, TransformBlock);
+            BufferData(GL_UNIFORM_BUFFER, _GetUniformBlockSize(TransformUniformBlockName), default(float[]), GL_DYNAMIC_DRAW);
+            BindBufferBase(GL_UNIFORM_BUFFER, 0, TransformBlock);
             BindBuffer(GL_UNIFORM_BUFFER, 0);
 
             // lights uniform Block
-            BindBuffer(GL_UNIFORM_BUFFER, _uniformBlockObj[1]);
+            BindBuffer(GL_UNIFORM_BUFFER, LightsBlock);
             BufferData(GL_UNIFORM_BUFFER, _GetUniformBlockSize(LightsUniformBlockName), default(float[]), GL_STATIC_DRAW);
-            BindBufferBase(GL_UNIFORM_BUFFER, 1, _uniformBlockObj[1]);
+            BindBufferBase(GL_UNIFORM_BUFFER, 1, LightsBlock);
             BindBuffer(GL_UNIFORM_BUFFER, 0);
             #endregion
+        }
+
+        private void _DeleteResource()
+        {
+            _defaultShader.Dispose();
+            DeleteBuffers(2, _uniformBlockObj);
+
+            _models.ForEach(model => model.Dispose());
+            _lights.ForEach(light => light.PropertyChanged -= _OnLightPropertyChanged);
+
+            _models = null;
+            _lights = null;
+            _defaultShader = null;
+            _uniformBlockObj = null;
         }
 
         private int _GetUniformBlockSize(string uniformBlockName)
@@ -328,6 +395,11 @@ namespace YOpenGL._3D
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+            _DeleteResource();
+            Loaded -= _OnLoaded;
+            _camera.PropertyChanged -= _OnCameraPropertyChanged;
+            _selector.Dispose();
+            _selector = null;
             _mouseEventHandler.Dispose();
             _mouseEventHandler = null;
         }
@@ -372,7 +444,7 @@ namespace YOpenGL._3D
             Dispatcher.Invoke(() => { _DispatchFrame(); }, DispatcherPriority.Render);
             _watch.Stop();
 
-            var span = (int)(_watch.ElapsedMilliseconds - before);
+            var span = Math.Max(0, (int)(_watch.ElapsedMilliseconds - before));
 
             if (_frameSpan > span)
                 Thread.Sleep(_frameSpan - span);
@@ -389,12 +461,6 @@ namespace YOpenGL._3D
             ClearColor(_red, _green, _blue, 1.0f);
             ClearStencil(0);
             Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-            #region Update View and Projection Matrix
-            BindBuffer(GL_UNIFORM_BUFFER, _uniformBlockObj[0]);
-            BufferSubData(GL_UNIFORM_BUFFER, 0, 16 * sizeof(float), _camera.ViewMatrix.GetData());
-            BufferSubData(GL_UNIFORM_BUFFER, 16 * sizeof(float), 16 * sizeof(float), _camera.ProjectionMatrix.GetData());
-            #endregion
 
             _DrawModels();
 
@@ -470,6 +536,8 @@ namespace YOpenGL._3D
 
             ViewWidth = Math.Max(width * _transformToDevice.M11, 1);
             ViewHeight = Math.Max(height * _transformToDevice.M11, 1);
+            Viewport(0, 0, (int)ViewWidth, (int)ViewHeight);
+
             switch (_camera.Type)
             {
                 case CameraType.Perspective:
@@ -479,9 +547,6 @@ namespace YOpenGL._3D
                     _camera.SetOrthographicParameters(ViewWidth, ViewHeight);
                     break;
             }
-
-            ZoomExtents();
-            Viewport(0, 0, (int)ViewWidth, (int)ViewHeight);
         }
         #endregion
 
@@ -508,6 +573,23 @@ namespace YOpenGL._3D
             }
             return Shader.GenShader(source, this);
         }
+
+        private void _OnCameraPropertyChanged(object sender, EventArgs e)
+        {
+            MakeSureCurrentContext();
+            #region Update View and Projection Matrix
+            BindBuffer(GL_UNIFORM_BUFFER, TransformBlock);
+            BufferSubData(GL_UNIFORM_BUFFER, 0, 16 * sizeof(float), _camera.ViewMatrix.GetData());
+            BufferSubData(GL_UNIFORM_BUFFER, 16 * sizeof(float), 16 * sizeof(float), _camera.ProjectionMatrix.GetData());
+            #endregion
+            _Refresh();
+        }
+
+        private void _OnLoaded(object sender, RoutedEventArgs e)
+        {
+            if (_zoomExtentWhenLoaded)
+                ZoomExtents();
+        }
         #endregion
 
         #region Internel func
@@ -525,6 +607,25 @@ namespace YOpenGL._3D
             _models.ForEach(m => bounds.Union(m.Bounds));
             return bounds;
         }
+
+        #region HitTest
+        /// <returns>返回结果按Z-Depth排序</returns>
+        public IEnumerable<HitResult> HitTest(PointF pointInWpf, float sensitive = 5)
+        {
+            return HitTestHelper.HitTest(this, pointInWpf, sensitive, false);
+        }
+
+        public HitResult HitTestTop(PointF pointInWpf, float sensitive = 5)
+        {
+            return HitTestHelper.HitTest(this, pointInWpf, sensitive, true).FirstOrDefault();
+        }
+
+        public IEnumerable<RectHitResult> HitTest(RectF rectInWpf, RectHitTestMode hitTestMode)
+        {
+            return HitTestHelper.HitTest(this, rectInWpf, hitTestMode);
+        }
+        #endregion
+
         #endregion
 
         #region Interface
@@ -563,20 +664,45 @@ namespace YOpenGL._3D
 
         /// <param name="point">Point in world coordinate</param>
         /// <returns>Point in wpf</returns>
-        public PointF Point3DToPoint2D(Point3F point)
+        public PointF Point3DToPointInWpf(Point3F point)
         {
-            var transform = _camera.GetTotalTransform();
-            transform.Append(GetNDCToWPF());
-            var transformedP = transform.Transform(point);
+            var transformedP = Point3DToPointInWpfWithZDpeth(point);
             return new PointF(transformedP.X, transformedP.Y);
         }
 
-        /// <param name="point">Point in wpf</param>
+        /// <param name="point">Point in world coordinate</param>
+        /// <returns>Point in wpf</returns>
+        public IEnumerable<PointF> Point3DToPointInWpf(IEnumerable<Point3F> points)
+        {
+            foreach (var point in Point3DToPointInWpfWithZDpeth(points))
+                yield return new PointF(point.X, point.Y);
+        }
+
+        /// <param name="point">Point in world coordinate</param>
+        /// <returns>Point in wpf</returns>
+        public Point3F Point3DToPointInWpfWithZDpeth(Point3F point)
+        {
+            var transform = _camera.GetTotalTransform();
+            transform.Append(GetNDCToWPF());
+            return point * transform;
+        }
+
+        /// <param name="points">Points in world coordinate</param>
+        /// <returns>Points in wpf</returns>
+        public IEnumerable<Point3F> Point3DToPointInWpfWithZDpeth(IEnumerable<Point3F> points)
+        {
+            var transform = _camera.GetTotalTransform();
+            transform.Append(GetNDCToWPF());
+            foreach (var point in points)
+                yield return point * transform;
+        }
+
+        /// <param name="pointInWpf">Point in wpf</param>
         /// <param name="ZDepth">Range In [-1, 1]</param>
         /// <returns>Point in world coordinate</returns>
-        public Point3F? Point2DToPoint3D(PointF point, float? ZDepth = null)
+        public Point3F? PointInWpfToPoint3D(PointF pointInWpf, float? ZDepth = null)
         {
-            var ret = new Point3F(point.X, point.Y, 0);
+            var ret = new Point3F(pointInWpf.X, pointInWpf.Y, 0);
             var transform = GetWPFToNDC();
             ret *= transform;
             //var near = new Point3F(ret.X, ret.Y, -0.99f);
@@ -666,7 +792,6 @@ namespace YOpenGL._3D
         {
             var newPosition = target - newLookDirection;
             _camera.SetViewParameters(newPosition, newLookDirection, newUpDirection);
-            _Refresh();
         }
         #endregion
 
@@ -685,7 +810,7 @@ namespace YOpenGL._3D
 
         public void Zoom(float delta, PointF zoomAround)
         {
-            var zoomAround3D = Point2DToPoint3D(zoomAround);
+            var zoomAround3D = PointInWpfToPoint3D(zoomAround);
             if (zoomAround3D.HasValue)
                 Zoom(delta, zoomAround3D.Value);
         }
@@ -703,7 +828,6 @@ namespace YOpenGL._3D
                     _ZoomByChangingCameraWidth(delta, zoomAround);
                     break;
             }
-            _Refresh();
         }
 
         private void _ZoomByChangingCameraWidth(double delta, Point3F zoomAround)
@@ -790,7 +914,6 @@ namespace YOpenGL._3D
             if (_camera.Mode == CameraMode.FixedPosition) return;
 
             _camera.SetViewParameters(_camera.Position + delta);
-            _Refresh();
         }
 
         /// <summary>
@@ -859,7 +982,6 @@ namespace YOpenGL._3D
             var newPosition = rotateAround - newRelativePosition;
 
             _camera.SetViewParameters(_camera.Mode == CameraMode.Inspect ? newPosition : _camera.Position, newTarget - newPosition, newUpDirection);
-            _Refresh();
         }
 
         public void RotateTurntable(VectorF delta, Point3F rotateAround)
@@ -896,7 +1018,6 @@ namespace YOpenGL._3D
             Point3F newPosition = rotateAround - newRelativePosition;
 
             _camera.SetViewParameters(_camera.Mode == CameraMode.Inspect ? newPosition : _camera.Position, newTarget - newPosition, newUpDirection);
-            _Refresh();
         }
 
         public void RotateTurnball(PointF p1, PointF p2, Point3F rotateAround)
@@ -939,7 +1060,6 @@ namespace YOpenGL._3D
             Vector3F newLookDirection = newTarget - newPosition;
 
             _camera.SetViewParameters(_camera.Mode == CameraMode.Inspect ? newPosition : _camera.Position, newLookDirection, newUpDirection);
-            _Refresh();
         }
         #endregion
 

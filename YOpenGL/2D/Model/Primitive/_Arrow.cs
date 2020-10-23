@@ -72,8 +72,8 @@ namespace YOpenGL
             var wl = hdir * hwidth;
             var p1 = b + wl;
             var p2 = b - wl;
-            var line1 = new CLine(_origin, b);
-            var line2 = new CLine(p1, p2);
+            var line1 = new Line(_origin, b);
+            var line2 = new Line(p1, p2);
 
             return _Contains(line1, line2, p, hwidth, height);
         }
@@ -89,8 +89,8 @@ namespace YOpenGL
             var wl = hdir * hwidth;
             var p1 = b + wl;
             var p2 = b - wl;
-            var line1 = new CLine(_origin, b);
-            var line2 = new CLine(p1, p2);
+            var line1 = new Line(_origin, b);
+            var line2 = new Line(p1, p2);
 
             if (_Contains(line1, line2, rect.BottomLeft, hwidth, height)
                 || _Contains(line1, line2, rect.BottomRight, hwidth, height)
@@ -101,7 +101,7 @@ namespace YOpenGL
             return rect.Contains(_origin) || rect.Contains(p1) || rect.Contains(p2);
         }
 
-        private bool _Contains(CLine line1, CLine line2, PointF p, float hwidth, float height)
+        private bool _Contains(Line line1, Line line2, PointF p, float hwidth, float height)
         {
             var s1 = line2.CalcSymbol(_origin);
             var s2 = line2.CalcSymbol(p);
@@ -109,7 +109,7 @@ namespace YOpenGL
             if (MathUtil.IsSameSymbol(s1, s2))
             {
                 var len1 = line2.CalcLength(s2);
-                var len2 = line1.CalcLength(p);
+                var len2 = line1.Distance(p);
                 return len2 <= (hwidth * (height - len1) / height);
             }
 

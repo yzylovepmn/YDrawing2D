@@ -74,9 +74,9 @@ uniform Material material;
 uniform Material materialBack;
 
 vec3 CalcAmbientLight(AmbientLight light, Material material);
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, Material material);
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir, Material material);
-vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, Material material);
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, Material material, float a);
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir, Material material, float a);
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, Material material, float a);
 
 void main()
 {
@@ -85,6 +85,7 @@ void main()
     vec3 viewDir = normalize(viewPos - fragPos);
 
     vec3 ret = vec3(0);
+    float a = mat.hasDiffuse ? mat.diffuse.a : (mat.hasEmissive ? mat.emissive.a : 1);
 
     if (mat.hasDiffuse)
     {
@@ -92,22 +93,22 @@ void main()
             ret += CalcAmbientLight(ambientLights[i], mat);
     }
     for(int i = 0; i < dirLightCount; i++)
-        ret += CalcDirLight(dirLights[i], norm, viewDir, mat);
+        ret += CalcDirLight(dirLights[i], norm, viewDir, mat, a);
     for(int i = 0; i < pointLightCount; i++)
-        ret += CalcPointLight(pointLights[i], norm, viewDir, mat);
+        ret += CalcPointLight(pointLights[i], norm, viewDir, mat, a);
     for(int i = 0; i < spotLightCount; i++)
-        ret += CalcSpotLight(spotLights[i], norm, viewDir, mat);
+        ret += CalcSpotLight(spotLights[i], norm, viewDir, mat, a);
     if (mat.hasEmissive)
-        ret += mat.emissive.rgb;
-    FragColor = vec4(ret.rgb, mat.hasDiffuse ? mat.diffuse.a : 1);
+        ret += mat.emissive.rgb * (mat.hasDiffuse ? mat.emissive.a / a : 1);
+    FragColor = vec4(ret.rgb, a);
 }
 
 vec3 CalcAmbientLight(AmbientLight light, Material material)
 {
-    return light.ambient.rgb * material.diffuse.rgb;
+    return light.ambient.a * light.ambient.rgb * material.diffuse.rgb;
 }
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, Material material)
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, Material material, float a)
 {
     vec3 dirRet = vec3(0);
     vec3 lightDir = normalize(-light.direction);
@@ -116,7 +117,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, Material material)
     if (material.hasDiffuse)
     {
         float diff = max(dot(normal, lightDir), 0.0);
-        vec3 diffuse = light.diffuse.rgb * diff * material.diffuse.rgb;
+        vec3 diffuse = light.diffuse.a * light.diffuse.rgb * diff * material.diffuse.rgb;
         dirRet += diffuse;
     }
 
@@ -125,14 +126,14 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, Material material)
     {
         vec3 reflectDir = reflect(-lightDir, normal);
         float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-        vec3 specular = light.specular.rgb * spec * material.specular.rgb;
+        vec3 specular = light.specular.a * light.specular.rgb * spec * material.specular.rgb * material.specular.a / a;
         dirRet += specular;
     }
 
     return dirRet;
 }
 
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir, Material material)
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir, Material material, float a)
 {
     vec3 pointRet = vec3(0);
     vec3 lightDir = normalize(light.position - fragPos);
@@ -147,7 +148,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir, Material materi
         if (material.hasDiffuse)
         {
             float diff = max(dot(normal, lightDir), 0.0);
-            vec3 diffuse = light.diffuse.rgb * diff * material.diffuse.rgb;
+            vec3 diffuse = light.diffuse.a * light.diffuse.rgb * diff * material.diffuse.rgb;
             pointRet += diffuse * attenuation;
         }
 
@@ -156,7 +157,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir, Material materi
         {
             vec3 reflectDir = reflect(-lightDir, normal);
             float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-            vec3 specular = light.specular.rgb * spec * material.specular.rgb;
+            vec3 specular = light.specular.a * light.specular.rgb * spec * material.specular.rgb * material.specular.a / a;
             pointRet += specular * attenuation;
         }
     }
@@ -164,7 +165,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir, Material materi
     return pointRet;
 }
 
-vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, Material material)
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, Material material, float a)
 {
     vec3 spotRet = vec3(0);
     vec3 lightDir = normalize(light.position - fragPos);
@@ -183,7 +184,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, Material material
         if (material.hasDiffuse)
         {
             float diff = max(dot(normal, lightDir), 0.0);
-            vec3 diffuse = light.diffuse.rgb * diff * material.diffuse.rgb;
+            vec3 diffuse = light.diffuse.a * light.diffuse.rgb * diff * material.diffuse.rgb;
             spotRet += diffuse * attenuation * intensity;
         }
 
@@ -192,7 +193,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, Material material
         {
             vec3 reflectDir = reflect(-lightDir, normal);
             float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-            vec3 specular = light.specular.rgb * spec * material.specular.rgb;
+            vec3 specular = light.specular.a * light.specular.rgb * spec * material.specular.rgb * material.specular.a / a;
             spotRet += specular * attenuation * intensity;
         }
     }

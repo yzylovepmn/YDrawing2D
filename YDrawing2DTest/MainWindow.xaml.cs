@@ -173,6 +173,8 @@ namespace YDrawing2DTest
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            _glPanel3D.MouseDown += _glPanel3D_MouseDown;
+            _glPanel3D.MouseMove += _glPanel3D_MouseMove;
             //_glPanel.AddVisual(new Text("Hello world!", new PointF(100, 200)));
             //_hint = new Hint() { HitTestVisible = false };
             //_glPanel.AddVisual(_hint);
@@ -180,6 +182,33 @@ namespace YDrawing2DTest
             //_glPanel.MouseWheel += _panel_MouseWheel;
             //_glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
             //_glPanel.UpdateAll();
+        }
+
+        private void _glPanel3D_MouseMove(object sender, MouseEventArgs e)
+        {
+            var moveP = _glPanel3D.GetPosition();
+            if (_glPanel3D.Selector.IsVisible)
+            {
+                _glPanel3D.Selector.P2 = moveP;
+                _glPanel3D.Selector.Color = _glPanel3D.Selector.P1.X > _glPanel3D.Selector.P2.X ? new Color() { ScA = 0.1f, ScG = 1f } : new Color() { ScA = 0.1f, ScB = 1f };
+            }
+        }
+
+        private void _glPanel3D_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var downP = _glPanel3D.GetPosition();
+            //var rets = _glPanel3D.HitTest(_glPanel3D.GetPosition());
+            if (!_glPanel3D.Selector.IsVisible)
+            {
+                _glPanel3D.Selector.P1 = downP;
+                _glPanel3D.Selector.P2 = downP;
+                _glPanel3D.Selector.IsVisible = true;
+            }
+            else
+            {
+                _glPanel3D.Selector.IsVisible = false;
+                var rets = _glPanel3D.HitTest(new RectF(_glPanel3D.Selector.P1, _glPanel3D.Selector.P2), _glPanel3D.Selector.P1.X < _glPanel3D.Selector.P2.X ? RectHitTestMode.FullContain : RectHitTestMode.Intersect);
+            }
         }
 
         private void _panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

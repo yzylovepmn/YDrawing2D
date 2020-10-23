@@ -13,7 +13,7 @@ namespace YOpenGL
         {
             _pen = pen;
 
-            Line = new CLine(start, end);
+            Line = new Line(start, end);
         }
 
         public PenF Pen { get { return _pen; } }
@@ -40,7 +40,7 @@ namespace YOpenGL
             }
         }
 
-        internal CLine Line;
+        internal Line Line;
 
         public RectF GetBounds(float scale)
         {

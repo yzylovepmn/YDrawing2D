@@ -41,7 +41,8 @@ namespace YOpenGL
         internal const string OpenGLName = "OPENGL32.DLL";
         private static bool _isInit;
 
-        internal static float[] PointSizeRange;
+        public static float[] PointSizeRange;
+        public static float[] LineWidthRange;
 
         static GLFunc()
         {
@@ -785,6 +786,9 @@ namespace YOpenGL
         {
             PointSizeRange = new float[2];
             GetFloatv(GLConst.GL_POINT_SIZE_RANGE, PointSizeRange);
+
+            LineWidthRange = new float[2];
+            GetFloatv(GLConst.GL_LINE_WIDTH_RANGE, LineWidthRange);
         }
 
         private static void _Init()
@@ -1564,6 +1568,30 @@ namespace YOpenGL
                 {
                     fixed(GLint* p = &param)
                         glGetIntegerv(pname, (GLvoid)p);
+                }
+            }
+        }
+
+        public static void GetIntegerv(GLenum pname, GLint[] param)
+        {
+            if (glGetIntegerv != null)
+            {
+                unsafe
+                {
+                    fixed (GLint* p = param)
+                        glGetIntegerv(pname, (GLvoid)p);
+                }
+            }
+        }
+
+        public static void GetFloatv(GLenum pname, ref GLfloat param)
+        {
+            if (glGetFloatv != null)
+            {
+                unsafe
+                {
+                    fixed (GLfloat* p = &param)
+                        glGetFloatv(pname, (GLvoid)p);
                 }
             }
         }

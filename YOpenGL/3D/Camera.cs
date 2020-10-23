@@ -67,6 +67,8 @@ namespace YOpenGL._3D
         public GLPanel3D ViewPort { get { return _viewPort; } }
         private GLPanel3D _viewPort;
 
+        public event EventHandler PropertyChanged = delegate { };
+
         public CameraType Type 
         { 
             get { return _type; }
@@ -199,6 +201,7 @@ namespace YOpenGL._3D
                     _projectionMatrix = _GenerateOrthographicMatrix();
                     break;
             }
+            PropertyChanged(this, EventArgs.Empty);
         }
 
         private Matrix3F _GeneratePerspectiveMatrix()
@@ -251,6 +254,7 @@ namespace YOpenGL._3D
                 xaxis.Y, yaxis.Y, zaxis.Y, 0,
                 xaxis.Z, yaxis.Z, zaxis.Z, 0,
                 cx, cy, cz, 1);
+            PropertyChanged(this, EventArgs.Empty);
         }
 
         public Matrix3F GetTotalTransform()

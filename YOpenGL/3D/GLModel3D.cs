@@ -20,20 +20,24 @@ namespace YOpenGL._3D
 
     public class GLModel3D : IDisposable
     {
-        public GLModel3D()
+        public GLModel3D() : this(null, null, null, null)
         {
-            _materials = new List<Material>();
-            _backMaterials = new List<Material>();
         }
 
-        public GLModel3D(IEnumerable<Point3F> points, IEnumerable<Vector3F> normals, IEnumerable<PointF> textureCoordinates, IEnumerable<uint> triangleIndices)
+        public GLModel3D(IEnumerable<Point3F> points, IEnumerable<Vector3F> normals, IEnumerable<PointF> textureCoordinates, IEnumerable<uint> indices)
         {
-            _points = points.ToList();
-            _normals = normals.ToList();
-            _textureCoordinates = textureCoordinates.ToList();
-            _triangleIndices = triangleIndices.ToList();
+            _points = points?.ToList();
+            _normals = normals?.ToList();
+            _textureCoordinates = textureCoordinates?.ToList();
+            _indices = indices?.ToList();
             _materials = new List<Material>();
             _backMaterials = new List<Material>();
+
+            _pointSize = 1;
+            _lineWidth = 1f;
+            _isVisible = true;
+            _isHitTestVisible = true;
+            _mode = GLPrimitiveMode.GL_TRIANGLES;
         }
 
         public GLPanel3D Viewport
@@ -57,12 +61,63 @@ namespace YOpenGL._3D
         public Rect3F Bounds { get { return _bounds; } }
         private Rect3F _bounds;
 
+        public float PointSize
+        {
+            get { return _pointSize; }
+            set
+            {
+                var newValue = value;
+                if (PointSizeRange != null)
+                    MathUtil.Clamp(ref newValue, PointSizeRange[0], PointSizeRange[1]);
+                if (_pointSize != newValue)
+                {
+                    _pointSize = newValue;
+                    _viewport?.Refresh();
+                }
+            }
+        }
+        private float _pointSize;
+
+        public float LineWidth
+        {
+            get { return _lineWidth; }
+            set
+            {
+                var newValue = value;
+                if (LineWidthRange != null)
+                    MathUtil.Clamp(ref newValue, LineWidthRange[0], LineWidthRange[1]);
+                if (_lineWidth != newValue)
+                {
+                    _lineWidth = newValue;
+                    _viewport?.Refresh();
+                }
+            }
+        }
+        private float _lineWidth;
+
+        public bool IsVisible
+        {
+            get { return _isVisible; }
+            set
+            {
+                if (_isVisible != value)
+                {
+                    _isVisible = value;
+                    _viewport?.Refresh();
+                }
+            }
+        }
+        private bool _isVisible;
+
         public Shader CustomShader
         { 
             get { return _customShader; }
             set { _customShader = value; }
         }
         private Shader _customShader;
+
+        public bool IsHitTestVisible { get { return _isHitTestVisible; } set { _isHitTestVisible = value; } }
+        private bool _isHitTestVisible;
 
         internal bool HasInit { get { return _vao != null; } }
 
@@ -79,8 +134,8 @@ namespace YOpenGL._3D
         public IEnumerable<PointF> TextureCoordinates { get { return _textureCoordinates; } }
         private List<PointF> _textureCoordinates;
 
-        public IEnumerable<uint> TriangleIndices { get { return _triangleIndices; } }
-        private List<uint> _triangleIndices;
+        public IEnumerable<uint> Indices { get { return _indices; } }
+        private List<uint> _indices;
 
         private List<Material> _materials;
         private List<Material> _backMaterials;
@@ -98,6 +153,9 @@ namespace YOpenGL._3D
 
             _DataBinding();
             _IndicesBinding();
+
+            MathUtil.Clamp(ref _pointSize, PointSizeRange[0], PointSizeRange[1]);
+            MathUtil.Clamp(ref _lineWidth, LineWidthRange[0], LineWidthRange[1]);
         }
 
         internal void Clean()
@@ -148,7 +206,7 @@ namespace YOpenGL._3D
 
         public void SetTriangleIndices(IEnumerable<uint> triangleIndices)
         {
-            _triangleIndices = triangleIndices.ToList();
+            _indices = triangleIndices.ToList();
             if (HasInit)
             {
                 _viewport.MakeSureCurrentContext();
@@ -203,12 +261,12 @@ namespace YOpenGL._3D
         {
             BindVertexArray(_vao[0]);
             
-            if (_triangleIndices == null)
+            if (_indices == null)
                 BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
             else
             {
                 BindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo[0]);
-                BufferData(GL_ELEMENT_ARRAY_BUFFER, _triangleIndices.Count * sizeof(uint), _triangleIndices.ToArray(), GL_STATIC_DRAW);
+                BufferData(GL_ELEMENT_ARRAY_BUFFER, _indices.Count * sizeof(uint), _indices.ToArray(), GL_STATIC_DRAW);
             }
         }
 
@@ -220,8 +278,10 @@ namespace YOpenGL._3D
         private void _UpdateBounds()
         {
             _bounds = Rect3F.Empty;
-            if (_points != null)
-                foreach (var point in _points)
+            if (!_isVisible) return;
+            var points = GetDrawPoints();
+            if (points != null)
+                foreach (var point in points)
                     _bounds.Union(point);
         }
 
@@ -340,19 +400,37 @@ namespace YOpenGL._3D
         #region Draw
         protected internal virtual void OnRender(Shader shader)
         {
+            if (!_isVisible) return;
+
+            GLFunc.PointSize(_pointSize);
+            GLFunc.LineWidth(_lineWidth);
+
             _SetMaterialData(shader);
             BindVertexArray(_vao[0]);
             var hasPoints = _points != null;
-            var hasIndices = _triangleIndices != null;
+            var hasIndices = _indices != null;
             var mode = (uint)_mode;
             if (hasIndices)
-                DrawElements(mode, hasPoints ? _triangleIndices.Count : 0, GL_UNSIGNED_INT, 0);
+                DrawElements(mode, hasPoints ? _indices.Count : 0, GL_UNSIGNED_INT, 0);
             else DrawArrays(mode, 0, hasPoints ? _points.Count : 0);
         }
         #endregion
 
+        public Point3F[] GetDrawPoints()
+        {
+            if (_points == null) return null;
+            if (_indices == null) return _points.ToArray();
+
+            var points = new List<Point3F>();
+            foreach (var index in _indices)
+                if (index < _points.Count)
+                    points.Add(_points[(int)index]);
+            return points.ToArray();
+        }
+
         public void Dispose()
         {
+            Clean();
             _materials = null;
             _viewport = null;
         }

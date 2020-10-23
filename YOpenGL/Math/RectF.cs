@@ -286,6 +286,15 @@ namespace YOpenGL
             }
         }
 
+        public void Extents(float length)
+        {
+            var dl = length * 2;
+            _x -= length;
+            _y -= length;
+            _width += dl;
+            _height += dl;
+        }
+
         public bool Contains(PointF point)
         {
             return Contains(point._x, point._y);

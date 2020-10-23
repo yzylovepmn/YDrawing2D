@@ -38,7 +38,7 @@ namespace YOpenGL._3D
             _panel.CaptureMouse();
 
             _mouseDownPoint = _panel.GetPosition();
-            _mouseDownPoint3D = _panel.Point2DToPoint3D(_mouseDownPoint);
+            _mouseDownPoint3D = _panel.PointInWpfToPoint3D(_mouseDownPoint);
 
             _lastPoint = _mouseDownPoint;
             _lastPoint3D = _mouseDownPoint3D;
@@ -52,7 +52,7 @@ namespace YOpenGL._3D
         private void _OnMouseMove(object sender, MouseEventArgs e)
         {
             var mouseMovePoint = _panel.GetPosition();
-            var mouseMovePoint3D = _panel.Point2DToPoint3D(mouseMovePoint);
+            var mouseMovePoint3D = _panel.PointInWpfToPoint3D(mouseMovePoint);
 
             var rotateStatus = false;
             if (e.LeftButton == MouseButtonState.Pressed)
@@ -135,7 +135,7 @@ namespace YOpenGL._3D
                     _rotationPoint3D = _panel.Camera.Position;
                     break;
                 default:
-                    if (_panel.RotateAroundMousePoint && mouseMovePoint3D.HasValue)
+                    if (_panel.RotateAroundMouse && mouseMovePoint3D.HasValue)
                     {
                         _rotationPoint = mouseMovePoint;
                         _rotationPoint3D = mouseMovePoint3D.Value;

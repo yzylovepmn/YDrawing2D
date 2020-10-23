@@ -88,6 +88,11 @@ namespace YOpenGL
             return new Vector3F(point._x, point._y, point._z);
         }
 
+        public static explicit operator PointF(Point3F point)
+        {
+            return new PointF(point._x, point._y);
+        }
+
         public static explicit operator Point4F(Point3F point)
         {
             return new Point4F(point._x, point._y, point._z, (Float)1.0);
