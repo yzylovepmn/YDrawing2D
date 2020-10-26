@@ -43,6 +43,7 @@ namespace YOpenGL._3D
             _watch = new Stopwatch();
             _frameSpan = Math.Max(1, (int)(1000 / frameRate));
             _camera = new Camera(this, CameraType.Perspective, 1000, 800, 1, float.PositiveInfinity, new Point3F(0, 0, 1), new Vector3F(0, 0, -1), new Vector3F(0, 1, 0));
+            _camera.PropertyChanged += _OnCameraPropertyChanged;
             _selector = new RectSelector(this);
             _models = new List<GLModel3D>();
             _lights = new List<Light>();
@@ -58,7 +59,6 @@ namespace YOpenGL._3D
             BackgroundColor = backgroundColor;
             Focusable = true;
 
-            _camera.PropertyChanged += _OnCameraPropertyChanged;
             Loaded += _OnLoaded;
         }
 
@@ -113,6 +113,8 @@ namespace YOpenGL._3D
         #region Matrix
         internal MatrixF TransformToDevice { get { return _transformToDevice; } }
         private MatrixF _transformToDevice;
+
+        private Matrix3F _totalTransform;
         #endregion
 
         #region Buffer Object
@@ -121,6 +123,10 @@ namespace YOpenGL._3D
         internal uint TransformBlock { get { return _uniformBlockObj[0]; } }
 
         internal uint LightsBlock { get { return _uniformBlockObj[1]; } }
+        #endregion
+
+        #region Texture
+        private uint[] _texture_dash;
         #endregion
 
         public Vector3F ModelUpDirection
@@ -352,6 +358,7 @@ namespace YOpenGL._3D
             Enable(GL_FRAMEBUFFER_SRGB); // Gamma Correction
             BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             StencilMask(1);
+            EnableAliased();
 
             _CreateResource();
             _InitModels();
@@ -365,6 +372,16 @@ namespace YOpenGL._3D
 
             // create default shader
             _defaultShader = _GenerateShader(_defaultShadeSource);
+
+            // for dash line texture
+            _texture_dash = new uint[1];
+            GenTextures(1, _texture_dash);
+            BindTexture(GL_TEXTURE_1D, _texture_dash[0]);
+            TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            BindTexture(GL_TEXTURE_1D, 0);
 
             #region uniform Block
             _uniformBlockObj = new uint[2];
@@ -387,6 +404,7 @@ namespace YOpenGL._3D
         private void _DeleteResource()
         {
             _defaultShader.Dispose();
+            DeleteTextures(1, _texture_dash);
             DeleteBuffers(2, _uniformBlockObj);
 
             _models.ForEach(model => model.Dispose());
@@ -396,6 +414,7 @@ namespace YOpenGL._3D
             _lights = null;
             _defaultShader = null;
             _uniformBlockObj = null;
+            _texture_dash = null;
         }
 
         private int _GetUniformBlockSize(string uniformBlockName)
@@ -403,7 +422,7 @@ namespace YOpenGL._3D
             switch (uniformBlockName)
             {
                 case TransformUniformBlockName:
-                    return 32 * sizeof(float);
+                    return 48 * sizeof(float);
                 case LightsUniformBlockName:
                     return SpotLightOffset + SpotLightSize + 4 * sizeof(int);
             }
@@ -434,6 +453,9 @@ namespace YOpenGL._3D
         {
             MakeSureCurrentContext();
             Disable(GL_LINE_SMOOTH);
+            Disable(GL_POLYGON_SMOOTH);
+            Hint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
+            Hint(GL_POLYGON_SMOOTH_HINT, GL_FASTEST);
             _Refresh();
         }
 
@@ -441,6 +463,9 @@ namespace YOpenGL._3D
         {
             MakeSureCurrentContext();
             Enable(GL_LINE_SMOOTH);
+            Enable(GL_POLYGON_SMOOTH);
+            Hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+            Hint(GL_POLYGON_SMOOTH, GL_NICEST);
             _Refresh();
         }
         #endregion
@@ -498,6 +523,14 @@ namespace YOpenGL._3D
                 var shader = model.CustomShader ?? _defaultShader;
                 shader.Use();
                 shader.SetVec3("viewPos", 1, new float[] { _camera.Position.X, _camera.Position.Y, _camera.Position.Z });
+                shader.SetBool("dashed", model.HasDash);
+
+                if (model.HasDash)
+                {
+                    BindTexture(GL_TEXTURE_1D, _texture_dash[0]);
+                    TexImage1D(GL_TEXTURE_1D, 0, GL_RED, model.Dashes.Length, 0, GL_RED, GL_UNSIGNED_BYTE, model.Dashes);
+                }
+
                 model.OnRender(shader);
             }
         }
@@ -571,6 +604,8 @@ namespace YOpenGL._3D
                     _camera.SetOrthographicParameters(ViewWidth, ViewHeight);
                     break;
             }
+
+            _UpdateTotalTransform();
         }
         #endregion
 
@@ -600,11 +635,14 @@ namespace YOpenGL._3D
 
         private void _OnCameraPropertyChanged(object sender, EventArgs e)
         {
+            _UpdateTotalTransform();
+
             MakeSureCurrentContext();
             #region Update View and Projection Matrix
             BindBuffer(GL_UNIFORM_BUFFER, TransformBlock);
             BufferSubData(GL_UNIFORM_BUFFER, 0, 16 * sizeof(float), _camera.ViewMatrix.GetData());
             BufferSubData(GL_UNIFORM_BUFFER, 16 * sizeof(float), 16 * sizeof(float), _camera.ProjectionMatrix.GetData());
+            BufferSubData(GL_UNIFORM_BUFFER, 32 * sizeof(float), 16 * sizeof(float), _camera.TotalTransform.GetData());
             #endregion
             _Refresh();
         }
@@ -613,6 +651,19 @@ namespace YOpenGL._3D
         {
             if (_zoomExtentWhenLoaded)
                 ZoomExtents();
+        }
+
+        private void _UpdateTotalTransform()
+        {
+            _totalTransform = _camera.TotalTransform * GetNDCToWPF();
+
+            _UpdateDashedModels();
+        }
+
+        private void _UpdateDashedModels()
+        {
+            foreach (var model in _models.Where(m => m.IsVisible && m.Points != null && m.HasDash))
+                model.UpdateDistance();
         }
         #endregion
 
@@ -670,6 +721,11 @@ namespace YOpenGL._3D
             return (PointF)Mouse.GetPosition(this) * _transformToDevice;
         }
 
+        public Matrix3F GetWorldToWPF()
+        {
+            return _totalTransform;
+        }
+
         public Matrix3F GetNDCToWPF()
         {
             return new Matrix3F(ViewWidth / 2, 0, 0, 0,
@@ -706,19 +762,19 @@ namespace YOpenGL._3D
         /// <returns>Point in wpf</returns>
         public Point3F Point3DToPointInWpfWithZDpeth(Point3F point)
         {
-            var transform = _camera.GetTotalTransform();
-            transform.Append(GetNDCToWPF());
-            return point * transform;
+            //var transform = _camera.TotalTransform;
+            //transform.Append(GetNDCToWPF());
+            return point * _totalTransform;
         }
 
         /// <param name="points">Points in world coordinate</param>
         /// <returns>Points in wpf</returns>
         public IEnumerable<Point3F> Point3DToPointInWpfWithZDpeth(IEnumerable<Point3F> points)
         {
-            var transform = _camera.GetTotalTransform();
-            transform.Append(GetNDCToWPF());
+            //var transform = _camera.TotalTransform;
+            //transform.Append(GetNDCToWPF());
             foreach (var point in points)
-                yield return point * transform;
+                yield return point * _totalTransform;
         }
 
         /// <param name="pointInWpf">Point in wpf</param>
@@ -731,7 +787,7 @@ namespace YOpenGL._3D
             ret *= transform;
             //var near = new Point3F(ret.X, ret.Y, -0.99f);
             //var far = new Point3F(ret.X, ret.Y, 0.99f);
-            var cameraTransform = _camera.GetTotalTransform();
+            var cameraTransform = _camera.TotalTransform;
             if (!ZDepth.HasValue)
             {
                 var pp = _camera.Target * cameraTransform;
@@ -948,8 +1004,7 @@ namespace YOpenGL._3D
         {
             if (_camera.Mode == CameraMode.FixedPosition || !_isTranslateEnable) return;
 
-            var transform = _camera.GetTotalTransform();
-            transform.Append(GetNDCToWPF());
+            var transform = _totalTransform;
             var transformedPosition = _camera.Target * transform;
             transformedPosition.X += delta.X;
             transformedPosition.Y += delta.Y;

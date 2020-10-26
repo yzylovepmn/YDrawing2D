@@ -197,7 +197,7 @@ namespace YDrawing2DTest
         private void _glPanel3D_MouseDown(object sender, MouseButtonEventArgs e)
         {
             var downP = _glPanel3D.GetPosition();
-            //var rets = _glPanel3D.HitTest(_glPanel3D.GetPosition());
+            //var rets = _glPanel3D.HitTest(downP);
             if (!_glPanel3D.Selector.IsVisible)
             {
                 _glPanel3D.Selector.P1 = downP;

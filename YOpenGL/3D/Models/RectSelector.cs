@@ -103,7 +103,11 @@ namespace YOpenGL._3D
 
             var points = new List<Point3F>() { _bottomRight, _bottomLeft, _topLeft, _topRight };
             _fill.SetPoints(points);
+            points.Add(points.First());
             _wireframe.SetPoints(points);
+            if (_p1.X > _p2.X)
+                _wireframe.Dashes = new byte[] { 1, 1 };
+            else _wireframe.Dashes = null;
 
             if (_isVisible)
                 _viewport.Refresh();
@@ -112,8 +116,7 @@ namespace YOpenGL._3D
         private void _UpdateTransform()
         {
             if (!_viewport.IsInit) return;
-            _transform = _viewport.Camera.GetTotalTransform();
-            _transform.Append(_viewport.GetNDCToWPF());
+            _transform = _viewport.GetWorldToWPF();
             _transform.Invert();
         }
 
@@ -142,7 +145,7 @@ namespace YOpenGL._3D
             public RectWireframe()
             {
                 IsHitTestVisible = false;
-                Mode = GLPrimitiveMode.GL_LINE_LOOP;
+                Mode = GLPrimitiveMode.GL_LINE_STRIP;
                 AddMaterial(new EmissiveMaterial(), MaterialOption.Front);
             }
         }

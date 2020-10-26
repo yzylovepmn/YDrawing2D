@@ -69,9 +69,12 @@ layout (std140) uniform Lights
 in vec3 fragPos;
 in vec3 normal;
 in vec2 texCoords;
+in float distance;
 uniform vec3 viewPos;
 uniform Material material;
 uniform Material materialBack;
+uniform sampler1D pattern;
+uniform bool dashed;
 
 vec3 CalcAmbientLight(AmbientLight light, Material material);
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, Material material, float a);
@@ -80,6 +83,9 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, Material material
 
 void main()
 {
+    if(dashed && texture(pattern, distance).r < 0.5)
+        discard;
+
     Material mat = gl_FrontFacing ? material : materialBack;
     vec3 norm = normalize(normal);
     vec3 viewDir = normalize(viewPos - fragPos);

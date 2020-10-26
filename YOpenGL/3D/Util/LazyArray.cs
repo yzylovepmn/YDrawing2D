@@ -6,20 +6,20 @@ using System.Threading.Tasks;
 
 namespace YOpenGL._3D
 {
-    public class LazyArray<T> where T : struct
+    public class LazyArray<T, TResult> where T : struct where TResult : struct
     {
-        public LazyArray(IEnumerable<T> source, Func<T, T> init)
+        public LazyArray(IEnumerable<T> source, Func<T, TResult> init)
         {
             _source = source.ToArray();
             _init = init;
-            _values = new T?[_source.Length];
+            _values = new TResult?[_source.Length];
         }
 
         private T[] _source;
-        private Func<T, T> _init;
-        private T?[] _values;
+        private Func<T, TResult> _init;
+        private TResult?[] _values;
 
-        public T this[int index]
+        public TResult this[int index]
         {
             get
             {

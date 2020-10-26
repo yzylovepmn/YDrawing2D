@@ -625,5 +625,10 @@ namespace YOpenGL
                        W.GetHashCode();
             }
         }
+
+        public override string ToString()
+        {
+            return string.Format($"{_x}, {_y}, {_z}, {_w}");
+        }
     }
 }

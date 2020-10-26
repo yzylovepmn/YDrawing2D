@@ -33,7 +33,7 @@ namespace YOpenGL._3D
             _materials = new List<Material>();
             _backMaterials = new List<Material>();
 
-            _pointSize = 1;
+            _pointSize = 1f;
             _lineWidth = 1f;
             _isVisible = true;
             _isHitTestVisible = true;
@@ -94,6 +94,25 @@ namespace YOpenGL._3D
             }
         }
         private float _lineWidth;
+
+        public byte[] Dashes
+        {
+            internal get { return _dashes; }
+            set
+            {
+                var newDash = _GenData(value);
+                if (newDash == null && _dashes == null) return;
+                if (newDash == null || _dashes == null || !newDash.SequenceEqual(_dashes))
+                {
+                    _dashes = newDash;
+                    _viewport?.Refresh();
+                }
+            }
+        }
+        private byte[] _dashes;
+        private List<float> _distances;
+
+        public bool HasDash { get { return (_mode == GLPrimitiveMode.GL_LINES || _mode == GLPrimitiveMode.GL_LINE_STRIP) && _dashes != null && _indices == null; } }
 
         public bool IsVisible
         {
@@ -180,7 +199,7 @@ namespace YOpenGL._3D
             if (HasInit)
             {
                 _viewport.MakeSureCurrentContext();
-                _DataBinding();
+                UpdateDistance();
             }
         }
 
@@ -212,6 +231,48 @@ namespace YOpenGL._3D
                 _viewport.MakeSureCurrentContext();
                 _IndicesBinding();
             }
+        }
+
+        internal void UpdateDistance()
+        {
+            if (HasDash && _points != null)
+            {
+                var transform = _viewport.GetWorldToWPF();
+                var points = _points.ToArray();
+                var distances = new float[points.Length];
+                switch (_mode)
+                {
+                    case GLPrimitiveMode.GL_LINES:
+                        {
+                            for (int i = 0; i < points.Length - 1; i += 2)
+                            {
+                                var p1 = (Vector3F)(points[i] * transform);
+                                var p2 = (Vector3F)(points[i + 1] * transform);
+                                distances[i] = 0;
+                                distances[i + 1] = ((VectorF)p2 - (VectorF)p1).Length;
+                            }
+                        }
+                        break;
+                    case GLPrimitiveMode.GL_LINE_STRIP:
+                        {
+                            var dis = 0f;
+                            var pointsTransformed = new LazyArray<Point3F, PointF>(points, p => (PointF)(p * transform));
+
+                            for (int i = 1; i < pointsTransformed.Length; i++)
+                            {
+                                var p1 = pointsTransformed[i - 1];
+                                var p2 = pointsTransformed[i];
+                                dis += (p2 - p1).Length;
+                                distances[i] = dis;
+                            }
+                        }
+                        break;
+                }
+                _distances = distances.ToList();
+            }
+            else _distances = null;
+
+            _DataBinding();
         }
 
         private void _DataBinding()
@@ -253,8 +314,22 @@ namespace YOpenGL._3D
 
                 EnableVertexAttribArray(2);
                 VertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), offset);
+
+                offset += size;
             }
             else DisableVertexAttribArray(2);
+
+            if (_distances != null)
+            {
+                size = _distances.Count * sizeof(float);
+                BufferSubData(GL_ARRAY_BUFFER, offset, size, _distances.ToArray());
+
+                EnableVertexAttribArray(3);
+                VertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(float), offset);
+
+                offset += size;
+            }
+            else DisableVertexAttribArray(3);
         }
 
         private void _IndicesBinding()
@@ -272,7 +347,7 @@ namespace YOpenGL._3D
 
         private int _CalcDataSize()
         {
-            return (_points == null ? 0 : _points.Count * 3) + (_normals == null ? 0 : _normals.Count * 3) + (_textureCoordinates == null ? 0 : _textureCoordinates.Count * 2);
+            return (_points == null ? 0 : _points.Count * 3) + (_normals == null ? 0 : _normals.Count * 3) + (_textureCoordinates == null ? 0 : _textureCoordinates.Count * 2) + (_distances == null ? 0 : _distances.Count);
         }
 
         private void _UpdateBounds()
@@ -416,7 +491,7 @@ namespace YOpenGL._3D
         }
         #endregion
 
-        public IEnumerable<Point3F> GetDrawPoints()
+        internal IEnumerable<Point3F> GetDrawPoints()
         {
             if (_points == null) return null;
             if (_indices == null) return _points;
@@ -426,6 +501,23 @@ namespace YOpenGL._3D
                 if (index < _points.Count)
                     points.Add(_points[(int)index]);
             return points;
+        }
+
+        private static byte[] _GenData(byte[] dashes)
+        {
+            if (dashes == null) return null;
+
+            var data = new List<byte>();
+
+            var flag = true;
+            foreach (var value in dashes)
+            {
+                for (int i = value; i > 0; i--)
+                    data.Add(flag ? (byte)255 : (byte)0);
+                flag = !flag;
+            }
+
+            return data.ToArray();
         }
 
         public void Dispose()

@@ -234,5 +234,10 @@ namespace YOpenGL
 
         internal Float _x;
         internal Float _y;
+
+        public override string ToString()
+        {
+            return string.Format($"{_x}, {_y}");
+        }
     }
 }

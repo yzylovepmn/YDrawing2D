@@ -11,8 +11,7 @@ namespace YOpenGL._3D
         internal static IEnumerable<HitResult> HitTest(GLPanel3D viewport, PointF pointInWpf, float sensitive, bool findTop)
         {
             var results = new List<HitResult>();
-            var transform = viewport.Camera.GetTotalTransform();
-            transform.Append(viewport.GetNDCToWPF());
+            var transform = viewport.GetWorldToWPF();
             var reverseTransform = transform;
             if (reverseTransform.HasInverse)
                 reverseTransform.Invert();
@@ -40,7 +39,7 @@ namespace YOpenGL._3D
                 if (!bounds2D.Contains(pointInWpf)) continue;
 
                 var points = model.GetDrawPoints().ToArray();
-                var pointsTransformed = new LazyArray<Point3F>(points, p => p * transform);// points.Select(p => p * transform).ToArray();
+                var pointsTransformed = new LazyArray<Point3F, Point3F>(points, p => p * transform);// points.Select(p => p * transform).ToArray();
                 switch (model.Mode)
                 {
                     case GLPrimitiveMode.GL_POINTS:
@@ -178,8 +177,7 @@ namespace YOpenGL._3D
         internal static IEnumerable<RectHitResult> HitTest(GLPanel3D viewport, RectF rectInWpf, RectHitTestMode hitTestMode)
         {
             var results = new List<RectHitResult>();
-            var transform = viewport.Camera.GetTotalTransform();
-            transform.Append(viewport.GetNDCToWPF());
+            var transform = viewport.GetWorldToWPF();
             var reverseTransform = transform;
             if (reverseTransform.HasInverse)
                 reverseTransform.Invert();
@@ -207,7 +205,7 @@ namespace YOpenGL._3D
                 else if (hitTestMode == RectHitTestMode.Intersect)
                 {
                     if (!rectInWpf.IntersectsWith(bounds2D)) continue;
-                    var pointsTransformed = new LazyArray<Point3F>(model.GetDrawPoints(), p => p * transform);//model.GetDrawPoints().Select(p => p * transform).ToArray();
+                    var pointsTransformed = new LazyArray<Point3F, Point3F>(model.GetDrawPoints(), p => p * transform);//model.GetDrawPoints().Select(p => p * transform).ToArray();
                     switch (model.Mode)
                     {
                         case GLPrimitiveMode.GL_POINTS:

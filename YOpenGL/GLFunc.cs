@@ -2132,6 +2132,11 @@ namespace YOpenGL
             glBindTexture?.Invoke(target, texture);
         }
 
+        public static void ActiveTexture(GLenum texture)
+        {
+            glActiveTexture?.Invoke(texture);
+        }
+
         public static void DeleteTextures(GLsizei n, GLuint[] textures)
         {
             glDeleteTextures?.Invoke(n, textures);
@@ -2347,6 +2352,13 @@ namespace YOpenGL
             glBindBufferRange?.Invoke(target, index, buffer, offset, size);
         }
 
+        public static GLuint GetProgramResourceIndex(GLuint program, GLenum programInterface, string name)
+        {
+            if (glGetProgramResourceIndex != null)
+                glGetProgramResourceIndex(program, programInterface, name);
+            return 0;
+        }
+
         public static GLuint GetUniformBlockIndex(GLuint program, string uniformBlockName)
         {
             if (glGetUniformBlockIndex != null)
@@ -2359,6 +2371,11 @@ namespace YOpenGL
             if (glGetUniformLocation != null)
                 return glGetUniformLocation(program, name);
             return 0;
+        }
+
+        public static void ShaderStorageBlockBinding(GLuint program, GLuint storageBlockIndex, GLuint storageBlockBinding)
+        {
+            glShaderStorageBlockBinding?.Invoke(program, storageBlockIndex, storageBlockBinding);
         }
 
         public static void UniformBlockBinding(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding)

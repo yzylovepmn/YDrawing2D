@@ -271,6 +271,11 @@ namespace YOpenGL
             return new Point3F(vector._x, vector._y, vector._z);
         }
 
+        public static explicit operator VectorF(Vector3F vector)
+        {
+            return new VectorF(vector._x, vector._y);
+        }
+
         public static explicit operator Size3F(Vector3F vector)
         {
             return new Size3F(Math.Abs(vector._x), Math.Abs(vector._y), Math.Abs(vector._z));
@@ -364,5 +369,10 @@ namespace YOpenGL
         internal Float _x;
         internal Float _y;
         internal Float _z;
+
+        public override string ToString()
+        {
+            return string.Format($"{_x}, {_y}, {_z}");
+        }
     }
 }

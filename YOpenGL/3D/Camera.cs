@@ -136,6 +136,9 @@ namespace YOpenGL._3D
         public Matrix3F ViewMatrix { get { return _viewMatrix; } }
         private Matrix3F _viewMatrix;
 
+        internal Matrix3F TotalTransform { get { return _totalTransform; } }
+        private Matrix3F _totalTransform;
+
         public void SetPerspectiveParameters(float fieldOfView)
         {
             SetPerspectiveParameters(fieldOfView, _aspect, _nearPlaneDistance, _farPlaneDistance);
@@ -201,6 +204,8 @@ namespace YOpenGL._3D
                     _projectionMatrix = _GenerateOrthographicMatrix();
                     break;
             }
+
+            _totalTransform = _viewMatrix * _projectionMatrix;
             PropertyChanged(this, EventArgs.Empty);
         }
 
@@ -254,12 +259,9 @@ namespace YOpenGL._3D
                 xaxis.Y, yaxis.Y, zaxis.Y, 0,
                 xaxis.Z, yaxis.Z, zaxis.Z, 0,
                 cx, cy, cz, 1);
-            PropertyChanged(this, EventArgs.Empty);
-        }
 
-        public Matrix3F GetTotalTransform()
-        {
-            return _viewMatrix * _projectionMatrix;
+            _totalTransform = _viewMatrix * _projectionMatrix;
+            PropertyChanged(this, EventArgs.Empty);
         }
 
         public void Dispose()
