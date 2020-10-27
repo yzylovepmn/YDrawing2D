@@ -61,7 +61,7 @@ namespace YDrawing2DTest
                 new Vector3F(0, 0, 1), new Vector3F(0, 0, 1), new Vector3F(0, 0, 1), new Vector3F(0, 0, 1),
                 new Vector3F(0, 1, 0), new Vector3F(0, 1, 0), new Vector3F(0, 1, 0), new Vector3F(0, 1, 0),
             });
-            _model3D.SetTriangleIndices(new List<uint>()
+            _model3D.SetIndices(new List<uint>()
             {
                 0, 2, 1, 1, 2, 3,
                 4, 5, 6, 6, 5, 7,

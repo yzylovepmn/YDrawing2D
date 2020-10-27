@@ -111,9 +111,7 @@ namespace YOpenGL._3D
         internal float ViewHeight;
 
         #region Matrix
-        internal MatrixF TransformToDevice { get { return _transformToDevice; } }
         private MatrixF _transformToDevice;
-
         private Matrix3F _totalTransform;
         #endregion
 

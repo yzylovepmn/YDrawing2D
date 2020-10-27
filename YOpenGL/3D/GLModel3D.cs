@@ -223,9 +223,9 @@ namespace YOpenGL._3D
             }
         }
 
-        public void SetTriangleIndices(IEnumerable<uint> triangleIndices)
+        public void SetIndices(IEnumerable<uint> indices)
         {
-            _indices = triangleIndices.ToList();
+            _indices = indices.ToList();
             if (HasInit)
             {
                 _viewport.MakeSureCurrentContext();

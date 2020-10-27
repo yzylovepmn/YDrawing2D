@@ -374,6 +374,8 @@ namespace YOpenGL
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
         public void AddVisual(GLVisual visual, bool refresh = false)
         {
+            MakeSureCurrentContext(_context);
+
             if (!visual.IsDeleted)
             {
                 if (visual.Panel != this)
@@ -389,6 +391,8 @@ namespace YOpenGL
 
         public void InsertVisuals(int index, IEnumerable<GLVisual> visuals, bool refresh = false)
         {
+            MakeSureCurrentContext(_context);
+
             foreach (var visual in visuals)
             {
                 if (!visual.IsDeleted)
@@ -414,6 +418,8 @@ namespace YOpenGL
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
         public void RemoveVisual(GLVisual visual, bool refresh = true)
         {
+            MakeSureCurrentContext(_context);
+
             if (visual.Panel != this)
                 throw new InvalidOperationException("Logical parent error!");
             _DetachVisual(visual);
@@ -429,6 +435,8 @@ namespace YOpenGL
 
         public void RemoveAll()
         {
+            MakeSureCurrentContext(_context);
+
             _DisposeModels();
             foreach (var visual in _visuals)
             {
@@ -476,6 +484,8 @@ namespace YOpenGL
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
         public async void Update(GLVisual visual, bool refresh = false)
         {
+            MakeSureCurrentContext(_context);
+
             if (visual.Panel == null) return;
             if (_renderMode == RenderMode.Sync)
                 _Update(visual, true);
@@ -491,6 +501,8 @@ namespace YOpenGL
         /// <param name="refresh">Whether to refresh the frame buffer immediately</param>
         public async Task UpdateAsync(GLVisual visual, bool refresh = false)
         {
+            MakeSureCurrentContext(_context);
+
             if (visual.Panel == null) return;
             if (_renderMode == RenderMode.Sync)
                 _Update(visual, true);
@@ -542,6 +554,8 @@ namespace YOpenGL
         /// </summary>
         public async void UpdateAll()
         {
+            MakeSureCurrentContext(_context);
+
             _DisposeModels(); /// clear render buffer, so we do not need remove context from render buffer.<see cref="_Update(GLVisual, bool)"/> and <see cref="_UpdateAsync(GLVisual, bool)"/>
             if (_renderMode == RenderMode.Sync)
             {
@@ -1111,12 +1125,9 @@ namespace YOpenGL
                 // Set line pattern
                 BindTexture(GL_TEXTURE_1D, _texture_dash[0]);
                 TexImage1D(GL_TEXTURE_1D, 0, GL_RED, pair.Key.Data.Length, 0, GL_RED, GL_UNSIGNED_BYTE, pair.Key.Data);
-
-                foreach (var model in pair.Value)
-                    model.Draw(shader);
             }
-            else foreach (var model in pair.Value)
-                    model.Draw(shader);
+            foreach (var model in pair.Value)
+                model.Draw(shader);
         }
 
         private void _DrawFilledModelHandle(KeyValuePair<Color, List<MeshModel>> pair, Shader shader)

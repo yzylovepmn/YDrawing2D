@@ -399,12 +399,9 @@ namespace YOpenGL
                 // Set line pattern
                 BindTexture(GL_TEXTURE_1D, _panel.Texture_Dash[0]);
                 TexImage1D(GL_TEXTURE_1D, 0, GL_RED, pair.Key.Data.Length, 0, GL_RED, GL_UNSIGNED_BYTE, pair.Key.Data);
-
-                foreach (var model in pair.Value)
-                    model.Draw(shader);
             }
-            else foreach (var model in pair.Value)
-                    model.Draw(shader);
+            foreach (var model in pair.Value)
+                model.Draw(shader);
         }
 
         private void _DrawFilledModelHandle(KeyValuePair<Color, List<MeshModel>> pair, Shader shader)
@@ -551,8 +548,6 @@ namespace YOpenGL
 
         private void _DisposeModels()
         {
-            MakeSureCurrentContext(_panel.Context);
-
             foreach (var item in _fillModels.Values)
                 item?.DisposeInner();
             foreach (var item in _arrowModels.Values)
