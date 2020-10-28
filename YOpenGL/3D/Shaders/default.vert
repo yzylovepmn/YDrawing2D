@@ -24,5 +24,5 @@ void main()
     texCoords = aTexCoords;
     distance = aDistance / dashedFactor;
     vec4 pos = vp * vec4(aPos, 1.0);
-    gl_Position = pos;
+    gl_Position = pos / pos.w;
 }
