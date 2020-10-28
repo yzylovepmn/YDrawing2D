@@ -525,7 +525,7 @@ namespace YOpenGL._3D
 
                 if (model.HasDash)
                 {
-                    shader.SetFloat("dashedFactor", model.Dashes.Length * 4);
+                    shader.SetFloat("dashedFactor", model.Dashes.Length * 2);
                     BindTexture(GL_TEXTURE_1D, _texture_dash[0]);
                     TexImage1D(GL_TEXTURE_1D, 0, GL_RED, model.Dashes.Length, 0, GL_RED, GL_UNSIGNED_BYTE, model.Dashes);
                 }
