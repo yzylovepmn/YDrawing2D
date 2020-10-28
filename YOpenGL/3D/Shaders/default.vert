@@ -15,13 +15,14 @@ out vec3 fragPos;
 out vec3 normal;
 out vec2 texCoords;
 out float distance;
+uniform float dashedFactor;
 
 void main()
 {
     fragPos = aPos;
     normal = aNormal;
     texCoords = aTexCoords;
-    distance = aDistance / 8;
+    distance = aDistance / dashedFactor;
     vec4 pos = vp * vec4(aPos, 1.0);
     gl_Position = pos;
 }

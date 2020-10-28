@@ -397,6 +397,7 @@ namespace YOpenGL
             if (pair.Key.Data != null)
             {
                 // Set line pattern
+                shader.SetFloat("dashedFactor", pair.Key.Data.Length * 4);
                 BindTexture(GL_TEXTURE_1D, _panel.Texture_Dash[0]);
                 TexImage1D(GL_TEXTURE_1D, 0, GL_RED, pair.Key.Data.Length, 0, GL_RED, GL_UNSIGNED_BYTE, pair.Key.Data);
             }

@@ -9,13 +9,9 @@ namespace YOpenGL._3D
 {
     public class RectSelector : IDisposable
     {
-        private const float _ZDpeth = 0f;
-
         public RectSelector(GLPanel3D viewport)
         {
             _viewport = viewport;
-            _viewport.Camera.PropertyChanged += _OnPropertyChanged;
-            _UpdateTransform();
             _fill = new RectFill();
             _wireframe = new RectWireframe();
         }
@@ -23,11 +19,6 @@ namespace YOpenGL._3D
         private GLPanel3D _viewport;
         private RectFill _fill;
         private RectWireframe _wireframe;
-        private Matrix3F _transform;
-        private Point3F _topLeft;
-        private Point3F _topRight;
-        private Point3F _bottomLeft;
-        private Point3F _bottomRight;
 
         public Color Color { get { return _fill.Material.Color; } set { _fill.Material.Color = value; } }
 
@@ -84,11 +75,6 @@ namespace YOpenGL._3D
         }
         private PointF _p2;
 
-        private void _OnPropertyChanged(object sender, EventArgs e)
-        {
-            _UpdateTransform();
-        }
-
         private void _UpdateData()
         {
             var xmin = Math.Min(_p1.X, _p2.X);
@@ -96,33 +82,29 @@ namespace YOpenGL._3D
             var ymin = Math.Min(_p1.Y, _p2.Y);
             var ymax = Math.Max(_p1.Y, _p2.Y);
 
-            _bottomLeft = new Point3F(xmin, ymin, _ZDpeth) * _transform;
-            _bottomRight = new Point3F(xmax, ymin, _ZDpeth) * _transform;
-            _topLeft = new Point3F(xmin, ymax, _ZDpeth) * _transform;
-            _topRight = new Point3F(xmax, ymax, _ZDpeth) * _transform;
+            var zDepth = _viewport.Camera.Type == CameraType.Orthographic ? -1 : -0.9999f;
+            var bottomLeft = _viewport.PointInWpfToPoint3D(new PointF(xmin, ymin), zDepth);
+            var bottomRight = _viewport.PointInWpfToPoint3D(new PointF(xmax, ymin), zDepth);
+            var topLeft = _viewport.PointInWpfToPoint3D(new PointF(xmin, ymax), zDepth);
+            var topRight = _viewport.PointInWpfToPoint3D(new PointF(xmax, ymax), zDepth);
 
-            var points = new List<Point3F>() { _bottomRight, _bottomLeft, _topLeft, _topRight };
-            _fill.SetPoints(points);
-            points.Add(points.First());
-            _wireframe.SetPoints(points);
-            if (_p1.X > _p2.X)
-                _wireframe.Dashes = new byte[] { 1, 1 };
-            else _wireframe.Dashes = null;
+            if (bottomLeft.HasValue)
+            {
+                var points = new List<Point3F>() { bottomRight.Value, bottomLeft.Value, topLeft.Value, topRight.Value };
+                _fill.SetPoints(points);
+                points.Add(points.First());
+                _wireframe.SetPoints(points);
+                if (_p1.X > _p2.X)
+                    _wireframe.Dashes = new byte[] { 1, 1 };
+                else _wireframe.Dashes = null;
 
-            if (_isVisible)
-                _viewport.Refresh();
-        }
-
-        private void _UpdateTransform()
-        {
-            if (!_viewport.IsInit) return;
-            _transform = _viewport.GetWorldToWPF();
-            _transform.Invert();
+                if (_isVisible)
+                    _viewport.Refresh();
+            }
         }
 
         public void Dispose()
         {
-            _viewport.Camera.PropertyChanged -= _OnPropertyChanged;
             _viewport = null;
         }
 

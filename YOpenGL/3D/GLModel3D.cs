@@ -237,7 +237,6 @@ namespace YOpenGL._3D
         {
             if (HasDash && _points != null)
             {
-                var transform = _viewport.GetWorldToWPF();
                 var points = _points.ToArray();
                 var distances = new float[points.Length];
                 switch (_mode)
@@ -246,17 +245,17 @@ namespace YOpenGL._3D
                         {
                             for (int i = 0; i < points.Length - 1; i += 2)
                             {
-                                var p1 = (Vector3F)(points[i] * transform);
-                                var p2 = (Vector3F)(points[i + 1] * transform);
+                                var p1 = _viewport.Point3DToPointInWpf(points[i]);
+                                var p2 = _viewport.Point3DToPointInWpf(points[i + 1]);
                                 distances[i] = 0;
-                                distances[i + 1] = ((VectorF)p2 - (VectorF)p1).Length;
+                                distances[i + 1] = (p2 - p1).Length;
                             }
                         }
                         break;
                     case GLPrimitiveMode.GL_LINE_STRIP:
                         {
                             var dis = 0f;
-                            var pointsTransformed = new LazyArray<Point3F, PointF>(points, p => (PointF)(p * transform));
+                            var pointsTransformed = new LazyArray<Point3F, PointF>(points, p => _viewport.Point3DToPointInWpf(p));
 
                             for (int i = 1; i < pointsTransformed.Length; i++)
                             {

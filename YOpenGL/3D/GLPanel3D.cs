@@ -525,6 +525,7 @@ namespace YOpenGL._3D
 
                 if (model.HasDash)
                 {
+                    shader.SetFloat("dashedFactor", model.Dashes.Length * 4);
                     BindTexture(GL_TEXTURE_1D, _texture_dash[0]);
                     TexImage1D(GL_TEXTURE_1D, 0, GL_RED, model.Dashes.Length, 0, GL_RED, GL_UNSIGNED_BYTE, model.Dashes);
                 }
@@ -599,7 +600,7 @@ namespace YOpenGL._3D
                     _camera.SetPerspectiveParameters(_camera.FieldOfView, ViewWidth / ViewHeight);
                     break;
                 case CameraType.Orthographic:
-                    _camera.SetOrthographicParameters(ViewWidth, ViewHeight);
+                    _camera.SetOrthographicParameters(ViewWidth / ViewHeight * _camera.Height, _camera.Height);
                     break;
             }
 
@@ -719,11 +720,6 @@ namespace YOpenGL._3D
             return (PointF)Mouse.GetPosition(this) * _transformToDevice;
         }
 
-        public Matrix3F GetWorldToWPF()
-        {
-            return _totalTransform;
-        }
-
         public Matrix3F GetNDCToWPF()
         {
             return new Matrix3F(ViewWidth / 2, 0, 0, 0,
@@ -760,52 +756,54 @@ namespace YOpenGL._3D
         /// <returns>Point in wpf</returns>
         public Point3F Point3DToPointInWpfWithZDpeth(Point3F point)
         {
-            //var transform = _camera.TotalTransform;
-            //transform.Append(GetNDCToWPF());
-            return point * _totalTransform;
+            //if (_camera.Type == CameraType.Orthographic)
+                return point * _totalTransform;
+            //else
+            //{
+            //    var pp = (Point4F)point * _totalTransform;
+            //    return new Point3F(pp.X / pp.W, pp.Y / pp.W, pp.Z / pp.W);
+            //}
         }
 
         /// <param name="points">Points in world coordinate</param>
         /// <returns>Points in wpf</returns>
         public IEnumerable<Point3F> Point3DToPointInWpfWithZDpeth(IEnumerable<Point3F> points)
         {
-            //var transform = _camera.TotalTransform;
-            //transform.Append(GetNDCToWPF());
-            foreach (var point in points)
-                yield return point * _totalTransform;
+            //if (_camera.Type == CameraType.Orthographic)
+            //{
+                foreach (var point in points)
+                    yield return point * _totalTransform;
+            //}
+            //else
+            //{
+            //    foreach (var point in points)
+            //    {
+            //        var pp = (Point4F)point * _totalTransform;
+            //        yield return new Point3F(pp.X / pp.W, pp.Y / pp.W, pp.Z / pp.W);
+            //    }
+            //}
         }
 
         /// <param name="pointInWpf">Point in wpf</param>
         /// <param name="ZDepth">Range In [-1, 1]</param>
         /// <returns>Point in world coordinate</returns>
-        public Point3F? PointInWpfToPoint3D(PointF pointInWpf, float? ZDepth = null)
+        public Point3F? PointInWpfToPoint3D(PointF pointInWpf, float? zDepth = null)
         {
             var ret = new Point3F(pointInWpf.X, pointInWpf.Y, 0);
             var transform = GetWPFToNDC();
             ret *= transform;
-            //var near = new Point3F(ret.X, ret.Y, -0.99f);
-            //var far = new Point3F(ret.X, ret.Y, 0.99f);
-            var cameraTransform = _camera.TotalTransform;
-            if (!ZDepth.HasValue)
+            var cameraTransformReverse = _camera.TotalTransformReverse;
+
+            if (!zDepth.HasValue)
             {
-                var pp = _camera.Target * cameraTransform;
-                ret.Z = pp.Z;
+                var p = _camera.Target * _camera.TotalTransform;
+                ret.Z = p.Z;
             }
-            else ret.Z = ZDepth.Value;
+            else ret.Z = zDepth.Value;
 
-            if (cameraTransform.HasInverse)
+            if (cameraTransformReverse.HasValue)
             {
-                cameraTransform.Invert();
-                ret *= cameraTransform;
-
-                //near *= cameraTransform;
-                //far *= cameraTransform;
-                //var dir = far - near;
-                //var normal = _camera.LookDirection;
-                //var dn = Vector3F.DotProduct(normal, dir);
-
-                //var u = Vector3F.DotProduct(normal, _camera.Target - near) / dn;
-                //ret = near + (u * dir);
+                ret *= cameraTransformReverse.Value;
                 return ret;
             }
             else return null;
@@ -934,11 +932,11 @@ namespace YOpenGL._3D
             float r = d * (float)Math.Tan(MathUtil.DegreesToRadians(0.5 * fov));
 
             fov *= 1 + (delta * 0.5f);
-            if (fov < 10)
-                fov = 10;
+            if (fov < 5)
+                fov = 5;
 
-            if (fov > 60)
-                fov = 60;
+            if (fov > 120)
+                fov = 120;
 
             _camera.SetPerspectiveParameters(fov);
             float d2 = r / (float)Math.Tan(MathUtil.DegreesToRadians(0.5 * fov));
@@ -976,9 +974,19 @@ namespace YOpenGL._3D
             var newRelativePosition = relativePosition * f;
             var newRelativeTarget = relativeTarget * f;
 
-            var newTarget = zoomAround - newRelativeTarget;
+            var newLookDirection = newRelativePosition - newRelativeTarget;
+
+            var distance = newLookDirection.Length;
+            if (distance > _camera.FarPlaneDistance || distance < _camera.NearPlaneDistance)
+            {
+                var newDistance = 0f;
+                MathUtil.Clamp(ref newDistance, _camera.NearPlaneDistance, _camera.FarPlaneDistance);
+                newRelativePosition *= newDistance / distance;
+                newLookDirection *= newDistance / distance;
+            }
+
+            //var newTarget = zoomAround - newRelativeTarget;
             var newPosition = zoomAround - newRelativePosition;
-            var newLookDirection = newTarget - newPosition;
 
             _camera.SetViewParameters(newPosition, newLookDirection);
         }
@@ -1002,17 +1010,13 @@ namespace YOpenGL._3D
         {
             if (_camera.Mode == CameraMode.FixedPosition || !_isTranslateEnable) return;
 
-            var transform = _totalTransform;
-            var transformedPosition = _camera.Target * transform;
+            var transformedPosition = Point3DToPointInWpf(_camera.Target);
             transformedPosition.X += delta.X;
             transformedPosition.Y += delta.Y;
 
-            if (transform.HasInverse)
-            {
-                transform.Invert();
-                transformedPosition *= transform;
-                Translate(transformedPosition - _camera.Target);
-            }
+            var newTarget = PointInWpfToPoint3D(transformedPosition);
+            if (newTarget.HasValue)
+                Translate(newTarget.Value - _camera.Target);
         }
         #endregion
 

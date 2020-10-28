@@ -11,16 +11,13 @@ namespace YOpenGL._3D
         internal static IEnumerable<HitResult> HitTest(GLPanel3D viewport, PointF pointInWpf, float sensitive, bool findTop)
         {
             var results = new List<HitResult>();
-            var transform = viewport.GetWorldToWPF();
-            var reverseTransform = transform;
-            if (reverseTransform.HasInverse)
-                reverseTransform.Invert();
-            else return results;
+            if (!viewport.Camera.TotalTransformReverse.HasValue)
+                return results;
 
             foreach (var model in viewport.Models.Where(m => m.IsVisible && m.IsHitTestVisible && m.Points != null))
             {
                 var bounds3D = model.Bounds;
-                var bounds2D = Math3DHelper.Transform(bounds3D, transform);
+                var bounds2D = Math3DHelper.Transform(bounds3D, viewport);
                 var sensity = sensitive;
                 switch (model.Mode)
                 {
@@ -39,7 +36,7 @@ namespace YOpenGL._3D
                 if (!bounds2D.Contains(pointInWpf)) continue;
 
                 var points = model.GetDrawPoints().ToArray();
-                var pointsTransformed = new LazyArray<Point3F, Point3F>(points, p => p * transform);// points.Select(p => p * transform).ToArray();
+                var pointsTransformed = new LazyArray<Point3F, Point3F>(points, p => viewport.Point3DToPointInWpfWithZDpeth(p));// points.Select(p => p * transform).ToArray();
                 switch (model.Mode)
                 {
                     case GLPrimitiveMode.GL_POINTS:
@@ -93,10 +90,13 @@ namespace YOpenGL._3D
                                     var p = cp.Value;
                                     var t = line.CalcT(p);
                                     var z = t * pt1.Z + (1 - t) * pt2.Z;
-                                    var ht = new Point3F(p.X, p.Y, z) * reverseTransform;
-                                    results.Add(new HitResult(new LineMesh(p1, p2), model, ht, z));
-                                    if (findTop) return results;
-                                    break;
+                                    var ht = viewport.PointInWpfToPoint3D(new PointF(p.X, p.Y), z);
+                                    if (ht.HasValue)
+                                    {
+                                        results.Add(new HitResult(new LineMesh(p1, p2), model, ht.Value, z));
+                                        if (findTop) return results;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -121,10 +121,13 @@ namespace YOpenGL._3D
                                 {
                                     var c = 1 - a - b;
                                     var z = pt1.Z * a + pt2.Z * b + pt3.Z * c;
-                                    var ht = new Point3F(pointInWpf.X, pointInWpf.Y, z) * reverseTransform;
-                                    results.Add(new HitResult(new TriangleMesh(p1, p2, p3), model, ht, z));
-                                    if (findTop) return results;
-                                    break;
+                                    var ht = viewport.PointInWpfToPoint3D(new PointF(pointInWpf.X, pointInWpf.Y), z);
+                                    if (ht.HasValue)
+                                    {
+                                        results.Add(new HitResult(new TriangleMesh(p1, p2, p3), model, ht.Value, z));
+                                        if (findTop) return results;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -147,10 +150,13 @@ namespace YOpenGL._3D
                                 {
                                     var c = 1 - a - b;
                                     var z = pt1.Z * a + pt2.Z * b + pt3.Z * c;
-                                    var ht = new Point3F(pointInWpf.X, pointInWpf.Y, z) * reverseTransform;
-                                    results.Add(new HitResult(new TriangleMesh(p1, p2, p3), model, ht, z));
-                                    if (findTop) return results;
-                                    break;
+                                    var ht = viewport.PointInWpfToPoint3D(new PointF(pointInWpf.X, pointInWpf.Y), z);
+                                    if (ht.HasValue)
+                                    {
+                                        results.Add(new HitResult(new TriangleMesh(p1, p2, p3), model, ht.Value, z));
+                                        if (findTop) return results;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -177,16 +183,13 @@ namespace YOpenGL._3D
         internal static IEnumerable<RectHitResult> HitTest(GLPanel3D viewport, RectF rectInWpf, RectHitTestMode hitTestMode)
         {
             var results = new List<RectHitResult>();
-            var transform = viewport.GetWorldToWPF();
-            var reverseTransform = transform;
-            if (reverseTransform.HasInverse)
-                reverseTransform.Invert();
-            else return results;
+            if (!viewport.Camera.TotalTransformReverse.HasValue)
+                return results;
 
             foreach (var model in viewport.Models.Where(m => m.IsVisible && m.IsHitTestVisible && m.Points != null))
             {
                 var bounds3D = model.Bounds;
-                var bounds2D = Math3DHelper.Transform(bounds3D, transform);
+                var bounds2D = Math3DHelper.Transform(bounds3D, viewport);
                 var sensity = model.Mode == GLPrimitiveMode.GL_POINTS ? model.PointSize / 2 : model.LineWidth;
                 switch (model.Mode)
                 {
@@ -205,7 +208,7 @@ namespace YOpenGL._3D
                 else if (hitTestMode == RectHitTestMode.Intersect)
                 {
                     if (!rectInWpf.IntersectsWith(bounds2D)) continue;
-                    var pointsTransformed = new LazyArray<Point3F, Point3F>(model.GetDrawPoints(), p => p * transform);//model.GetDrawPoints().Select(p => p * transform).ToArray();
+                    var pointsTransformed = new LazyArray<Point3F, PointF>(model.GetDrawPoints(), p => viewport.Point3DToPointInWpf(p));//model.GetDrawPoints().Select(p => p * transform).ToArray();
                     switch (model.Mode)
                     {
                         case GLPrimitiveMode.GL_POINTS:
@@ -213,12 +216,11 @@ namespace YOpenGL._3D
                                 for (int i = 0; i < pointsTransformed.Length; i++)
                                 {
                                     var pt = pointsTransformed[i];
-                                    var tt = (PointF)pt;
-                                    if (rectInWpf.Contains(tt) 
-                                        || (rectInWpf.BottomLeft - tt).Length <= sensity
-                                        || (rectInWpf.BottomRight - tt).Length <= sensity
-                                        || (rectInWpf.TopLeft - tt).Length <= sensity
-                                        || (rectInWpf.TopRight - tt).Length <= sensity)
+                                    if (rectInWpf.Contains(pt) 
+                                        || (rectInWpf.BottomLeft - pt).Length <= sensity
+                                        || (rectInWpf.BottomRight - pt).Length <= sensity
+                                        || (rectInWpf.TopLeft - pt).Length <= sensity
+                                        || (rectInWpf.TopRight - pt).Length <= sensity)
                                     {
                                         results.Add(new RectHitResult(model));
                                         break;
@@ -235,8 +237,8 @@ namespace YOpenGL._3D
                                 var limit = model.Mode == GLPrimitiveMode.GL_LINE_LOOP ? pointsTransformed.Length : pointsTransformed.Length - 1;
                                 for (int i = 0; i < limit; i += stride)
                                 {
-                                    var pt1 = new Point3F();
-                                    var pt2 = new Point3F();
+                                    var pt1 = new PointF();
+                                    var pt2 = new PointF();
                                     if (i != cond)
                                     {
                                         pt1 = pointsTransformed[i];
@@ -248,7 +250,7 @@ namespace YOpenGL._3D
                                         pt2 = pointsTransformed[0];
                                     }
 
-                                    var line = new Line((PointF)pt1, (PointF)pt2);
+                                    var line = new Line(pt1, pt2);
                                     var bounds = line.GetBounds();
                                     bounds.Extents(sensity);
                                     if (bounds.IntersectsWith(rectInWpf) && line.HitTest(rectInWpf, sensity))
@@ -269,7 +271,7 @@ namespace YOpenGL._3D
                                     var pt2 = pointsTransformed[i + 1];
                                     var pt3 = pointsTransformed[i + 2];
 
-                                    var triangle = new Triangle((PointF)pt1, (PointF)pt2, (PointF)pt3);
+                                    var triangle = new Triangle(pt1, pt2, pt3);
                                     if (rectInWpf.Contains(triangle.P1) || rectInWpf.Contains(triangle.P2) || rectInWpf.Contains(triangle.P3)
                                         || triangle.IsPointInside(rectInWpf.TopLeft) || triangle.IsPointInside(rectInWpf.TopRight) || triangle.IsPointInside(rectInWpf.BottomLeft) || triangle.IsPointInside(rectInWpf.BottomRight))
                                     {
@@ -287,7 +289,7 @@ namespace YOpenGL._3D
                                     var pt2 = pointsTransformed[i - 1];
                                     var pt3 = pointsTransformed[i];
 
-                                    var triangle = new Triangle((PointF)pt1, (PointF)pt2, (PointF)pt3);
+                                    var triangle = new Triangle(pt1, pt2, pt3);
                                     if (rectInWpf.Contains(triangle.P1) || rectInWpf.Contains(triangle.P2) || rectInWpf.Contains(triangle.P3)
                                         || triangle.IsPointInside(rectInWpf.TopLeft) || triangle.IsPointInside(rectInWpf.TopRight) || triangle.IsPointInside(rectInWpf.BottomLeft) || triangle.IsPointInside(rectInWpf.BottomRight))
                                     {

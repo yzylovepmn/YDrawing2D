@@ -8,7 +8,7 @@ namespace YOpenGL._3D
 {
     public class Math3DHelper
     {
-        public static RectF Transform(Rect3F rect, Matrix3F transform)
+        public static RectF Transform(Rect3F rect, GLPanel3D viewport)
         {
             var p1 = rect.Location;
             var p2 = p1 + new Vector3F(rect.SizeX, 0, 0);
@@ -20,14 +20,14 @@ namespace YOpenGL._3D
             var p8 = p1 + new Vector3F(rect.SizeX, rect.SizeY, rect.SizeZ);
 
             var ret = RectF.Empty;
-            ret.Union((PointF)(p1 * transform));
-            ret.Union((PointF)(p2 * transform));
-            ret.Union((PointF)(p3 * transform));
-            ret.Union((PointF)(p4 * transform));
-            ret.Union((PointF)(p5 * transform));
-            ret.Union((PointF)(p6 * transform));
-            ret.Union((PointF)(p7 * transform));
-            ret.Union((PointF)(p8 * transform));
+            ret.Union(viewport.Point3DToPointInWpf(p1));
+            ret.Union(viewport.Point3DToPointInWpf(p2));
+            ret.Union(viewport.Point3DToPointInWpf(p3));
+            ret.Union(viewport.Point3DToPointInWpf(p4));
+            ret.Union(viewport.Point3DToPointInWpf(p5));
+            ret.Union(viewport.Point3DToPointInWpf(p6));
+            ret.Union(viewport.Point3DToPointInWpf(p7));
+            ret.Union(viewport.Point3DToPointInWpf(p8));
             return ret;
         }
     }

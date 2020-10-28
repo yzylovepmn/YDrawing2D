@@ -81,6 +81,11 @@ namespace YOpenGL
             return !(point1 == point2);
         }
 
+        public static explicit operator Point3F(Point4F point)
+        {
+            return new Point3F(point._x, point._y, point._z);
+        }
+
         public static bool Equals(Point4F point1, Point4F point2)
         {
             return point1.X.Equals(point2.X) &&

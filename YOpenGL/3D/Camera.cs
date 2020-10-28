@@ -139,6 +139,9 @@ namespace YOpenGL._3D
         internal Matrix3F TotalTransform { get { return _totalTransform; } }
         private Matrix3F _totalTransform;
 
+        internal Matrix3F? TotalTransformReverse { get { return _totalTransformReverse; } }
+        private Matrix3F? _totalTransformReverse;
+
         public void SetPerspectiveParameters(float fieldOfView)
         {
             SetPerspectiveParameters(fieldOfView, _aspect, _nearPlaneDistance, _farPlaneDistance);
@@ -205,8 +208,7 @@ namespace YOpenGL._3D
                     break;
             }
 
-            _totalTransform = _viewMatrix * _projectionMatrix;
-            PropertyChanged(this, EventArgs.Empty);
+            _OnTransformChanged();
         }
 
         private Matrix3F _GeneratePerspectiveMatrix()
@@ -260,7 +262,18 @@ namespace YOpenGL._3D
                 xaxis.Z, yaxis.Z, zaxis.Z, 0,
                 cx, cy, cz, 1);
 
+            _OnTransformChanged();
+        }
+
+        private void _OnTransformChanged()
+        {
             _totalTransform = _viewMatrix * _projectionMatrix;
+            if (_totalTransform.HasInverse)
+            {
+                var totalTransformReverse = _totalTransform;
+                totalTransformReverse.Invert();
+                _totalTransformReverse = totalTransformReverse;
+            }
             PropertyChanged(this, EventArgs.Empty);
         }
 

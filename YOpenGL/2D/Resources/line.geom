@@ -4,6 +4,7 @@ layout(line_strip, max_vertices=2) out;
 
 uniform vec2 screenSize;
 uniform bool dashed;
+uniform float dashedFactor;
 
 out float texCoord;
 
@@ -17,7 +18,7 @@ void main()
 		texCoord = 0.0;
 		EmitVertex();
 		gl_Position = gl_in[1].gl_Position;
-		texCoord = length(winPos1-winPos0) / 16.0;
+		texCoord = length(winPos1-winPos0) / dashedFactor;
 		EmitVertex();
 	}
 	else

@@ -5,6 +5,7 @@ layout(line_strip, max_vertices=66) out;
 uniform vec2 screenSize;
 uniform vec2 samples[65];
 uniform bool dashed;
+uniform float dashedFactor;
 
 in vec3 arcParams[];
 in float factor[];
@@ -40,7 +41,7 @@ void main()
           EmitVertex();
         }
         gl_Position = p2;
-        _texCoord = _texCoord + length(winPos1-winPos0) / 16.0;
+        _texCoord = _texCoord + length(winPos1-winPos0) / dashedFactor;
         texCoord = _texCoord;
         EmitVertex();
         p1 = p2;
@@ -202,7 +203,7 @@ float emitpoint(vec4 p1, vec4 p2, float _texCoord, bool emitp1)
     texCoord = _texCoord;
     EmitVertex();
   }
-  _texCoord = _texCoord + length(winPos1-winPos0) / 16.0;
+  _texCoord = _texCoord + length(winPos1-winPos0) / dashedFactor;
   gl_Position = p2;
   texCoord = _texCoord;
   EmitVertex();
