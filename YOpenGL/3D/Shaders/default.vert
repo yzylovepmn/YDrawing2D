@@ -15,6 +15,7 @@ out vec3 fragPos;
 out vec3 normal;
 out vec2 texCoords;
 out float distance;
+uniform bool dashed;
 uniform float dashedFactor;
 
 void main()
@@ -24,5 +25,7 @@ void main()
     texCoords = aTexCoords;
     distance = aDistance / dashedFactor;
     vec4 pos = vp * vec4(aPos, 1.0);
-    gl_Position = pos / pos.w;
+    if (dashed)
+        gl_Position = pos / pos.w;
+    else gl_Position = pos;
 }

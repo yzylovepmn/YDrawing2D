@@ -821,6 +821,16 @@ namespace YOpenGL._3D
             FitView(bounds, lookDirection, upDirection);
         }
 
+        public void FitView(GLModel3D model)
+        {
+            FitView(model, _camera.LookDirection, _camera.UpDirection);
+        }
+
+        public void FitView(GLModel3D model, Vector3F lookDirection, Vector3F upDirection)
+        {
+            FitView(model.Bounds, lookDirection, upDirection);
+        }
+
         public void FitView(Rect3F bounds, Vector3F lookDirection, Vector3F upDirection)
         {
             var diagonal = new Vector3F(bounds.SizeX, bounds.SizeY, bounds.SizeZ);
