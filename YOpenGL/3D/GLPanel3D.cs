@@ -48,6 +48,7 @@ namespace YOpenGL._3D
             _models = new List<GLModel3D>();
             _lights = new List<Light>();
             _mouseEventHandler = new MouseEventHandler(this);
+
             _zoomExtentWhenLoaded = true;
             _isRotateEnable = true;
             _isTranslateEnable = true;
@@ -55,6 +56,10 @@ namespace YOpenGL._3D
             _zoomSensitivity = 1;
             _rotationSensitivity = 1;
             _modelUpDirection = new Vector3F(0, 0, 1);
+            _minOrthographicCameraWidth = 10;
+            _maxOrthographicCameraWidth = 10000;
+            _minPerspectiveCameraDistance = 10;
+            _maxPerspectiveCameraDistance = 5000;
 
             BackgroundColor = backgroundColor;
             Focusable = true;
@@ -174,6 +179,34 @@ namespace YOpenGL._3D
             set { _isZoomEnable = value; }
         }
         private bool _isZoomEnable;
+
+        public float MaxOrthographicCameraWidth
+        {
+            get { return _maxOrthographicCameraWidth; }
+            set { _maxOrthographicCameraWidth = value; }
+        }
+        private float _maxOrthographicCameraWidth;
+
+        public float MinOrthographicCameraWidth
+        {
+            get { return _minOrthographicCameraWidth; }
+            set { _minOrthographicCameraWidth = value; }
+        }
+        private float _minOrthographicCameraWidth;
+
+        public float MaxPerspectiveCameraDistance
+        {
+            get { return _maxPerspectiveCameraDistance; }
+            set { _maxPerspectiveCameraDistance = value; }
+        }
+        private float _maxPerspectiveCameraDistance;
+
+        public float MinPerspectiveCameraDistance
+        {
+            get { return _minPerspectiveCameraDistance; }
+            set { _minPerspectiveCameraDistance = value; }
+        }
+        private float _minPerspectiveCameraDistance;
         #endregion
 
         #region Models
@@ -927,10 +960,21 @@ namespace YOpenGL._3D
                 case CameraMode.WalkAround:
                 case CameraMode.Inspect:
                 case CameraMode.FixedPosition:
-                    _ChangeCameraDistance(delta, zoomAround);
-
                     var radio = (float)Math.Pow(2.5, delta);
-                    _camera.SetOrthographicParameters(_camera.Width * radio, _camera.Height * radio);
+                    var newWidth = _camera.Width * radio;
+
+                    if (newWidth > _maxOrthographicCameraWidth || newWidth < _minOrthographicCameraWidth)
+                    {
+                        MathUtil.Clamp(ref newWidth, _minOrthographicCameraWidth, _maxOrthographicCameraWidth);
+                        radio = newWidth / _camera.Width;
+                        delta = Math.Log(radio, 2.5);
+                    }
+
+                    if (radio != 1)
+                    {
+                        _ChangeCameraPosition(delta, zoomAround);
+                        _camera.SetOrthographicParameters(newWidth, _camera.Height * radio);
+                    }
                     break;
             }
         }
@@ -985,20 +1029,37 @@ namespace YOpenGL._3D
             var newRelativeTarget = relativeTarget * f;
 
             var newLookDirection = newRelativePosition - newRelativeTarget;
-
-            var distance = newLookDirection.Length;
-            if (distance > _camera.FarPlaneDistance || distance < _camera.NearPlaneDistance)
+            var len = newLookDirection.Length;
+            if (len < _minPerspectiveCameraDistance || len > _maxPerspectiveCameraDistance)
             {
-                var newDistance = 0f;
-                MathUtil.Clamp(ref newDistance, _camera.NearPlaneDistance, _camera.FarPlaneDistance);
-                newRelativePosition *= newDistance / distance;
-                newLookDirection *= newDistance / distance;
+                var oldLen = len;
+                MathUtil.Clamp(ref len, _minPerspectiveCameraDistance, _maxPerspectiveCameraDistance);
+                var radio = len / oldLen;
+                newRelativePosition *= radio;
+                newRelativeTarget *= radio;
+                newLookDirection = newRelativePosition - newRelativeTarget;
             }
-
-            //var newTarget = zoomAround - newRelativeTarget;
             var newPosition = zoomAround - newRelativePosition;
 
             _camera.SetViewParameters(newPosition, newLookDirection);
+        }
+
+        private void _ChangeCameraPosition(double delta, Point3F zoomAround)
+        {
+            var view = _camera.ViewMatrix;
+
+            var target = _camera.Target;
+            var relativePosition = zoomAround - _camera.Position;
+
+            var f = (float)Math.Pow(2.5, delta);
+            var newRelativePosition = relativePosition * f;
+            var newPosition = zoomAround - newRelativePosition;
+            newPosition *= view;
+            newPosition.Z = 0;
+            view.Invert();
+            newPosition *= view;
+
+            _camera.SetViewParameters(newPosition, _camera.LookDirection);
         }
         #endregion
 

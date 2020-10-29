@@ -82,7 +82,7 @@ namespace YOpenGL._3D
             var ymin = Math.Min(_p1.Y, _p2.Y);
             var ymax = Math.Max(_p1.Y, _p2.Y);
 
-            var zDepth = _viewport.Camera.Type == CameraType.Orthographic ? -1 : -0.9999f;
+            var zDepth = _viewport.Camera.Type == CameraType.Orthographic ? -1 : 0f;
             var bottomLeft = _viewport.PointInWpfToPoint3D(new PointF(xmin, ymin), zDepth);
             var bottomRight = _viewport.PointInWpfToPoint3D(new PointF(xmax, ymin), zDepth);
             var topLeft = _viewport.PointInWpfToPoint3D(new PointF(xmin, ymax), zDepth);
