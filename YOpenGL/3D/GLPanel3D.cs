@@ -48,8 +48,10 @@ namespace YOpenGL._3D
             _models = new List<GLModel3D>();
             _lights = new List<Light>();
             _mouseEventHandler = new MouseEventHandler(this);
+            _mouseEventHandler.AttachEvents(this);
 
             _zoomExtentWhenLoaded = true;
+            _rotateAroundMouse = false;
             _isRotateEnable = true;
             _isTranslateEnable = true;
             _isZoomEnable = true;
@@ -103,6 +105,7 @@ namespace YOpenGL._3D
         public RectSelector Selector { get { return _selector; } }
         private RectSelector _selector;
 
+        public MouseEventHandler EventHook { get { return _mouseEventHandler; } }
         private MouseEventHandler _mouseEventHandler;
 
         internal bool IsInit { get { return _isInit; } }
@@ -144,7 +147,7 @@ namespace YOpenGL._3D
 
         public float ZoomSensitivity
         { 
-            get { return _zoomSensitivity; } 
+            get { return _zoomSensitivity; }
             set { _zoomSensitivity = Math.Min(Math.Max(0.1f, value), 10); }
         }
         private float _zoomSensitivity;

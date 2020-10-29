@@ -6,4 +6,12 @@
         xmlns:local="clr-namespace:YDrawing2DTest"
         mc:Ignorable="d"
         Title="MainWindow" WindowState="Maximized" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid x:Name="GD_2D"/>
+        <Grid x:Name="GD_3D" Grid.Row="1"/>
+    </Grid>
 </Window>

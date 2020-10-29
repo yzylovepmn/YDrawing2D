@@ -10,13 +10,13 @@ namespace YOpenGL._3D
 {
     public class MouseEventHandler : IDisposable
     {
-        public MouseEventHandler(GLPanel3D panel)
+        internal MouseEventHandler(GLPanel3D panel)
         {
             _panel = panel;
-            _AttachEvents();
         }
 
         private GLPanel3D _panel;
+        private UIElement _relativeTo;
 
         private PointF _lastPoint;
         private Point3F? _lastPoint3D;
@@ -24,18 +24,31 @@ namespace YOpenGL._3D
         private PointF _mouseDownPoint;
         private Point3F? _mouseDownPoint3D;
 
-        private void _AttachEvents()
+        public void AttachEvents(UIElement ele)
         {
-            _panel.MouseDown += _OnMouseDown;
-            _panel.MouseUp += _OnMouseUp;
-            _panel.MouseMove += _OnMouseMove;
-            _panel.MouseWheel += _OnMouseWheel;
+            _DetachEvents();
+            if (ele == null) return;
+
+            ele.MouseDown += _OnMouseDown;
+            ele.MouseUp += _OnMouseUp;
+            ele.MouseMove += _OnMouseMove;
+            ele.MouseWheel += _OnMouseWheel;
+            if (ele != _panel)
+                _relativeTo = ele;
         }
 
         private void _OnMouseDown(object sender, MouseButtonEventArgs e)
         {
-            _panel.Focus();
-            _panel.CaptureMouse();
+            if (_relativeTo != null)
+            {
+                _relativeTo.Focus();
+                _relativeTo.CaptureMouse();
+            }
+            else
+            {
+                _panel.Focus();
+                _panel.CaptureMouse();
+            }
 
             _mouseDownPoint = _panel.GetPosition();
             _mouseDownPoint3D = _panel.PointInWpfToPoint3D(_mouseDownPoint);
@@ -46,7 +59,9 @@ namespace YOpenGL._3D
 
         private void _OnMouseUp(object sender, MouseButtonEventArgs e)
         {
-            _panel.ReleaseMouseCapture();
+            if (_relativeTo != null)
+                _relativeTo.ReleaseMouseCapture();
+            else _panel.ReleaseMouseCapture();
         }
 
         private void _OnMouseMove(object sender, MouseEventArgs e)
@@ -75,7 +90,7 @@ namespace YOpenGL._3D
                         _isRotating = true;
                         _InitRotateParameters(mouseMovePoint, mouseMovePoint3D);
                     }
-                    Rotate(_lastPoint, mouseMovePoint, _rotationPoint3D);
+                    _Rotate(_lastPoint, mouseMovePoint, _rotationPoint3D);
                 }
             }
 
@@ -97,7 +112,7 @@ namespace YOpenGL._3D
         private PointF _rotationPoint;
         private Point3F _rotationPoint3D;
 
-        public void Rotate(PointF p0, PointF p1, Point3F rotateAround)
+        private void _Rotate(PointF p0, PointF p1, Point3F rotateAround)
         {
             var camera = _panel.Camera;
             switch (camera.RotationMode)
@@ -190,16 +205,28 @@ namespace YOpenGL._3D
 
         private void _DetachEvents()
         {
-            _panel.MouseDown -= _OnMouseDown;
-            _panel.MouseUp -= _OnMouseUp;
-            _panel.MouseMove -= _OnMouseMove;
-            _panel.MouseWheel -= _OnMouseWheel;
+            if (_relativeTo == null)
+            {
+                _panel.MouseDown -= _OnMouseDown;
+                _panel.MouseUp -= _OnMouseUp;
+                _panel.MouseMove -= _OnMouseMove;
+                _panel.MouseWheel -= _OnMouseWheel;
+            }
+            else
+            {
+                _relativeTo.MouseDown -= _OnMouseDown;
+                _relativeTo.MouseUp -= _OnMouseUp;
+                _relativeTo.MouseMove -= _OnMouseMove;
+                _relativeTo.MouseWheel -= _OnMouseWheel;
+                _relativeTo = null;
+            }
         }
 
         public void Dispose()
         {
             _DetachEvents();
             _panel = null;
+            _relativeTo = null;
         }
     }
 }

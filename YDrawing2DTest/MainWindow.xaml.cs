@@ -31,9 +31,11 @@ namespace YDrawing2DTest
         {
             InitializeComponent();
             Loaded += OnLoaded;
-            //_glPanel = new GLPanel(new PointF(0, 0), Colors.Black, 60, YOpenGL.RenderMode.Async, ResourceMode.Normal);
+            _glPanel = new GLPanel(new PointF(0, 0), Colors.Black, 60, YOpenGL.RenderMode.Async, ResourceMode.Normal);
             _glPanel3D = new GLPanel3D(Colors.Black);
-            Content = _glPanel3D;
+
+            GD_2D.Children.Add(_glPanel);
+            GD_3D.Children.Add(_glPanel3D);
 
             _InitModel();
 
@@ -175,13 +177,15 @@ namespace YDrawing2DTest
         {
             _glPanel3D.MouseDown += _glPanel3D_MouseDown;
             _glPanel3D.MouseMove += _glPanel3D_MouseMove;
-            //_glPanel.AddVisual(new Text("Hello world!", new PointF(100, 200)));
-            //_hint = new Hint() { HitTestVisible = false };
-            //_glPanel.AddVisual(_hint);
-            //_glPanel.MouseMove += _panel_MouseMove;
-            //_glPanel.MouseWheel += _panel_MouseWheel;
-            //_glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
-            //_glPanel.UpdateAll();
+
+            _glPanel.AddVisual(new Text("Hello world!", new PointF(200, 0)));
+            _hint = new Hint() { HitTestVisible = false };
+            _glPanel.AddVisual(_hint);
+            _glPanel.MouseMove += _panel_MouseMove;
+            _glPanel.MouseWheel += _panel_MouseWheel;
+            _glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
+            _glPanel.MouseLeftButtonUp += _glPanel_MouseLeftButtonUp;
+            _glPanel.UpdateAll();
         }
 
         private void _glPanel3D_MouseMove(object sender, MouseEventArgs e)
@@ -221,12 +225,11 @@ namespace YDrawing2DTest
                 GLSelectedVisual = _glPanel.HitTest(_pInView);
         }
 
-        //protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
-        //{
-        //    base.OnMouseLeftButtonUp(e);
-        //    _glPanel.ReleaseMouseCapture();
-        //    _hint.IsVisible = false;
-        //}
+        private void _glPanel_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            _glPanel.ReleaseMouseCapture();
+            _hint.IsVisible = false;
+        }
 
         private void _panel_MouseWheel(object sender, MouseWheelEventArgs e)
         {
