@@ -670,8 +670,9 @@ namespace YOpenGL._3D
 
         private void _OnCameraPropertyChanged(object sender, EventArgs e)
         {
-            _UpdateTotalTransform();
+            if (!_isInit) return;
 
+            _UpdateTotalTransform();
             MakeSureCurrentContext();
             #region Update View and Projection Matrix
             BindBuffer(GL_UNIFORM_BUFFER, TransformBlock);
