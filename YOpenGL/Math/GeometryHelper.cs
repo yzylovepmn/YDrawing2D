@@ -1100,7 +1100,7 @@ namespace YOpenGL
             return samplePoints.Where(p => !float.IsNaN(p.X) && !float.IsNaN(p.Y));
         }
 
-        internal static PointF ComputePoint(int k, float[] knots, PointF[] controlPoints, float[] weights, float u)
+        public static PointF ComputePoint(int k, float[] knots, PointF[] controlPoints, float[] weights, float u)
         {
             if (u > 1) throw new ArgumentOutOfRangeException();
             int i = k;
@@ -1137,6 +1137,43 @@ namespace YOpenGL
             return p;
         }
 
+        public static Point3F ComputePoint(int k, float[] knots, Point3F[] controlPoints, float[] weights, float u)
+        {
+            if (u > 1) throw new ArgumentOutOfRangeException();
+            int i = k;
+            while (knots[i + 1] < u) i++;
+            int start = i - k;
+            var p = new Point3F();
+            float down = 0;
+            if (weights != null && weights.Length > 0)
+            {
+                for (int j = start; j <= i; j++)
+                {
+                    float value = _GetBaseFuncValue(knots, u, j, k);
+                    float downSpan = weights[j] * value;
+                    down += downSpan;
+                    p.X += downSpan * controlPoints[j].X;
+                    p.Y += downSpan * controlPoints[j].Y;
+                }
+                p.X /= down;
+                p.Y /= down;
+            }
+            else
+            {
+                //for (int j = start; j <= i; j++)
+                //{
+                //    float value = _GetBaseFuncValue(knots, u, j, degree);
+                //    down += value;
+                //    p.X += value * controlPoints[j].X;
+                //    p.Y += value * controlPoints[j].Y;
+                //}
+                //p.X /= down;
+                //p.Y /= down;
+                p = (Point3F)ComputeVector(k, 0, knots, controlPoints, u);
+            }
+            return p;
+        }
+
         public static VectorF ComputeVector(int k, int rank, float[] knots, PointF[] cps, float u)
         {
             int i = k;
@@ -1155,7 +1192,39 @@ namespace YOpenGL
             return vec / w;
         }
 
+        public static Vector3F ComputeVector(int k, int rank, float[] knots, Point3F[] cps, float u)
+        {
+            int i = k;
+            while (knots[i + 1] < u) i++;
+
+            var vec = new Vector3F();
+            var w = 0f;
+            for (int j = i - k + rank; j <= i; j++)
+            {
+                var scale = _GetBaseFuncValue(knots, u, j, k - rank);
+                var v = _GetDI(k, rank, j, knots, cps);
+                vec += v * scale;
+                w += scale;
+            }
+
+            return vec / w;
+        }
+
         public static float ComputeArcLength(int k, float[] knots, PointF[] cps, double start, double end)
+        {
+            var len = 0.0;
+            var t1 = (end + start) / 2;
+            var t2 = (end - start) / 2;
+            for (int i = 0; i < 5; i++)
+            {
+                var vec = ComputeVector(k, 1, knots, cps, (float)(t2 * _table_x[i] + t1));
+                len += vec.Length * _table_w[i];
+            }
+
+            return (float)(len * t2);
+        }
+
+        public static float ComputeArcLength(int k, float[] knots, Point3F[] cps, double start, double end)
         {
             var len = 0.0;
             var t1 = (end + start) / 2;
@@ -1203,12 +1272,57 @@ namespace YOpenGL
             return u;
         }
 
+        public static float ComputeCurveParameter(int k, float[] knots, Point3F[] cps, float startU, float s, float L, int iterate = 5)
+        {
+            var low = startU;
+            var high = 1f;
+            var u = s / L + startU;
+            if (u > high)
+                u = high;
+
+            for (int i = 0; i < iterate; i++)
+            {
+                var delta = ComputeArcLength(k, knots, cps, startU, u) - s;
+                if (Math.Abs(delta) < Epsilon)
+                    return u;
+
+                var df = ComputeVector(k, 1, knots, cps, u).Length;
+                var uNext = u - delta / df;
+                if (delta > 0)
+                {
+                    high = u;
+                    if (uNext <= low)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+                else
+                {
+                    low = u;
+                    if (uNext >= high)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+            }
+            return u;
+        }
+
         private static VectorF _GetDI(int k, int rank, int j, float[] knots, PointF[] cps)
         {
             var vec = new VectorF();
 
             if (rank == 0)
                 vec = (VectorF)cps[j];
+            else vec = (k - rank + 1) * (_GetDI(k, rank - 1, j, knots, cps) - _GetDI(k, rank - 1, j - 1, knots, cps)) / (knots[j + k + 1 - rank] - knots[j]);
+
+            return vec;
+        }
+
+        private static Vector3F _GetDI(int k, int rank, int j, float[] knots, Point3F[] cps)
+        {
+            var vec = new Vector3F();
+
+            if (rank == 0)
+                vec = (Vector3F)cps[j];
             else vec = (k - rank + 1) * (_GetDI(k, rank - 1, j, knots, cps) - _GetDI(k, rank - 1, j - 1, knots, cps)) / (knots[j + k + 1 - rank] - knots[j]);
 
             return vec;
@@ -1308,7 +1422,12 @@ namespace YOpenGL
             return samplePoints;
         }
 
-        internal static PointF ComputePoint(PointF[] controlPoints, int degree, double u)
+        public static PointF ComputePoint(PointF[] controlPoints, int degree, double u)
+        {
+            return CalcValue(controlPoints, degree, 0, u);
+        }
+
+        public static Point3F ComputePoint(Point3F[] controlPoints, int degree, double u)
         {
             return CalcValue(controlPoints, degree, 0, u);
         }
@@ -1318,7 +1437,26 @@ namespace YOpenGL
             return degree * (CalcValue(cps, degree - 1, 1, u) - CalcValue(cps, degree - 1, 0, u));
         }
 
+        public static Vector3F ComputeVector(Point3F[] cps, int degree, double u)
+        {
+            return degree * (CalcValue(cps, degree - 1, 1, u) - CalcValue(cps, degree - 1, 0, u));
+        }
+
         public static float ComputeArcLength(PointF[] cps, int degree, double start, double end)
+        {
+            var len = 0.0;
+            var t1 = (end + start) / 2;
+            var t2 = (end - start) / 2;
+            for (int i = 0; i < 5; i++)
+            {
+                var vec = ComputeVector(cps, degree, t2 * _table_x[i] + t1);
+                len += vec.Length * _table_w[i];
+            }
+
+            return (float)(len * t2);
+        }
+
+        public static float ComputeArcLength(Point3F[] cps, int degree, double start, double end)
         {
             var len = 0.0;
             var t1 = (end + start) / 2;
@@ -1366,7 +1504,48 @@ namespace YOpenGL
             return u;
         }
 
+        public static float ComputeCurveParameter(Point3F[] cps, int degree, float startU, float s, float L, int iterate = 5)
+        {
+            var low = startU;
+            var high = 1f;
+            var u = s / L + startU;
+            if (u > high)
+                u = high;
+
+            for (int i = 0; i < iterate; i++)
+            {
+                var delta = ComputeArcLength(cps, degree, startU, u) - s;
+                if (Math.Abs(delta) < Epsilon)
+                    return u;
+
+                var df = ComputeVector(cps, degree, u).Length;
+                var uNext = u - delta / df;
+                if (delta > 0)
+                {
+                    high = u;
+                    if (uNext <= low)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+                else
+                {
+                    low = u;
+                    if (uNext >= high)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+            }
+            return u;
+        }
+
         internal static PointF CalcValue(PointF[] controlPoints, int degree, int index, double u)
+        {
+            if (degree == 0)
+                return controlPoints[index];
+            else return Combine(CalcValue(controlPoints, degree - 1, index, u), CalcValue(controlPoints, degree - 1, index + 1, u), u);
+        }
+
+        internal static Point3F CalcValue(Point3F[] controlPoints, int degree, int index, double u)
         {
             if (degree == 0)
                 return controlPoints[index];
@@ -1378,6 +1557,13 @@ namespace YOpenGL
             var u1 = 1 - u;
             var u2 = u;
             return (PointF)new Point(u1 * p1.X + u2 * p2.X, u1 * p1.Y + u2 * p2.Y);
+        }
+
+        internal static Point3F Combine(Point3F p1, Point3F p2, double u)
+        {
+            var u1 = 1 - u;
+            var u2 = u;
+            return new Point3F((float)(u1 * p1.X + u2 * p2.X), (float)(u1 * p1.Y + u2 * p2.Y), (float)(u1 * p1.Z + u2 * p2.Z));
         }
         #endregion
 

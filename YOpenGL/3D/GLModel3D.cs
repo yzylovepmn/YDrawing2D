@@ -519,7 +519,7 @@ namespace YOpenGL._3D
             return data.ToArray();
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             Clean();
             _materials = null;
