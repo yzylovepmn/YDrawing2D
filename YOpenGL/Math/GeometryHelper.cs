@@ -1107,33 +1107,9 @@ namespace YOpenGL
             while (knots[i + 1] < u) i++;
             int start = i - k;
             var p = new PointF();
-            float down = 0;
             if (weights != null && weights.Length > 0)
-            {
-                for (int j = start; j <= i; j++)
-                {
-                    float value = _GetBaseFuncValue(knots, u, j, k);
-                    float downSpan = weights[j] * value;
-                    down += downSpan;
-                    p.X += downSpan * controlPoints[j].X;
-                    p.Y += downSpan * controlPoints[j].Y;
-                }
-                p.X /= down;
-                p.Y /= down;
-            }
-            else
-            {
-                //for (int j = start; j <= i; j++)
-                //{
-                //    float value = _GetBaseFuncValue(knots, u, j, degree);
-                //    down += value;
-                //    p.X += value * controlPoints[j].X;
-                //    p.Y += value * controlPoints[j].Y;
-                //}
-                //p.X /= down;
-                //p.Y /= down;
-                p = (PointF)ComputeVector(k, 0, knots, controlPoints, u);
-            }
+                p = (PointF)ComputeVector(k, 0, knots, controlPoints, weights, u);
+            else p = (PointF)ComputeVector(k, 0, knots, controlPoints, u);
             return p;
         }
 
@@ -1144,33 +1120,9 @@ namespace YOpenGL
             while (knots[i + 1] < u) i++;
             int start = i - k;
             var p = new Point3F();
-            float down = 0;
             if (weights != null && weights.Length > 0)
-            {
-                for (int j = start; j <= i; j++)
-                {
-                    float value = _GetBaseFuncValue(knots, u, j, k);
-                    float downSpan = weights[j] * value;
-                    down += downSpan;
-                    p.X += downSpan * controlPoints[j].X;
-                    p.Y += downSpan * controlPoints[j].Y;
-                }
-                p.X /= down;
-                p.Y /= down;
-            }
-            else
-            {
-                //for (int j = start; j <= i; j++)
-                //{
-                //    float value = _GetBaseFuncValue(knots, u, j, degree);
-                //    down += value;
-                //    p.X += value * controlPoints[j].X;
-                //    p.Y += value * controlPoints[j].Y;
-                //}
-                //p.X /= down;
-                //p.Y /= down;
-                p = (Point3F)ComputeVector(k, 0, knots, controlPoints, u);
-            }
+                p = (Point3F)ComputeVector(k, 0, knots, controlPoints, weights, u);
+            else p = (Point3F)ComputeVector(k, 0, knots, controlPoints, u);
             return p;
         }
 
@@ -1185,6 +1137,24 @@ namespace YOpenGL
             {
                 var scale = _GetBaseFuncValue(knots, u, j, k - rank);
                 var v = _GetDI(k , rank, j, knots, cps);
+                vec += v * scale;
+                w += scale;
+            }
+
+            return vec / w;
+        }
+
+        public static VectorF ComputeVector(int k, int rank, float[] knots, PointF[] cps, float[] weights, float u)
+        {
+            int i = k;
+            while (knots[i + 1] < u) i++;
+
+            var vec = new VectorF();
+            var w = 0f;
+            for (int j = i - k + rank; j <= i; j++)
+            {
+                var scale = _GetBaseFuncValue(knots, u, j, k - rank) * weights[j];
+                var v = _GetDI(k, rank, j, knots, cps);
                 vec += v * scale;
                 w += scale;
             }
@@ -1210,6 +1180,24 @@ namespace YOpenGL
             return vec / w;
         }
 
+        public static Vector3F ComputeVector(int k, int rank, float[] knots, Point3F[] cps, float[] weights, float u)
+        {
+            int i = k;
+            while (knots[i + 1] < u) i++;
+
+            var vec = new Vector3F();
+            var w = 0f;
+            for (int j = i - k + rank; j <= i; j++)
+            {
+                var scale = _GetBaseFuncValue(knots, u, j, k - rank) * weights[j];
+                var v = _GetDI(k, rank, j, knots, cps);
+                vec += v * scale;
+                w += scale;
+            }
+
+            return vec / w;
+        }
+
         public static float ComputeArcLength(int k, float[] knots, PointF[] cps, double start, double end)
         {
             var len = 0.0;
@@ -1224,6 +1212,20 @@ namespace YOpenGL
             return (float)(len * t2);
         }
 
+        public static float ComputeArcLength(int k, float[] knots, PointF[] cps, float[] weights, double start, double end)
+        {
+            var len = 0.0;
+            var t1 = (end + start) / 2;
+            var t2 = (end - start) / 2;
+            for (int i = 0; i < 5; i++)
+            {
+                var vec = ComputeVector(k, 1, knots, cps, weights, (float)(t2 * _table_x[i] + t1));
+                len += vec.Length * _table_w[i];
+            }
+
+            return (float)(len * t2);
+        }
+
         public static float ComputeArcLength(int k, float[] knots, Point3F[] cps, double start, double end)
         {
             var len = 0.0;
@@ -1232,6 +1234,20 @@ namespace YOpenGL
             for (int i = 0; i < 5; i++)
             {
                 var vec = ComputeVector(k, 1, knots, cps, (float)(t2 * _table_x[i] + t1));
+                len += vec.Length * _table_w[i];
+            }
+
+            return (float)(len * t2);
+        }
+
+        public static float ComputeArcLength(int k, float[] knots, Point3F[] cps, float[] weights, double start, double end)
+        {
+            var len = 0.0;
+            var t1 = (end + start) / 2;
+            var t2 = (end - start) / 2;
+            for (int i = 0; i < 5; i++)
+            {
+                var vec = ComputeVector(k, 1, knots, cps, weights, (float)(t2 * _table_x[i] + t1));
                 len += vec.Length * _table_w[i];
             }
 
@@ -1272,6 +1288,40 @@ namespace YOpenGL
             return u;
         }
 
+        public static float ComputeCurveParameter(int k, float[] knots, PointF[] cps, float[] weights, float startU, float s, float L, int iterate = 5)
+        {
+            var low = startU;
+            var high = 1f;
+            var u = s / L + startU;
+            if (u > high)
+                u = high;
+
+            for (int i = 0; i < iterate; i++)
+            {
+                var delta = ComputeArcLength(k, knots, cps, weights, startU, u) - s;
+                if (Math.Abs(delta) < Epsilon)
+                    return u;
+
+                var df = ComputeVector(k, 1, knots, cps, weights, u).Length;
+                var uNext = u - delta / df;
+                if (delta > 0)
+                {
+                    high = u;
+                    if (uNext <= low)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+                else
+                {
+                    low = u;
+                    if (uNext >= high)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+            }
+            return u;
+        }
+
         public static float ComputeCurveParameter(int k, float[] knots, Point3F[] cps, float startU, float s, float L, int iterate = 5)
         {
             var low = startU;
@@ -1287,6 +1337,40 @@ namespace YOpenGL
                     return u;
 
                 var df = ComputeVector(k, 1, knots, cps, u).Length;
+                var uNext = u - delta / df;
+                if (delta > 0)
+                {
+                    high = u;
+                    if (uNext <= low)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+                else
+                {
+                    low = u;
+                    if (uNext >= high)
+                        u = (low + high) / 2;
+                    else u = uNext;
+                }
+            }
+            return u;
+        }
+
+        public static float ComputeCurveParameter(int k, float[] knots, Point3F[] cps, float[] weights, float startU, float s, float L, int iterate = 5)
+        {
+            var low = startU;
+            var high = 1f;
+            var u = s / L + startU;
+            if (u > high)
+                u = high;
+
+            for (int i = 0; i < iterate; i++)
+            {
+                var delta = ComputeArcLength(k, knots, cps, weights, startU, u) - s;
+                if (Math.Abs(delta) < Epsilon)
+                    return u;
+
+                var df = ComputeVector(k, 1, knots, cps, weights, u).Length;
                 var uNext = u - delta / df;
                 if (delta > 0)
                 {

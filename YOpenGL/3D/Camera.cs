@@ -57,9 +57,8 @@ namespace YOpenGL._3D
             _viewPort = viewPort;
             _type = type;
 
-            if (_type == CameraType.Orthographic)
-                SetOrthographicParameters(width, height, nearPlaneDistance, farPlaneDistance);
-            else SetPerspectiveParameters((float)MathUtil.RadiansToDegrees(2 * Math.Atan(Math.Tan(MathUtil.DegreesToRadians(30 / 2.0)) * nearPlaneDistance)), width / height, nearPlaneDistance, farPlaneDistance);
+            SetOrthographicParameters(width, height, nearPlaneDistance, farPlaneDistance);
+            SetPerspectiveParameters((float)MathUtil.RadiansToDegrees(2 * Math.Atan(Math.Tan(MathUtil.DegreesToRadians(30 / 2.0)) * nearPlaneDistance)), width / height, nearPlaneDistance, farPlaneDistance);
 
             SetViewParameters(position, lookDirection, upDirection);
         }

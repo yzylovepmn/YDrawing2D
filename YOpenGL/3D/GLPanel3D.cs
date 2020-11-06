@@ -242,6 +242,18 @@ namespace YOpenGL._3D
                 model.Init();
         }
 
+        public void RemoveAllModels()
+        {
+            MakeSureCurrentContext();
+            foreach (var model in _models)
+            {
+                model.Clean();
+                model.Viewport = null;
+            }
+            _models.Clear();
+            _Refresh();
+        }
+
         public void RemoveModels(IEnumerable<GLModel3D> models)
         {
             MakeSureCurrentContext();
