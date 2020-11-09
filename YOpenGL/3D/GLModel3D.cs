@@ -105,6 +105,8 @@ namespace YOpenGL._3D
                 if (newDash == null || _dashes == null || !newDash.SequenceEqual(_dashes))
                 {
                     _dashes = newDash;
+                    if (_distances == null && _viewport != null)
+                        UpdateDistance();
                     _viewport?.Refresh();
                 }
             }
@@ -170,7 +172,7 @@ namespace YOpenGL._3D
             GenBuffers(1, _vbo);
             GenBuffers(1, _ebo);
 
-            _DataBinding();
+            UpdateDistance();
             _IndicesBinding();
 
             MathUtil.Clamp(ref _pointSize, PointSizeRange[0], PointSizeRange[1]);
@@ -231,6 +233,11 @@ namespace YOpenGL._3D
                 _viewport.MakeSureCurrentContext();
                 _IndicesBinding();
             }
+        }
+
+        internal void InvalidateDistance()
+        {
+            _distances = null;
         }
 
         internal void UpdateDistance()

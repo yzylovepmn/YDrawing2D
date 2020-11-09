@@ -168,8 +168,8 @@ namespace YOpenGL._3D
 
         public void SetOrthographicParameters(float width, float height, float nearPlaneDistance, float farPlaneDistance)
         {
-            _width = width;
-            _height = height;
+            _width = Math.Max(1, width);
+            _height = Math.Max(1, height);
             _nearPlaneDistance = nearPlaneDistance;
             _farPlaneDistance = farPlaneDistance;
 

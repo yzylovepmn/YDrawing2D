@@ -111,6 +111,7 @@ namespace YOpenGL._3D
         internal bool IsInit { get { return _isInit; } }
         private bool _isInit;
 
+        private bool _isRenderSizeChanging;
         private int _signal;
         private int _frameSpan;
         private Timer _timer;
@@ -629,9 +630,11 @@ namespace YOpenGL._3D
 
         protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
         {
+            _isRenderSizeChanging = true;
             base.OnRenderSizeChanged(sizeInfo);
             _Init();
             _OnRenderSizeChanged((float)sizeInfo.NewSize.Width, (float)sizeInfo.NewSize.Height);
+            _isRenderSizeChanging = false;
         }
 
         private void _OnRenderSizeChanged(float width, float height)
@@ -684,7 +687,7 @@ namespace YOpenGL._3D
         {
             if (!_isInit) return;
 
-            _UpdateTotalTransform();
+            _UpdateTotalTransform(true);
             MakeSureCurrentContext();
             #region Update View and Projection Matrix
             BindBuffer(GL_UNIFORM_BUFFER, TransformBlock);
@@ -692,7 +695,8 @@ namespace YOpenGL._3D
             BufferSubData(GL_UNIFORM_BUFFER, 16 * sizeof(float), 16 * sizeof(float), _camera.ProjectionMatrix.GetData());
             BufferSubData(GL_UNIFORM_BUFFER, 32 * sizeof(float), 16 * sizeof(float), _camera.TotalTransform.GetData());
             #endregion
-            _Refresh();
+            if (!_isRenderSizeChanging)
+                _Refresh();
         }
 
         private void _OnLoaded(object sender, RoutedEventArgs e)
@@ -701,17 +705,22 @@ namespace YOpenGL._3D
                 ZoomExtents();
         }
 
-        private void _UpdateTotalTransform()
+        private void _UpdateTotalTransform(bool isInvokeByCamera = false)
         {
             _totalTransform = _camera.TotalTransform * GetNDCToWPF();
 
-            _UpdateDashedModels();
+            if (!isInvokeByCamera || !_isRenderSizeChanging)
+                _UpdateDashedModels();
         }
 
         private void _UpdateDashedModels()
         {
-            foreach (var model in _models.Where(m => m.IsVisible && m.Points != null && m.HasDash))
-                model.UpdateDistance();
+            foreach (var model in _models.Where(m => m.IsVisible && m.Points != null))
+            {
+                if (model.HasDash)
+                    model.UpdateDistance();
+                else model.InvalidateDistance();
+            }
         }
         #endregion
 
