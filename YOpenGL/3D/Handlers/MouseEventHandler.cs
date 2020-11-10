@@ -72,25 +72,26 @@ namespace YOpenGL._3D
             var rotateStatus = false;
             if (e.LeftButton == MouseButtonState.Pressed)
             {
-                // Translate
-                if (Keyboard.Modifiers == ModifierKeys.Shift && _panel.IsTranslateEnable)
+                switch (_panel.OperateMode)
                 {
-                    if (mouseMovePoint3D.HasValue && _lastPoint3D.HasValue)
-                    {
-                        _panel.Translate((_lastPoint3D - mouseMovePoint3D).Value);
-                        mouseMovePoint3D = _lastPoint3D; // mouseMovePoint 所对应的 mouseMovePoint3D 保持不变
-                    }
-                }
-                // Rotate
-                if (Keyboard.Modifiers == ModifierKeys.Control && _panel.IsRotateEnable)
-                {
-                    rotateStatus = true;
-                    if (!_isRotating)
-                    {
-                        _isRotating = true;
-                        _InitRotateParameters(mouseMovePoint, mouseMovePoint3D);
-                    }
-                    _Rotate(_lastPoint, mouseMovePoint, _rotationPoint3D);
+                    case OperateMode.Disable:
+                        break;
+                    case OperateMode.Free:
+                        {
+                            // Rotate
+                            if (Keyboard.Modifiers == ModifierKeys.Control && _panel.IsRotateEnable)
+                                _Rotate(ref rotateStatus, mouseMovePoint, mouseMovePoint3D);
+                            // Translate
+                            if (Keyboard.Modifiers == ModifierKeys.Shift && _panel.IsTranslateEnable)
+                                _Translate(ref mouseMovePoint3D);
+                        }
+                        break;
+                    case OperateMode.RotateOnly:
+                        _Rotate(ref rotateStatus, mouseMovePoint, mouseMovePoint3D);
+                        break;
+                    case OperateMode.TranslateOnly:
+                        _Translate(ref mouseMovePoint3D);
+                        break;
                 }
             }
 
@@ -111,6 +112,17 @@ namespace YOpenGL._3D
         internal Vector3F _rotationAxisY;
         private PointF _rotationPoint;
         private Point3F _rotationPoint3D;
+
+        private void _Rotate(ref bool rotateStatus, PointF mouseMovePoint, Point3F? mouseMovePoint3D)
+        {
+            rotateStatus = true;
+            if (!_isRotating)
+            {
+                _isRotating = true;
+                _InitRotateParameters(mouseMovePoint, mouseMovePoint3D);
+            }
+            _Rotate(_lastPoint, mouseMovePoint, _rotationPoint3D);
+        }
 
         private void _Rotate(PointF p0, PointF p1, Point3F rotateAround)
         {
@@ -199,6 +211,17 @@ namespace YOpenGL._3D
             {
                 // delta.X = 0;
                 _rotationAxisY = -dir;
+            }
+        }
+        #endregion
+
+        #region Translate
+        private void _Translate(ref Point3F? mouseMovePoint3D)
+        {
+            if (mouseMovePoint3D.HasValue && _lastPoint3D.HasValue)
+            {
+                _panel.Translate((_lastPoint3D - mouseMovePoint3D).Value);
+                mouseMovePoint3D = _lastPoint3D; // mouseMovePoint 所对应的 mouseMovePoint3D 保持不变
             }
         }
         #endregion

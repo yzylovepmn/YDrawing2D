@@ -37,6 +37,7 @@ namespace YOpenGL._3D
             _lineWidth = 1f;
             _isVisible = true;
             _isHitTestVisible = true;
+            _isVolumeObject = true;
             _mode = GLPrimitiveMode.GL_TRIANGLES;
         }
 
@@ -129,6 +130,9 @@ namespace YOpenGL._3D
             }
         }
         private bool _isVisible;
+
+        public bool IsVolumeObject { get { return _isVolumeObject; } set { _isVolumeObject = value; } }
+        private bool _isVolumeObject;
 
         public Shader CustomShader
         { 

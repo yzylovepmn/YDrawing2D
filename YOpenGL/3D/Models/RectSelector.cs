@@ -113,6 +113,7 @@ namespace YOpenGL._3D
             public RectFill()
             {
                 IsHitTestVisible = false;
+                IsVolumeObject = false;
                 Mode = GLPrimitiveMode.GL_TRIANGLE_FAN;
                 _emissive = new EmissiveMaterial();
                 AddMaterial(_emissive, MaterialOption.Front);
@@ -127,6 +128,7 @@ namespace YOpenGL._3D
             public RectWireframe()
             {
                 IsHitTestVisible = false;
+                IsVolumeObject = false;
                 Mode = GLPrimitiveMode.GL_LINE_STRIP;
                 AddMaterial(new EmissiveMaterial(), MaterialOption.Front);
             }

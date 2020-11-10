@@ -19,7 +19,15 @@ using System.ComponentModel;
 
 namespace YOpenGL._3D
 {
-    public class GLPanel3D : HwndHost, IGLContext, IDisposable
+    public enum OperateMode
+    {
+        Disable,
+        Free,
+        RotateOnly,
+        TranslateOnly
+    }
+
+    public class GLPanel3D : HwndHost, INotifyPropertyChanged, IGLContext, IDisposable
     {
         public const string TransformUniformBlockName = "Matrices";
         public const string LightsUniformBlockName = "Lights";
@@ -42,13 +50,13 @@ namespace YOpenGL._3D
             _timer = new Timer(_OnRender);
             _watch = new Stopwatch();
             _frameSpan = Math.Max(1, (int)(1000 / frameRate));
-            _camera = new Camera(this, CameraType.Perspective, 1000, 800, 1, float.PositiveInfinity, new Point3F(0, 0, 1), new Vector3F(0, 0, -1), new Vector3F(0, 1, 0));
-            _camera.PropertyChanged += _OnCameraPropertyChanged;
-            _selector = new RectSelector(this);
             _models = new List<GLModel3D>();
             _lights = new List<Light>();
+            _camera = new Camera(this, CameraType.Perspective, 1000, 800, 1, float.PositiveInfinity, new Point3F(0, 0, 1), new Vector3F(0, 0, -1), new Vector3F(0, 1, 0));
+            _camera.PropertyChanged += _OnCameraPropertyChanged;
             _mouseEventHandler = new MouseEventHandler(this);
             _mouseEventHandler.AttachEvents(this);
+            _selector = new RectSelector(this);
 
             _zoomExtentWhenLoaded = true;
             _rotateAroundMouse = false;
@@ -62,6 +70,7 @@ namespace YOpenGL._3D
             _maxOrthographicCameraWidth = 10000;
             _minPerspectiveCameraDistance = 10;
             _maxPerspectiveCameraDistance = 5000;
+            _operateMode = OperateMode.Free;
 
             BackgroundColor = backgroundColor;
             Focusable = true;
@@ -139,7 +148,14 @@ namespace YOpenGL._3D
         public Vector3F ModelUpDirection
         {
             get { return _modelUpDirection; }
-            set { _modelUpDirection = value; }
+            set
+            {
+                if (_modelUpDirection != value)
+                {
+                    _modelUpDirection = value;
+                    PropertyChanged(this, new PropertyChangedEventArgs("ModelUpDirection"));
+                }
+            }
         }
         private Vector3F _modelUpDirection;
 
@@ -160,57 +176,134 @@ namespace YOpenGL._3D
         }
         private float _rotationSensitivity;
 
-        public bool RotateAroundMouse { get { return _rotateAroundMouse; } set { _rotateAroundMouse = value; } }
+        public bool RotateAroundMouse 
+        { 
+            get { return _rotateAroundMouse; } 
+            set
+            {
+                if (_rotateAroundMouse != value)
+                {
+                    _rotateAroundMouse = value;
+                    PropertyChanged(this, new PropertyChangedEventArgs("RotateAroundMouse"));
+                }
+            }
+        }
         private bool _rotateAroundMouse;
 
         public bool IsTranslateEnable
         {
             get { return _isTranslateEnable; }
-            set { _isTranslateEnable = value; }
+            set
+            {
+                if (_isTranslateEnable != value)
+                {
+                    _isTranslateEnable = value;
+                    PropertyChanged(this, new PropertyChangedEventArgs("IsTranslateEnable"));
+                }
+            }
         }
         private bool _isTranslateEnable;
 
         public bool IsRotateEnable
         {
             get { return _isRotateEnable; }
-            set { _isRotateEnable = value; }
+            set
+            {
+                if (_isRotateEnable != value)
+                {
+                    _isRotateEnable = value;
+                    PropertyChanged(this, new PropertyChangedEventArgs("IsRotateEnable"));
+                }
+            }
         }
         private bool _isRotateEnable;
 
         public bool IsZoomEnable
         {
             get { return _isZoomEnable; }
-            set { _isZoomEnable = value; }
+            set
+            {
+                if (_isZoomEnable != value)
+                {
+                    _isZoomEnable = value;
+                    PropertyChanged(this, new PropertyChangedEventArgs("IsZoomEnable"));
+                }
+            }
         }
         private bool _isZoomEnable;
 
         public float MaxOrthographicCameraWidth
         {
             get { return _maxOrthographicCameraWidth; }
-            set { _maxOrthographicCameraWidth = value; }
+            set
+            {
+                if (_maxOrthographicCameraWidth != value)
+                {
+                    _maxOrthographicCameraWidth = value;
+                    PropertyChanged(this, new PropertyChangedEventArgs("MaxOrthographicCameraWidth"));
+                }
+            }
         }
         private float _maxOrthographicCameraWidth;
 
         public float MinOrthographicCameraWidth
         {
             get { return _minOrthographicCameraWidth; }
-            set { _minOrthographicCameraWidth = value; }
+            set
+            {
+                if (_minOrthographicCameraWidth != value)
+                {
+                    _minOrthographicCameraWidth = value;
+                    PropertyChanged(this, new PropertyChangedEventArgs("MinOrthographicCameraWidth"));
+                }
+            }
         }
         private float _minOrthographicCameraWidth;
 
         public float MaxPerspectiveCameraDistance
         {
             get { return _maxPerspectiveCameraDistance; }
-            set { _maxPerspectiveCameraDistance = value; }
+            set
+            {
+                if (_maxPerspectiveCameraDistance != value)
+                {
+                    _maxPerspectiveCameraDistance = value;
+                    PropertyChanged(this, new PropertyChangedEventArgs("MaxPerspectiveCameraDistance"));
+                }
+            }
         }
         private float _maxPerspectiveCameraDistance;
 
         public float MinPerspectiveCameraDistance
         {
             get { return _minPerspectiveCameraDistance; }
-            set { _minPerspectiveCameraDistance = value; }
+            set 
+            {
+                if (_minPerspectiveCameraDistance != value)
+                {
+                    _minPerspectiveCameraDistance = value;
+                    PropertyChanged(this, new PropertyChangedEventArgs("MinPerspectiveCameraDistance"));
+                }
+            }
         }
         private float _minPerspectiveCameraDistance;
+
+        public OperateMode OperateMode
+        {
+            get { return _operateMode; }
+            set 
+            { 
+                if (_operateMode != value)
+                {
+                    _operateMode = value;
+                    PropertyChanged(this, new PropertyChangedEventArgs("OperateMode"));
+                }
+            }
+        }
+        private OperateMode _operateMode;
+
+        public event PropertyChangedEventHandler PropertyChanged = delegate { };
+        public event EventHandler OnViewportChanged = delegate { };
         #endregion
 
         #region Models
@@ -565,7 +658,7 @@ namespace YOpenGL._3D
 
         private void _DrawModels()
         {
-            foreach (var model in _models)
+            foreach (var model in _models.Where(m => m.IsVisible && m.Points != null))
             {
                 var shader = model.CustomShader ?? _defaultShader;
                 shader.Use();
@@ -709,6 +802,8 @@ namespace YOpenGL._3D
         {
             _totalTransform = _camera.TotalTransform * GetNDCToWPF();
 
+            OnViewportChanged(this, EventArgs.Empty);
+
             if (!isInvokeByCamera || !_isRenderSizeChanging)
                 _UpdateDashedModels();
         }
@@ -736,8 +831,17 @@ namespace YOpenGL._3D
         public Rect3F GetBounds()
         {
             var bounds = Rect3F.Empty;
-            _models.ForEach(m => bounds.Union(m.Bounds));
+            foreach (var model in _models.Where(model => model.IsVisible && model.IsVolumeObject))
+                bounds.Union(model.Bounds);
             return bounds;
+        }
+
+        public void CullFace(bool isEnable)
+        {
+            MakeSureCurrentContext();
+            if (isEnable)
+                Enable(GL_CULL_FACE);
+            else Disable(GL_CULL_FACE);
         }
 
         #region HitTest
