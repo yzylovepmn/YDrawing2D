@@ -398,6 +398,7 @@ namespace YOpenGL._3D
             _transformToDevice = (MatrixF)PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
             _context = CreateContextCurrent(Handle);
 
+            MakeSureCurrentContext();
             Init();
             Enable(GL_BLEND);
             Enable(GL_LINE_WIDTH);
@@ -415,8 +416,6 @@ namespace YOpenGL._3D
 
         private void _CreateResource()
         {
-            MakeSureCurrentContext();
-
             // create default shader
             _defaultShader = _GenerateShader(_defaultShadeSource);
 
@@ -485,6 +484,7 @@ namespace YOpenGL._3D
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+            MakeSureCurrentContext();
             _DeleteResource();
             Loaded -= _OnLoaded;
             _camera.PropertyChanged -= _OnCameraPropertyChanged;
@@ -687,8 +687,8 @@ namespace YOpenGL._3D
         {
             if (!_isInit) return;
 
-            _UpdateTotalTransform(true);
             MakeSureCurrentContext();
+            _UpdateTotalTransform(true);
             #region Update View and Projection Matrix
             BindBuffer(GL_UNIFORM_BUFFER, TransformBlock);
             BufferSubData(GL_UNIFORM_BUFFER, 0, 16 * sizeof(float), _camera.ViewMatrix.GetData());
