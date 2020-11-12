@@ -200,7 +200,7 @@ namespace YOpenGL._3D
 
         public void SetPoints(IEnumerable<Point3F> points)
         {
-            _points = points.ToList();
+            _points = points?.ToList();
             _UpdateBounds();
             if (HasInit)
             {
@@ -211,7 +211,7 @@ namespace YOpenGL._3D
 
         public void SetNormals(IEnumerable<Vector3F> normals)
         {
-            _normals = normals.ToList();
+            _normals = normals?.ToList();
             if (HasInit)
             {
                 _viewport.MakeSureCurrentContext();
@@ -221,7 +221,7 @@ namespace YOpenGL._3D
 
         public void SetTextureCoordinates(IEnumerable<PointF> textureCoordinates)
         {
-            _textureCoordinates = textureCoordinates.ToList();
+            _textureCoordinates = textureCoordinates?.ToList();
             if (HasInit)
             {
                 _viewport.MakeSureCurrentContext();
@@ -231,7 +231,7 @@ namespace YOpenGL._3D
 
         public void SetIndices(IEnumerable<uint> indices)
         {
-            _indices = indices.ToList();
+            _indices = indices?.ToList();
             if (HasInit)
             {
                 _viewport.MakeSureCurrentContext();
@@ -382,8 +382,7 @@ namespace YOpenGL._3D
                 _AddBackMaterial(material);
             if (option != 0)
                 material.PropertyChanged += _OnMaterialChanged;
-            if (HasInit)
-                _viewport.Refresh();
+            _viewport?.Refresh();
         }
 
         private void _AddMaterial(Material material)
@@ -408,9 +407,7 @@ namespace YOpenGL._3D
                 _RemoveBackMaterial(material);
             if (option != 0)
                 material.PropertyChanged -= _OnMaterialChanged;
-            if (HasInit)
-                _viewport.Refresh();
-            _viewport.Refresh();
+            _viewport?.Refresh();
         }
 
         private void _RemoveMaterial(Material material)
@@ -427,7 +424,7 @@ namespace YOpenGL._3D
 
         private void _OnMaterialChanged(object sender, PropertyChangedEventArgs e)
         {
-            _viewport.Refresh();
+            _viewport?.Refresh();
         }
 
         private void _SetMaterialData(Shader shader)

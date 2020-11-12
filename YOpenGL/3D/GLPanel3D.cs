@@ -946,6 +946,11 @@ namespace YOpenGL._3D
             //}
         }
 
+        public bool CanPointInWpfTransformToPoint3D()
+        {
+            return _camera.TotalTransformReverse.HasValue;
+        }
+
         /// <param name="pointInWpf">Point in wpf</param>
         /// <param name="ZDepth">Range In [-1, 1]</param>
         /// <returns>Point in world coordinate</returns>
@@ -974,13 +979,7 @@ namespace YOpenGL._3D
         #region View
         public void FitView(Vector3F lookDirection, Vector3F upDirection)
         {
-            var bounds = GetBounds();
-            var diagonal = new Vector3F(bounds.SizeX, bounds.SizeY, bounds.SizeZ);
-
-            if (bounds.IsEmpty || diagonal.LengthSquared < double.Epsilon)
-                return;
-
-            FitView(bounds, lookDirection, upDirection);
+            FitView(GetBounds(), lookDirection, upDirection);
         }
 
         public void FitView(GLModel3D model)
@@ -995,7 +994,13 @@ namespace YOpenGL._3D
 
         public void FitView(Rect3F bounds, Vector3F lookDirection, Vector3F upDirection)
         {
+            if (bounds.IsVolumeEmpty)
+                return;
+
             var diagonal = new Vector3F(bounds.SizeX, bounds.SizeY, bounds.SizeZ);
+            if (diagonal.LengthSquared < 1e-10)
+                return;
+
             var center = bounds.Location + (diagonal * 0.5f);
             var radius = diagonal.Length * 0.5f;
             FitView(center, radius, lookDirection, upDirection);
@@ -1051,8 +1056,6 @@ namespace YOpenGL._3D
 
         public void ZoomExtents(Rect3F bounds)
         {
-            if (bounds.IsEmpty) return;
-
             FitView(bounds, _camera.LookDirection, _camera.UpDirection);
         }
 

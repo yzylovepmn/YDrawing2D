@@ -72,6 +72,14 @@ namespace YOpenGL
             }
         }
 
+        public bool IsVolumeEmpty
+        {
+            get
+            {
+                return _sizeX < 0 || (_sizeX == 0 && _sizeY == 0 && _sizeZ == 0);
+            }
+        }
+
         public Point3F Location
         {
             get

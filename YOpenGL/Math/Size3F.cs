@@ -38,6 +38,14 @@ namespace YOpenGL
             }
         }
 
+        public bool IsVolumeEmpty
+        {
+            get
+            {
+                return _x < 0 || (_x == 0 && _y == 0 && _z == 0);
+            }
+        }
+
         public Float X
         {
             get
