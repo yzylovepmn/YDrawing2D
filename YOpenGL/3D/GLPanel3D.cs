@@ -848,12 +848,12 @@ namespace YOpenGL._3D
         /// <returns>返回结果按Z-Depth排序</returns>
         public IEnumerable<HitResult> HitTest(PointF pointInWpf, float sensitive = 5)
         {
-            return HitTestHelper.HitTest(this, pointInWpf, sensitive, false);
+            return HitTestHelper.HitTest(this, pointInWpf, sensitive);
         }
 
         public HitResult HitTestTop(PointF pointInWpf, float sensitive = 5)
         {
-            return HitTestHelper.HitTest(this, pointInWpf, sensitive, true).FirstOrDefault();
+            return HitTestHelper.HitTest(this, pointInWpf, sensitive).FirstOrDefault();
         }
 
         public IEnumerable<RectHitResult> HitTest(RectF rectInWpf, RectHitTestMode hitTestMode)

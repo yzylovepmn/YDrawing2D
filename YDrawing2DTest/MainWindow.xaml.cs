@@ -79,13 +79,15 @@ namespace YDrawing2DTest
             _glPanel3D.AddModel(_model3D);
             _glPanel3D.AddLight(new AmbientLight(Colors.White));
             //_glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(-1, -1, -1)));
-            _glPanel3D.AddLight(new PointLight(Colors.White, new Point3F(70, -40, 200)));
+            _pointLight = new PointLight(Colors.White, new Point3F(70, -40, 200));
+            _glPanel3D.AddLight(_pointLight);
             //_glPanel3D.AddLight(new SpotLight(Colors.White, new Point3F(50, 50, 150), new Vector3F(0, 0, -1)) { InnerConeAngle = 20, OuterConeAngle = 80 });
         }
 
         private static GLPanel _glPanel;
         private static GLPanel3D _glPanel3D;
         private static GLModel3D _model3D;
+        private static PointLight _pointLight;
 
         public static DrawingPen WhitePen = new DrawingPen(1, Colors.White);
         public static DrawingPen ActivePen = new DrawingPen(1, Colors.Yellow);
@@ -177,6 +179,7 @@ namespace YDrawing2DTest
         {
             _glPanel3D.MouseDown += _glPanel3D_MouseDown;
             _glPanel3D.MouseMove += _glPanel3D_MouseMove;
+            _glPanel3D.Camera.PropertyChanged += Camera_PropertyChanged;
 
             _glPanel.AddVisual(new Text("Hello world!", new PointF(200, 0)));
             _hint = new Hint() { HitTestVisible = false };
@@ -186,6 +189,11 @@ namespace YDrawing2DTest
             _glPanel.MouseLeftButtonDown += _panel_MouseLeftButtonDown;
             _glPanel.MouseLeftButtonUp += _glPanel_MouseLeftButtonUp;
             _glPanel.UpdateAll();
+        }
+
+        private void Camera_PropertyChanged(object sender, EventArgs e)
+        {
+            _pointLight.Position = _glPanel3D.Camera.Position;
         }
 
         private void _glPanel3D_MouseMove(object sender, MouseEventArgs e)

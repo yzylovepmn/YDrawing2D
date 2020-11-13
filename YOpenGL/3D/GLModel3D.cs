@@ -232,6 +232,7 @@ namespace YOpenGL._3D
         public void SetIndices(IEnumerable<uint> indices)
         {
             _indices = indices?.ToList();
+            _UpdateBounds();
             if (HasInit)
             {
                 _viewport.MakeSureCurrentContext();

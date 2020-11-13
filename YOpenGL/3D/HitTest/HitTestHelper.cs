@@ -8,7 +8,7 @@ namespace YOpenGL._3D
 {
     public class HitTestHelper
     {
-        internal static IEnumerable<HitResult> HitTest(GLPanel3D viewport, PointF pointInWpf, float sensitive, bool findTop)
+        internal static IEnumerable<HitResult> HitTest(GLPanel3D viewport, PointF pointInWpf, float sensitive)
         {
             var results = new List<HitResult>();
             if (!viewport.Camera.TotalTransformReverse.HasValue)
@@ -36,7 +36,7 @@ namespace YOpenGL._3D
                 if (!bounds2D.Contains(pointInWpf)) continue;
 
                 var points = model.GetDrawPoints().ToArray();
-                var pointsTransformed = new LazyArray<Point3F, Point3F>(points, p => viewport.Point3DToPointInWpfWithZDpeth(p));// points.Select(p => p * transform).ToArray();
+                var pointsTransformed = new LazyArray<Point3F, Point3F>(points, p => viewport.Point3DToPointInWpfWithZDpeth(p));
                 switch (model.Mode)
                 {
                     case GLPrimitiveMode.GL_POINTS:
@@ -49,7 +49,6 @@ namespace YOpenGL._3D
                                 if (dist <= sensity)
                                 {
                                     results.Add(new HitResult(new PointMesh(p), model, p, pt.Z));
-                                    if (findTop) return results;
                                     break;
                                 }
                             }
@@ -94,7 +93,6 @@ namespace YOpenGL._3D
                                     if (ht.HasValue)
                                     {
                                         results.Add(new HitResult(new LineMesh(p1, p2), model, ht.Value, z));
-                                        if (findTop) return results;
                                         break;
                                     }
                                 }
@@ -125,7 +123,6 @@ namespace YOpenGL._3D
                                     if (ht.HasValue)
                                     {
                                         results.Add(new HitResult(new TriangleMesh(p1, p2, p3), model, ht.Value, z));
-                                        if (findTop) return results;
                                         break;
                                     }
                                 }
@@ -154,7 +151,6 @@ namespace YOpenGL._3D
                                     if (ht.HasValue)
                                     {
                                         results.Add(new HitResult(new TriangleMesh(p1, p2, p3), model, ht.Value, z));
-                                        if (findTop) return results;
                                         break;
                                     }
                                 }
@@ -205,10 +201,13 @@ namespace YOpenGL._3D
                     results.Add(new RectHitResult(model));
                     continue;
                 }
-                else if (hitTestMode == RectHitTestMode.Intersect)
+                else
                 {
                     if (!rectInWpf.IntersectsWith(bounds2D)) continue;
-                    var pointsTransformed = new LazyArray<Point3F, PointF>(model.GetDrawPoints(), p => viewport.Point3DToPointInWpf(p));//model.GetDrawPoints().Select(p => p * transform).ToArray();
+                    var isFullContain = hitTestMode == RectHitTestMode.FullContain;
+                    var flag1 = false;
+                    var flag2 = true;
+                    var pointsTransformed = new LazyArray<Point3F, PointF>(model.GetDrawPoints(), p => viewport.Point3DToPointInWpf(p));
                     switch (model.Mode)
                     {
                         case GLPrimitiveMode.GL_POINTS:
@@ -216,14 +215,23 @@ namespace YOpenGL._3D
                                 for (int i = 0; i < pointsTransformed.Length; i++)
                                 {
                                     var pt = pointsTransformed[i];
-                                    if (rectInWpf.Contains(pt) 
-                                        || (rectInWpf.BottomLeft - pt).Length <= sensity
-                                        || (rectInWpf.BottomRight - pt).Length <= sensity
-                                        || (rectInWpf.TopLeft - pt).Length <= sensity
-                                        || (rectInWpf.TopRight - pt).Length <= sensity)
+                                    if (!isFullContain)
                                     {
-                                        results.Add(new RectHitResult(model));
-                                        break;
+                                        if (rectInWpf.Contains(pt, sensity))
+                                        {
+                                            flag1 = true;
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var rect = new RectF(pt, pt);
+                                        rect.Extents(sensity);
+                                        if (!rectInWpf.Contains(rect))
+                                        {
+                                            flag2 = false;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -253,10 +261,21 @@ namespace YOpenGL._3D
                                     var line = new Line(pt1, pt2);
                                     var bounds = line.GetBounds();
                                     bounds.Extents(sensity);
-                                    if (bounds.IntersectsWith(rectInWpf) && line.HitTest(rectInWpf, sensity))
+                                    if (!isFullContain)
                                     {
-                                        results.Add(new RectHitResult(model));
-                                        break;
+                                        if (bounds.IntersectsWith(rectInWpf) && line.HitTest(rectInWpf, sensity))
+                                        {
+                                            flag1 = true;
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (!rectInWpf.Contains(bounds))
+                                        {
+                                            flag2 = false;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -272,11 +291,22 @@ namespace YOpenGL._3D
                                     var pt3 = pointsTransformed[i + 2];
 
                                     var triangle = new Triangle(pt1, pt2, pt3);
-                                    if (rectInWpf.Contains(triangle.P1) || rectInWpf.Contains(triangle.P2) || rectInWpf.Contains(triangle.P3)
-                                        || triangle.IsPointInside(rectInWpf.TopLeft) || triangle.IsPointInside(rectInWpf.TopRight) || triangle.IsPointInside(rectInWpf.BottomLeft) || triangle.IsPointInside(rectInWpf.BottomRight))
+                                    if (!isFullContain)
                                     {
-                                        results.Add(new RectHitResult(model));
-                                        break;
+                                        if (rectInWpf.Contains(triangle.P1) || rectInWpf.Contains(triangle.P2) || rectInWpf.Contains(triangle.P3)
+                                        || triangle.IsPointInside(rectInWpf.TopLeft) || triangle.IsPointInside(rectInWpf.TopRight) || triangle.IsPointInside(rectInWpf.BottomLeft) || triangle.IsPointInside(rectInWpf.BottomRight))
+                                        {
+                                            flag1 = true;
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (!triangle.IsCompletelyInside(rectInWpf))
+                                        {
+                                            flag2 = false;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -290,16 +320,29 @@ namespace YOpenGL._3D
                                     var pt3 = pointsTransformed[i];
 
                                     var triangle = new Triangle(pt1, pt2, pt3);
-                                    if (rectInWpf.Contains(triangle.P1) || rectInWpf.Contains(triangle.P2) || rectInWpf.Contains(triangle.P3)
-                                        || triangle.IsPointInside(rectInWpf.TopLeft) || triangle.IsPointInside(rectInWpf.TopRight) || triangle.IsPointInside(rectInWpf.BottomLeft) || triangle.IsPointInside(rectInWpf.BottomRight))
+                                    if (!isFullContain)
                                     {
-                                        results.Add(new RectHitResult(model));
-                                        break;
+                                        if (rectInWpf.Contains(triangle.P1) || rectInWpf.Contains(triangle.P2) || rectInWpf.Contains(triangle.P3)
+                                        || triangle.IsPointInside(rectInWpf.TopLeft) || triangle.IsPointInside(rectInWpf.TopRight) || triangle.IsPointInside(rectInWpf.BottomLeft) || triangle.IsPointInside(rectInWpf.BottomRight))
+                                        {
+                                            flag1 = true;
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (!triangle.IsCompletelyInside(rectInWpf))
+                                        {
+                                            flag2 = false;
+                                            break;
+                                        }
                                     }
                                 }
                             }
                             break;
                     }
+                    if ((flag1 && !isFullContain) || (flag2 && isFullContain))
+                        results.Add(new RectHitResult(model));
                 }
             }
 
