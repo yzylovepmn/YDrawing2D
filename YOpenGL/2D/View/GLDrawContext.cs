@@ -206,47 +206,47 @@ namespace YOpenGL
         /// <summary>
         /// The points.Count() == degree + 1;
         /// </summary>
-        public void DrawBezier(PenF pen, int degree, IEnumerable<PointF> points)
+        public void DrawBezier(PenF pen, int degree, IEnumerable<PointF> points, float? tolerance = null)
         {
-            _primitives.Add(_DrawBezier(pen, points.Select(p => _transform.Transform(p))));
+            _primitives.Add(_DrawBezier(pen, points.Select(p => _transform.Transform(p)), tolerance));
         }
 
-        private _Bezier _DrawBezier(PenF pen, IEnumerable<PointF> points)
+        private _Bezier _DrawBezier(PenF pen, IEnumerable<PointF> points, float? tolerance = null)
         {
             pen.Color = _transform.Transform(pen.Color);
 
-            return new _Bezier(points.ToArray(), pen, _visual.Panel.Preference.Tolerance);
+            return new _Bezier(points.ToArray(), pen, tolerance ?? _visual.Panel.Preference.Tolerance);
         }
 
         /// <summary>
         /// Non-uniform rational B-spline (NURBS)
         /// </summary>
-        public void DrawSpline(PenF pen, int degree, IEnumerable<float> knots, IEnumerable<PointF> controlPoints, IEnumerable<float> weights, IEnumerable<PointF> fitPoints)
+        public void DrawSpline(PenF pen, int degree, IEnumerable<float> knots, IEnumerable<PointF> controlPoints, IEnumerable<float> weights, IEnumerable<PointF> fitPoints, float? tolerance = null)
         {
             pen.Color = _transform.Transform(pen.Color);
 
-            _primitives.Add(new _Spline(degree, knots?.ToArray(), controlPoints?.Select(c => _transform.Transform(c)).ToArray(), weights?.ToArray(), fitPoints?.Select(f => _transform.Transform(f)).ToArray(), pen, _visual.Panel.Preference.Tolerance));
+            _primitives.Add(new _Spline(degree, knots?.ToArray(), controlPoints?.Select(c => _transform.Transform(c)).ToArray(), weights?.ToArray(), fitPoints?.Select(f => _transform.Transform(f)).ToArray(), pen, tolerance ?? _visual.Panel.Preference.Tolerance));
         }
 
-        public void DrawText(PenF pen, Color? fillColor, FormattedText textToDraw, PointF origin)
-        {
-            pen.Color = _transform.Transform(pen.Color);
-            if (fillColor.HasValue)
-                fillColor = _transform.Transform(fillColor.Value);
-
-            _DrawGeometry(pen, fillColor, textToDraw.BuildGeometry(new Point(origin.X, -origin.Y - textToDraw.Height)));
-        }
-
-        public void DrawGlyphRun(PenF pen, Color? fillColor, GlyphRun glyphRun)
+        public void DrawText(PenF pen, Color? fillColor, FormattedText textToDraw, PointF origin, float? tolerance = null)
         {
             pen.Color = _transform.Transform(pen.Color);
             if (fillColor.HasValue)
                 fillColor = _transform.Transform(fillColor.Value);
 
-            _DrawGeometry(pen, fillColor, glyphRun.BuildGeometry());
+            _DrawGeometry(pen, fillColor, textToDraw.BuildGeometry(new Point(origin.X, -origin.Y - textToDraw.Height)), tolerance);
         }
 
-        private void _DrawGeometry(PenF pen, Color? fillColor, Geometry geometry)
+        public void DrawGlyphRun(PenF pen, Color? fillColor, GlyphRun glyphRun, float? tolerance = null)
+        {
+            pen.Color = _transform.Transform(pen.Color);
+            if (fillColor.HasValue)
+                fillColor = _transform.Transform(fillColor.Value);
+
+            _DrawGeometry(pen, fillColor, glyphRun.BuildGeometry(), tolerance);
+        }
+
+        private void _DrawGeometry(PenF pen, Color? fillColor, Geometry geometry, float? tolerance = null)
         {
             if (geometry.IsEmpty()) return;
             foreach (var figure in geometry.GetOutlinedPathGeometry().Figures)
@@ -267,22 +267,22 @@ namespace YOpenGL
                     if (segment is BezierSegment)
                     {
                         var bezier = (BezierSegment)segment;
-                        BezierTo(3, new List<PointF>() { _Transform(bezier.Point1), _Transform(bezier.Point2), _Transform(bezier.Point3) }, true);
+                        BezierTo(3, new List<PointF>() { _Transform(bezier.Point1), _Transform(bezier.Point2), _Transform(bezier.Point3) }, true, tolerance);
                     }
                     if (segment is QuadraticBezierSegment)
                     {
                         var bezier = (QuadraticBezierSegment)segment;
-                        BezierTo(2, new List<PointF>() { _Transform(bezier.Point1), _Transform(bezier.Point2) }, true);
+                        BezierTo(2, new List<PointF>() { _Transform(bezier.Point1), _Transform(bezier.Point2) }, true, tolerance);
                     }
                     if (segment is PolyBezierSegment)
                     {
                         var bezier = (PolyBezierSegment)segment;
-                        PolyBezierTo(3, _Transform(bezier.Points.ToArray()), true);
+                        PolyBezierTo(3, _Transform(bezier.Points.ToArray()), true, tolerance);
                     }
                     if (segment is PolyQuadraticBezierSegment)
                     {
                         var bezier = (PolyQuadraticBezierSegment)segment;
-                        PolyBezierTo(2, _Transform(bezier.Points.ToArray()), true);
+                        PolyBezierTo(2, _Transform(bezier.Points.ToArray()), true, tolerance);
                     }
                 }
             }
@@ -378,21 +378,21 @@ namespace YOpenGL
                 _LineTo(point, isStroked);
         }
 
-        public void BezierTo(int degree, IEnumerable<PointF> points, bool isStroked)
+        public void BezierTo(int degree, IEnumerable<PointF> points, bool isStroked, float? tolerance = null)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
             var _points = new List<PointF>();
             points = points.Select(p => _transform.Transform(p));
             _points.Add(_current.Value);
             _points.AddRange(points);
-            _subGeo.StreamTo(_DrawBezier(isStroked ? new PenF() : PenF.NULL, _points));
+            _subGeo.StreamTo(_DrawBezier(isStroked ? new PenF() : PenF.NULL, _points, tolerance));
             _current = points.Last();
         }
 
         /// <summary>
         /// The points.Count() must be an integer multiple of degree
         /// </summary>
-        public void PolyBezierTo(int degree, IEnumerable<PointF> points, bool isStroked)
+        public void PolyBezierTo(int degree, IEnumerable<PointF> points, bool isStroked, float? tolerance = null)
         {
             if (!_begin.HasValue) throw new InvalidOperationException("must be figure begin point!");
             var _points = new List<PointF>();
@@ -401,7 +401,7 @@ namespace YOpenGL
                 _points.Add(point);
                 if (_points.Count == degree)
                 {
-                    BezierTo(degree, _points, isStroked);
+                    BezierTo(degree, _points, isStroked, tolerance);
                     _points.Clear();
                 }
             }
