@@ -157,6 +157,7 @@ namespace YOpenGL._3D
             _aspect = aspect;
             _nearPlaneDistance = nearPlaneDistance;
             _farPlaneDistance = farPlaneDistance;
+            _width = _aspect * _height;
 
             _UpdateProjectionMatrix();
         }
@@ -172,6 +173,7 @@ namespace YOpenGL._3D
             _height = Math.Max(1, height);
             _nearPlaneDistance = nearPlaneDistance;
             _farPlaneDistance = farPlaneDistance;
+            _aspect = _width / _height;
 
             _UpdateProjectionMatrix();
         }
