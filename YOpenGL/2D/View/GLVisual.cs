@@ -549,24 +549,24 @@ namespace YOpenGL
 
         private void _DisposeModels()
         {
-            foreach (var item in _fillModels.Values)
+            foreach (var item in _fillModels?.Values)
                 item?.DisposeInner();
-            foreach (var item in _arrowModels.Values)
+            foreach (var item in _arrowModels?.Values)
                 item?.DisposeInner();
             _streamModels?.DisposeInner();
-            foreach (var item in _lineModels.Values)
+            foreach (var item in _lineModels?.Values)
                 item?.DisposeInner();
-            foreach (var item in _arcModels.Values)
+            foreach (var item in _arcModels?.Values)
                 item?.DisposeInner();
-            foreach (var item in _pointModels.Values)
+            foreach (var item in _pointModels?.Values)
                 item?.DisposeInner();
 
-            _fillModels.Clear();
-            _arrowModels.Clear();
-            _streamModels.Clear();
-            _lineModels.Clear();
-            _arcModels.Clear();
-            _pointModels.Clear();
+            _fillModels?.Clear();
+            _arrowModels?.Clear();
+            _streamModels?.Clear();
+            _lineModels?.Clear();
+            _arcModels?.Clear();
+            _pointModels?.Clear();
         }
 
         public virtual bool Dispose()
