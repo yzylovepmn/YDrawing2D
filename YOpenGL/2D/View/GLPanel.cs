@@ -147,9 +147,9 @@ namespace YOpenGL
             {
                 _color = value;
                 //_brush = new SolidColorBrush(_color);
-                _red = (float)Math.Pow(_color.R / (float)byte.MaxValue, 2.1);
-                _green = (float)Math.Pow(_color.G / (float)byte.MaxValue, 2.1);
-                _blue = (float)Math.Pow(_color.B / (float)byte.MaxValue, 2.1);
+                _red = (float)Math.Pow(_color.R / (float)byte.MaxValue, 2.2);
+                _green = (float)Math.Pow(_color.G / (float)byte.MaxValue, 2.2);
+                _blue = (float)Math.Pow(_color.B / (float)byte.MaxValue, 2.2);
                 _Refresh();
             }
         }
@@ -351,18 +351,18 @@ namespace YOpenGL
             }
         }
 
-        public GLVisual HitTest(PointF point, float sensitive = 6)
+        public GLVisual HitTest(PointF pointInView, float sensitive = 6)
         {
             foreach (var visual in _visuals.Where(v => v.HitTestVisible))
-                if (visual.HitTest(point, sensitive * _viewResverse.M11))
+                if (visual.HitTest(pointInView, sensitive * _viewResverse.M11))
                     return visual;
             return null;
         }
 
-        public IEnumerable<GLVisual> HitTest(RectF rect, bool isFullContain = false)
+        public IEnumerable<GLVisual> HitTest(RectF rectInView, bool isFullContain = false)
         {
             foreach (var visual in _visuals.Where(v => v.HitTestVisible))
-                if (visual.HitTest(rect, isFullContain))
+                if (visual.HitTest(rectInView, isFullContain))
                     yield return visual;
             yield break;
         }
@@ -486,7 +486,7 @@ namespace YOpenGL
         {
             MakeSureCurrentContext(_context);
 
-            if (visual.Panel == null) return;
+            if (visual.IsDeleted) return;
             if (_renderMode == RenderMode.Sync)
                 _Update(visual, true);
             else await _UpdateAsync(visual, true);
@@ -503,7 +503,7 @@ namespace YOpenGL
         {
             MakeSureCurrentContext(_context);
 
-            if (visual.Panel == null) return;
+            if (visual.IsDeleted) return;
             if (_renderMode == RenderMode.Sync)
                 _Update(visual, true);
             else await _UpdateAsync(visual, true);
@@ -777,7 +777,7 @@ namespace YOpenGL
 
         private void _AfterPainted()
         {
-            _EnterDispose();
+            //_EnterDispose();
 
             if (!_isDisposed)
             {
@@ -786,9 +786,9 @@ namespace YOpenGL
 
                 var old = Volatile.Read(ref _signal);
 
-                _ExitDispose();
+                //_ExitDispose();
                 Dispatcher.Invoke(() => { _DispatchFrame(); }, DispatcherPriority.Render);
-                _EnterDispose();
+                //_EnterDispose();
 
                 if (!_isDisposed)
                 {
@@ -803,7 +803,7 @@ namespace YOpenGL
                 }
             }
 
-            _ExitDispose();
+            //_ExitDispose();
         }
 
         private void _AttachVisual(GLVisual visual)
@@ -1089,14 +1089,14 @@ namespace YOpenGL
             else
             {
                 Enable(GL_CULL_FACE);
-                foreach (var pair in _lineModels)
-                    _DrawModelHandle(pair, _lineshader);
+                foreach (var pair in _fillModels)
+                    _DrawFilledModelHandle(pair, _fillshader);
 
                 foreach (var pair in _arcModels)
                     _DrawModelHandle(pair, _arcshader);
 
-                foreach (var pair in _fillModels)
-                    _DrawFilledModelHandle(pair, _fillshader);
+                foreach (var pair in _lineModels)
+                    _DrawModelHandle(pair, _lineshader);
 
                 foreach (var pair in _arrowModels)
                     _DrawFilledModelHandle(pair, _arrowShader);
@@ -1123,7 +1123,7 @@ namespace YOpenGL
             if (pair.Key.Data != null)
             {
                 // Set line pattern
-                shader.SetFloat("dashedFactor", pair.Key.Data.Length * 4);
+                shader.SetFloat("dashedFactor", pair.Key.Data.Length * 8);
                 BindTexture(GL_TEXTURE_1D, _texture_dash[0]);
                 TexImage1D(GL_TEXTURE_1D, 0, GL_RED, pair.Key.Data.Length, 0, GL_RED, GL_UNSIGNED_BYTE, pair.Key.Data);
             }

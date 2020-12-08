@@ -47,6 +47,11 @@ namespace YOpenGL
             return Line.GetBounds();
         }
 
+        public RectF GetGeometryBounds(float scale)
+        {
+            return Line.GetBounds();
+        }
+
         public bool HitTest(PointF p, float sensitive, float scale)
         {
             return Line.HitTest(p, sensitive);

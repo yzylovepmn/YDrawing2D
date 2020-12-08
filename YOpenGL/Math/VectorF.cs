@@ -20,6 +20,8 @@ namespace YOpenGL
             }
         }
 
+        public bool IsEmpty { get { return _x == 0f && _y == 0f; } }
+
         public Float LengthSquared
         {
             get

@@ -594,7 +594,7 @@ namespace YOpenGL._3D
         #endregion
 
         #region Aliased
-        internal void EnableAliased()
+        public void EnableAliased()
         {
             MakeSureCurrentContext();
             Disable(GL_LINE_SMOOTH);
@@ -604,7 +604,7 @@ namespace YOpenGL._3D
             _Refresh();
         }
 
-        internal void DisableAliased()
+        public void DisableAliased()
         {
             MakeSureCurrentContext();
             Enable(GL_LINE_SMOOTH);

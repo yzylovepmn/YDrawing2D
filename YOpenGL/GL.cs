@@ -54,9 +54,7 @@ namespace YOpenGL
 
                 MakeCurrentContext(context);//激活当前渲染上下文
 
-                if (!_contexts.ContainsKey(context.HDC))
-                    _contexts.Add(context.HDC, context);
-                else _contexts[context.HDC] = context;
+                _contexts[context.HDC] = context;
             }
             return context;
         }

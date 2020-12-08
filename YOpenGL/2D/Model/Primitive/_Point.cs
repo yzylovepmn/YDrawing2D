@@ -46,6 +46,11 @@ namespace YOpenGL
             return bound;
         }
 
+        public RectF GetGeometryBounds(float scale)
+        {
+            return new RectF(_point, _point);
+        }
+
         public bool HitTest(PointF p, float sensitive, float scale)
         {
             //var pointSize = _pointSize / scale;

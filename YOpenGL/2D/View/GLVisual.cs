@@ -18,6 +18,7 @@ namespace YOpenGL
             _context1 = new GLDrawContext(this);
             _context2 = new GLDrawContext(this);
             _bounds = RectF.Empty;
+            _geometryBounds = RectF.Empty;
             _hitTestVisible = true;
             _isDeleted = true;
 
@@ -41,14 +42,17 @@ namespace YOpenGL
         public GLPanel Panel { get { return _panel; } internal set { _panel = value; } }
         protected GLPanel _panel;
 
-        public virtual RectF Bounds { get { return _bounds; } }
+        public RectF Bounds { get { return _bounds; } }
         private RectF _bounds;
+
+        public RectF GeometryBounds { get { return _geometryBounds; } }
+        private RectF _geometryBounds;
 
         public bool HitTestVisible { get { return _hitTestVisible; } set { _hitTestVisible = value; } }
         protected bool _hitTestVisible;
 
-        public bool IsDeleted { get { return _isDeleted; } set { _isDeleted = value; } }
-        protected bool _isDeleted;
+        internal bool IsDeleted { get { return _isDeleted; } set { _isDeleted = value; } }
+        private bool _isDeleted;
 
         #region Context
         internal GLDrawContext CurrentContext 
@@ -104,8 +108,8 @@ namespace YOpenGL
         #region Data
         internal void AttachData()
         {
-            var drawContext = CurrentContext;
             MakeSureCurrentContext(_panel.Context);
+            var drawContext = CurrentContext;
 
             foreach (var primitive in drawContext.Primitives)
             {
@@ -363,15 +367,19 @@ namespace YOpenGL
 
         internal void DrawModels()
         {
+            Enable(GL_STENCIL_TEST);
+            _DrawSteramModelHandle(_streamModels, _panel.Fillshader);
+            Disable(GL_STENCIL_TEST);
+
             Enable(GL_CULL_FACE);
-            foreach (var pair in _lineModels)
-                _DrawModelHandle(pair, _panel.Lineshader);
+            foreach (var pair in _fillModels)
+                _DrawFilledModelHandle(pair, _panel.Fillshader);
 
             foreach (var pair in _arcModels)
                 _DrawModelHandle(pair, _panel.Arcshader);
 
-            foreach (var pair in _fillModels)
-                _DrawFilledModelHandle(pair, _panel.Fillshader);
+            foreach (var pair in _lineModels)
+                _DrawModelHandle(pair, _panel.Lineshader);
 
             foreach (var pair in _arrowModels)
                 _DrawFilledModelHandle(pair, _panel.ArrowShader);
@@ -379,10 +387,6 @@ namespace YOpenGL
             foreach (var pair in _pointModels)
                 _DrawPointModelsHandle(pair, _panel.Fillshader);
             Disable(GL_CULL_FACE);
-
-            Enable(GL_STENCIL_TEST);
-            _DrawSteramModelHandle(_streamModels, _panel.Fillshader);
-            Disable(GL_STENCIL_TEST);
         }
 
         private void _DrawModelHandle(KeyValuePair<PenF, List<MeshModel>> pair, Shader shader)
@@ -397,7 +401,7 @@ namespace YOpenGL
             if (pair.Key.Data != null)
             {
                 // Set line pattern
-                shader.SetFloat("dashedFactor", pair.Key.Data.Length * 4);
+                shader.SetFloat("dashedFactor", pair.Key.Data.Length * 8);
                 BindTexture(GL_TEXTURE_1D, _panel.Texture_Dash[0]);
                 TexImage1D(GL_TEXTURE_1D, 0, GL_RED, pair.Key.Data.Length, 0, GL_RED, GL_UNSIGNED_BYTE, pair.Key.Data);
             }
@@ -430,7 +434,7 @@ namespace YOpenGL
         }
         #endregion
 
-        private GLDrawContext RenderOpen()
+        private GLDrawContext _RenderOpen()
         {
             // Reset context
             var back = BackContext;
@@ -449,14 +453,18 @@ namespace YOpenGL
         {
             var scale = _panel.ScaleX;
             _bounds = RectF.Empty;
+            _geometryBounds = RectF.Empty;
             if (context.HasPrimitives)
                 foreach (var primitive in context.Primitives)
+                {
                     _bounds.Union(primitive.GetBounds(scale));
+                    _geometryBounds.Union(primitive.GetGeometryBounds(scale));
+                }
         }
 
         internal void Update()
         {
-            var context = RenderOpen();
+            var context = _RenderOpen();
             Draw(context);
             _UpdateBounds(context);
             _SwapBuffer();
@@ -464,7 +472,7 @@ namespace YOpenGL
 
         internal async Task UpdateAsync()
         {
-            var context = RenderOpen();
+            var context = _RenderOpen();
             await Task.Factory.StartNew(() => 
             {
                 do
@@ -487,22 +495,23 @@ namespace YOpenGL
             _context1.Clear();
             _context2.Clear();
             _bounds = RectF.Empty;
+            _geometryBounds = RectF.Empty;
         }
 
         internal void Detach(GLDrawContext context)
         {
             foreach (var primitive in context.Primitives)
-                _Deatch(primitive);
+                _Detach(primitive);
         }
 
-        private void _Deatch(IPrimitive primitive)
+        private void _Detach(IPrimitive primitive)
         {
             if (primitive.Type == PrimitiveType.ComplexGeometry)
             {
                 var geo = (_ComplexGeometry)primitive;
                 foreach (var subgeo in geo.Children)
                     foreach (var item in subgeo.Stream)
-                        _Deatch(item);
+                        _Detach(item);
             }
             if (primitive.FillModel != null && !primitive.FillModel.IsDisposed)
             {

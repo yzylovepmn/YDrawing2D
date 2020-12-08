@@ -11,17 +11,17 @@ namespace YOpenGL
     {
         public _Spline(int degree, float[] knots, PointF[] controlPoints, float[] weights, PointF[] fitPoints, PenF pen, float tolerance)
         {
-            _degree = degree;
-            _knots = knots ?? new float[0];
-            _controlPoints = controlPoints ?? new PointF[0];
-            _weights = weights ?? new float[0];
-            _fitPoints = fitPoints ?? new PointF[0];
+            //degree = degree;
+            knots = knots ?? new float[0];
+            controlPoints = controlPoints ?? new PointF[0];
+            weights = weights ?? new float[0];
+            fitPoints = fitPoints ?? new PointF[0];
             _pen = pen;
 
             _bounds = RectF.Empty;
             _innerLines = default(List<_Line>);
 
-            Regular();
+            Regular(knots, degree);
 
             _innerLines = GeometryHelper.CalcSampleLines(degree, knots, controlPoints, weights, fitPoints, tolerance);
 
@@ -32,32 +32,32 @@ namespace YOpenGL
         /// <summary>
         /// Degree of the spline
         /// </summary>
-        public int Degree { get { return _degree; } }
-        private int _degree;
+        //public int Degree { get { return _degree; } }
+        //private int _degree;
 
         /// <summary>
         /// Knots of the spline
         /// </summary>
-        public float[] Knots { get { return _knots; } }
-        private float[] _knots;
+        //public float[] Knots { get { return _knots; } }
+        //private float[] _knots;
 
         /// <summary>
         /// Weights of the spline
         /// </summary>
-        public float[] Weights { get { return _weights; } }
-        private float[] _weights;
+        //public float[] Weights { get { return _weights; } }
+        //private float[] _weights;
 
         /// <summary>
         /// ControlPoints of the spline
         /// </summary>
-        public PointF[] ControlPoints { get { return _controlPoints; } }
-        private PointF[] _controlPoints;
+        //public PointF[] ControlPoints { get { return _controlPoints; } }
+        //private PointF[] _controlPoints;
 
         /// <summary>
         /// FitPoints of the spline
         /// </summary>
-        public PointF[] FitPoints { get { return _fitPoints; } }
-        private PointF[] _fitPoints;
+        //public PointF[] FitPoints { get { return _fitPoints; } }
+        //private PointF[] _fitPoints;
 
         private RectF _bounds;
 
@@ -88,18 +88,24 @@ namespace YOpenGL
             }
         }
 
-        internal void Regular()
+        internal void Regular(float[] knots, int degree)
         {
-            if (_knots == null || _knots.Length == 0) return;
-            var b = _knots[_degree];
-            for (int i = 0; i < _knots.Length; i++)
-                _knots[i] += b;
-            b = _knots[_knots.Length - 1 - _degree];
-            for (int i = 0; i < _knots.Length; i++)
-                _knots[i] /= b;
+            if (knots == null || knots.Length == 0) return;
+
+            var b = -knots[degree];
+            for (int i = 0; i < knots.Length; i++)
+                knots[i] += b;
+            b = knots[knots.Length - 1 - degree];
+            for (int i = 0; i < knots.Length; i++)
+                knots[i] /= b;
         }
 
         public RectF GetBounds(float scale)
+        {
+            return _bounds;
+        }
+
+        public RectF GetGeometryBounds(float scale)
         {
             return _bounds;
         }

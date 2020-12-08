@@ -4,6 +4,7 @@ using Float = System.Single;
 
 namespace YOpenGL
 {
+    [Serializable]
     public struct RectF
     {
         public RectF(PointF location,

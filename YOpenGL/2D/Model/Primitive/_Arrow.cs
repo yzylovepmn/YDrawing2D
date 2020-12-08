@@ -48,6 +48,16 @@ namespace YOpenGL
 
         public RectF GetBounds(float scale)
         {
+            return _GetBounds(scale);
+        }
+
+        public RectF GetGeometryBounds(float scale)
+        {
+            return _GetBounds(scale);
+        }
+
+        private RectF _GetBounds(float scale)
+        {
             if (_height == 0 || _width == 0) return RectF.Empty;
 
             var height = _height / scale;

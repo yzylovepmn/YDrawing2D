@@ -84,6 +84,11 @@ namespace YOpenGL
             return _bounds;
         }
 
+        public RectF GetGeometryBounds(float scale)
+        {
+            return _bounds;
+        }
+
         public bool HitTest(PointF p, float sensitive, float scale)
         {
             if (IsEmpty) return false;

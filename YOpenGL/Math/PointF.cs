@@ -168,5 +168,10 @@ namespace YOpenGL
         {
             return string.Format($"{_x}, {_y}");
         }
+
+        public string ToString(int accuracy)
+        {
+            return string.Format("[{0}, {1}]", _x.ToString(string.Format("f{0}", accuracy)), _y.ToString(string.Format("f{0}", accuracy)));
+        }
     }
 }

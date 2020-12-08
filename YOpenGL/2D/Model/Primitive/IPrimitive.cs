@@ -14,6 +14,7 @@ namespace YOpenGL
         bool Filled { get; }
         PrimitiveType Type { get; }
         RectF GetBounds(float scale);
+        RectF GetGeometryBounds(float scale);
         bool HitTest(PointF p, float sensitive, float scale);
         bool HitTest(RectF rect, float scale);
         IEnumerable<PointF> this[bool isOutline] { get; }

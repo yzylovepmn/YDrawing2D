@@ -83,9 +83,9 @@ namespace YOpenGL
             var v1 = _color.GetValue();
             var v2 = other._color.GetValue();
             if (v1 > v2)
-                return -1;
-            if (v1 < v2)
                 return 1;
+            if (v1 < v2)
+                return -1;
             if (_data == null && other._data == null)
                 return 0;
             if (_data != null && other._data != null)

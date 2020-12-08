@@ -21,7 +21,7 @@ namespace YOpenGL
 
         /// <summary>
         /// The samller the value, the higher the quality of the resulting graphics, but the rendering speed will be slower
-        /// Range : [0.001, 10]
+        /// Range : [0.005, 10]
         /// Default value : 0.2
         /// </summary>
         public float Tolerance
@@ -31,7 +31,7 @@ namespace YOpenGL
             {
                 if (_tolerance != value)
                 {
-                    if (value > 10 || value < 0.001f)
+                    if (value > 10 || value < 0.005f)
                         return;
                     _tolerance = value;
                     _target.UpdateAll();

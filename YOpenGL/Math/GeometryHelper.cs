@@ -15,13 +15,13 @@ namespace YOpenGL
         static GeometryHelper()
         {
             DeltaRadian = GetRadian(360 / 64f);
-            UnitCicle = GenCiclePoints().ToArray();
+            UnitCicle = _GenCiclePoints().ToArray();
         }
 
         /// <summary>
         /// CounterClockwise
         /// </summary>
-        internal static float CalcInclusionRadian(float startRadian, float endRadian)
+        public static float CalcInclusionRadian(float startRadian, float endRadian)
         {
             var radian = Math.IEEERemainder(endRadian - startRadian, Math.PI * 2);
             if (radian < 0)
@@ -29,7 +29,7 @@ namespace YOpenGL
             return (float)radian;
         }
 
-        internal static void CalcABC(PointF p1, PointF p2, out float A, out float B, out float C)
+        public static void CalcABC(PointF p1, PointF p2, out float A, out float B, out float C)
         {
             var deltaY = p2.Y - p1.Y;
             var deltaX = p2.X - p1.X;
@@ -460,7 +460,7 @@ namespace YOpenGL
         /// <summary>
         /// Generate points clockwise(In order to get more accurate results, no matrix rotation is used)
         /// </summary>
-        internal static IEnumerable<PointF> GenCiclePoints()
+        private static IEnumerable<PointF> _GenCiclePoints()
         {
             var cnt = 64;
 
@@ -472,7 +472,24 @@ namespace YOpenGL
             }
         }
 
-        internal static IEnumerable<PointF> GenArcPoints(float startRadian, float endRadian, bool needReverse = true)
+        public static IEnumerable<PointF> GenCiclePoints(PointF center, float radius)
+        {
+            foreach (var up in UnitCicle)
+                yield return new PointF(center.X + radius * up.X, center.Y + radius * up.Y);
+        }
+
+        public static IEnumerable<PointF> GenArcPoints(PointF center, float radius, float startRadian, float endRadian, bool needReverse = true)
+        {
+            if (radius == 0)
+                yield return center;
+            else
+            {
+                foreach (var up in GenArcPoints(startRadian, endRadian, needReverse))
+                    yield return new PointF(center.X + radius * up.X, center.Y + radius * up.Y);
+            }
+        }
+
+        public static IEnumerable<PointF> GenArcPoints(float startRadian, float endRadian, bool needReverse = true)
         {
             var points = new List<PointF>();
             float curRadian = 0;
@@ -746,9 +763,9 @@ namespace YOpenGL
                                     // 1 1
                                     if (end.Y > point.Y)
                                     {
-                                        if (start.X == end.X && start.Y > end.Y)
+                                        if (start.X == end.X && start.Y >= end.Y)
                                             continue;
-                                        if (start.Y == end.Y && start.X < end.X)
+                                        if (start.Y == end.Y && start.X <= end.X)
                                             continue;
                                         if (start.X < end.X && start.Y > end.Y)
                                             continue;
@@ -822,9 +839,9 @@ namespace YOpenGL
                                     }
                                     else
                                     {
-                                        if (start.X == end.X && start.Y > end.Y)
+                                        if (start.X == end.X && start.Y >= end.Y)
                                             continue;
-                                        if (start.Y == end.Y && start.X > end.X)
+                                        if (start.Y == end.Y && start.X >= end.X)
                                             continue;
                                         if (start.X > end.X && start.Y > end.Y)
                                             continue;
@@ -894,16 +911,16 @@ namespace YOpenGL
                                 }
                                 else
                                 {
-                                    if (start.X == end.X && start.Y < end.Y)
-                                        continue;
-                                    if (start.Y == end.Y && start.X < end.X)
-                                        continue;
-                                    if (start.X < end.X && start.Y < end.Y)
-                                        continue;
-
                                     // 2 2
                                     if (end.Y > point.Y)
                                     {
+                                        if (start.X == end.X && start.Y <= end.Y)
+                                            continue;
+                                        if (start.Y == end.Y && start.X <= end.X)
+                                            continue;
+                                        if (start.X < end.X && start.Y < end.Y)
+                                            continue;
+
                                         var len = (point - arc.Center).Length;
                                         if (len < arc.Radius && isLarger)
                                         {
@@ -973,9 +990,9 @@ namespace YOpenGL
                                     }
                                     else
                                     {
-                                        if (start.X == end.X && start.Y < end.Y)
+                                        if (start.X == end.X && start.Y <= end.Y)
                                             continue;
-                                        if (start.Y == end.Y && start.X > end.X)
+                                        if (start.Y == end.Y && start.X >= end.X)
                                             continue;
                                         if (start.X > end.X && start.Y < end.Y)
                                             continue;
@@ -1136,7 +1153,7 @@ namespace YOpenGL
             for (int j = i - k + rank; j <= i; j++)
             {
                 var scale = _GetBaseFuncValue(knots, u, j, k - rank);
-                var v = _GetDI(k , rank, j, knots, cps);
+                var v = _GetDI(k, rank, j, knots, cps);
                 vec += v * scale;
                 w += scale;
             }

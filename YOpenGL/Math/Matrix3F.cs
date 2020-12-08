@@ -14,6 +14,7 @@ namespace YOpenGL
     /// <summary>
     /// 左手坐标系
     /// </summary>
+    [Serializable]
     public struct Matrix3F
     {
         public Matrix3F(Float m11, Float m12, Float m13, Float m14,
