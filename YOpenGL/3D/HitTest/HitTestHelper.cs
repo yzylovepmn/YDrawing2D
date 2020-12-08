@@ -14,18 +14,36 @@ namespace YOpenGL._3D
             if (!viewport.Camera.TotalTransformReverse.HasValue)
                 return results;
 
-            foreach (var model in viewport.Models.Where(m => m.IsVisible && m.IsHitTestVisible && m.Points != null))
+            foreach (var visusl in viewport.Visuals.Where(v => v.IsVisible && v.IsHitTestVisible && v.Model != null))
+                _HitTest(viewport, pointInWpf, sensitive, results, visusl.Model);
+            return results.OrderBy(ret => ret.ZDepth);
+        }
+
+        private static bool _HitTest(GLPanel3D viewport, PointF pointInWpf, float sensitive, List<HitResult> results, GLModel3D model)
+        {
+            if (model is GLModel3DGroup)
             {
-                var bounds3D = model.Bounds;
+                var group = model as GLModel3DGroup;
+                foreach (var child in group.Children)
+                {
+                    if (_HitTest(viewport, pointInWpf, sensitive, results, child))
+                        return true;
+                }
+                return false;
+            }
+            else
+            {
+                var meshModel = model as GLMeshModel3D;
+                var bounds3D = meshModel.Bounds;
                 var bounds2D = Math3DHelper.Transform(bounds3D, viewport);
                 var sensity = sensitive;
-                switch (model.Mode)
+                switch (meshModel.Mode)
                 {
                     case GLPrimitiveMode.GL_POINTS:
                     case GLPrimitiveMode.GL_LINES:
                     case GLPrimitiveMode.GL_LINE_LOOP:
                     case GLPrimitiveMode.GL_LINE_STRIP:
-                        sensity += model.Mode == GLPrimitiveMode.GL_POINTS ? model.PointSize / 2 : model.LineWidth / 2;
+                        sensity += meshModel.Mode == GLPrimitiveMode.GL_POINTS ? meshModel.PointSize / 2 : meshModel.LineWidth / 2;
                         bounds2D.Extents(sensity);
                         break;
                     case GLPrimitiveMode.GL_TRIANGLES:
@@ -33,11 +51,11 @@ namespace YOpenGL._3D
                     case GLPrimitiveMode.GL_TRIANGLE_FAN:
                         break;
                 }
-                if (!bounds2D.Contains(pointInWpf)) continue;
+                if (!bounds2D.Contains(pointInWpf)) return false;
 
-                var points = model.GetDrawPoints().ToArray();
+                var points = meshModel.GetDrawPoints().ToArray();
                 var pointsTransformed = new LazyArray<Point3F, Point3F>(points, p => viewport.Point3DToPointInWpfWithZDpeth(p));
-                switch (model.Mode)
+                switch (meshModel.Mode)
                 {
                     case GLPrimitiveMode.GL_POINTS:
                         {
@@ -48,8 +66,8 @@ namespace YOpenGL._3D
                                 var dist = (pointInWpf - (PointF)pt).Length;
                                 if (dist <= sensity)
                                 {
-                                    results.Add(new HitResult(new PointMesh(p), model, p, pt.Z));
-                                    break;
+                                    results.Add(new HitResult(new PointMesh(p), meshModel, p, pt.Z));
+                                    return true;
                                 }
                             }
                         }
@@ -59,8 +77,8 @@ namespace YOpenGL._3D
                     case GLPrimitiveMode.GL_LINE_LOOP:
                         {
                             var cond = points.Length - 1;
-                            var stride = model.Mode == GLPrimitiveMode.GL_LINES ? 2 : 1;
-                            var limit = model.Mode == GLPrimitiveMode.GL_LINE_LOOP ? points.Length : points.Length - 1;
+                            var stride = meshModel.Mode == GLPrimitiveMode.GL_LINES ? 2 : 1;
+                            var limit = meshModel.Mode == GLPrimitiveMode.GL_LINE_LOOP ? points.Length : points.Length - 1;
                             for (int i = 0; i < limit; i += stride)
                             {
                                 var p1 = new Point3F();
@@ -92,8 +110,8 @@ namespace YOpenGL._3D
                                     var ht = viewport.PointInWpfToPoint3D(new PointF(p.X, p.Y), z);
                                     if (ht.HasValue)
                                     {
-                                        results.Add(new HitResult(new LineMesh(p1, p2), model, ht.Value, z));
-                                        break;
+                                        results.Add(new HitResult(new LineMesh(p1, p2), meshModel, ht.Value, z));
+                                        return true;
                                     }
                                 }
                             }
@@ -102,7 +120,7 @@ namespace YOpenGL._3D
                     case GLPrimitiveMode.GL_TRIANGLES:
                     case GLPrimitiveMode.GL_TRIANGLE_STRIP:
                         {
-                            var stride = model.Mode == GLPrimitiveMode.GL_TRIANGLES ? 3 : 1;
+                            var stride = meshModel.Mode == GLPrimitiveMode.GL_TRIANGLES ? 3 : 1;
                             for (int i = 0; i < points.Length - 2; i += stride)
                             {
                                 var p1 = points[i];
@@ -122,8 +140,8 @@ namespace YOpenGL._3D
                                     var ht = viewport.PointInWpfToPoint3D(new PointF(pointInWpf.X, pointInWpf.Y), z);
                                     if (ht.HasValue)
                                     {
-                                        results.Add(new HitResult(new TriangleMesh(p1, p2, p3), model, ht.Value, z));
-                                        break;
+                                        results.Add(new HitResult(new TriangleMesh(p1, p2, p3), meshModel, ht.Value, z));
+                                        return true;
                                     }
                                 }
                             }
@@ -150,16 +168,16 @@ namespace YOpenGL._3D
                                     var ht = viewport.PointInWpfToPoint3D(new PointF(pointInWpf.X, pointInWpf.Y), z);
                                     if (ht.HasValue)
                                     {
-                                        results.Add(new HitResult(new TriangleMesh(p1, p2, p3), model, ht.Value, z));
-                                        break;
+                                        results.Add(new HitResult(new TriangleMesh(p1, p2, p3), meshModel, ht.Value, z));
+                                        return true;
                                     }
                                 }
                             }
                         }
                         break;
                 }
+                return false;
             }
-            return results.OrderBy(ret => ret.ZDpeth);
         }
 
         private static PointF? _LineHitTest(PointF pointInWpf, Line line, float sensitive)
@@ -182,12 +200,46 @@ namespace YOpenGL._3D
             if (!viewport.Camera.TotalTransformReverse.HasValue)
                 return results;
 
-            foreach (var model in viewport.Models.Where(m => m.IsVisible && m.IsHitTestVisible && m.Points != null))
+            var isFullContain = hitTestMode == RectHitTestMode.FullContain;
+            foreach (var visusl in viewport.Visuals.Where(v => v.IsVisible && v.IsHitTestVisible && v.Model != null))
+                _HitTest(viewport, rectInWpf, visusl.Model, results, isFullContain);
+
+            return results;
+        }
+
+        private static bool _HitTest(GLPanel3D viewport, RectF rectInWpf, GLModel3D model, List<RectHitResult> results, bool isFullContain)
+        {
+            if (model is GLModel3DGroup)
             {
+                var group = model as GLModel3DGroup;
+                if (isFullContain)
+                {
+                    foreach (var child in group.Children)
+                    {
+                        if (!_HitTest(viewport, rectInWpf, child, results, isFullContain))
+                            return false;
+                    }
+                    if (model.Parent == null)
+                        results.Add(new RectHitResult(model));
+                    return true;
+                }
+                else
+                {
+                    foreach (var child in group.Children)
+                    {
+                        if (_HitTest(viewport, rectInWpf, child, results, isFullContain))
+                            return true;
+                    }
+                    return false;
+                }
+            }
+            else
+            {
+                var meshModel = model as GLMeshModel3D;
                 var bounds3D = model.Bounds;
                 var bounds2D = Math3DHelper.Transform(bounds3D, viewport);
-                var sensity = model.Mode == GLPrimitiveMode.GL_POINTS ? model.PointSize / 2 : model.LineWidth;
-                switch (model.Mode)
+                var sensity = meshModel.Mode == GLPrimitiveMode.GL_POINTS ? meshModel.PointSize / 2 : meshModel.LineWidth;
+                switch (meshModel.Mode)
                 {
                     case GLPrimitiveMode.GL_POINTS:
                     case GLPrimitiveMode.GL_LINES:
@@ -198,17 +250,17 @@ namespace YOpenGL._3D
                 }
                 if (rectInWpf.Contains(bounds2D))
                 {
-                    results.Add(new RectHitResult(model));
-                    continue;
+                    if (!isFullContain || model.Parent == null)
+                        results.Add(new RectHitResult(model));
+                    return true;
                 }
                 else
                 {
-                    if (!rectInWpf.IntersectsWith(bounds2D)) continue;
-                    var isFullContain = hitTestMode == RectHitTestMode.FullContain;
+                    if (!rectInWpf.IntersectsWith(bounds2D)) return false;
                     var flag1 = false;
                     var flag2 = true;
-                    var pointsTransformed = new LazyArray<Point3F, PointF>(model.GetDrawPoints(), p => viewport.Point3DToPointInWpf(p));
-                    switch (model.Mode)
+                    var pointsTransformed = new LazyArray<Point3F, PointF>(meshModel.GetDrawPoints(), p => viewport.Point3DToPointInWpf(p));
+                    switch (meshModel.Mode)
                     {
                         case GLPrimitiveMode.GL_POINTS:
                             {
@@ -241,8 +293,8 @@ namespace YOpenGL._3D
                         case GLPrimitiveMode.GL_LINE_STRIP:
                             {
                                 var cond = pointsTransformed.Length - 1;
-                                var stride = model.Mode == GLPrimitiveMode.GL_LINES ? 2 : 1;
-                                var limit = model.Mode == GLPrimitiveMode.GL_LINE_LOOP ? pointsTransformed.Length : pointsTransformed.Length - 1;
+                                var stride = meshModel.Mode == GLPrimitiveMode.GL_LINES ? 2 : 1;
+                                var limit = meshModel.Mode == GLPrimitiveMode.GL_LINE_LOOP ? pointsTransformed.Length : pointsTransformed.Length - 1;
                                 for (int i = 0; i < limit; i += stride)
                                 {
                                     var pt1 = new PointF();
@@ -283,7 +335,7 @@ namespace YOpenGL._3D
                         case GLPrimitiveMode.GL_TRIANGLES:
                         case GLPrimitiveMode.GL_TRIANGLE_STRIP:
                             {
-                                var stride = model.Mode == GLPrimitiveMode.GL_TRIANGLES ? 3 : 1;
+                                var stride = meshModel.Mode == GLPrimitiveMode.GL_TRIANGLES ? 3 : 1;
                                 for (int i = 0; i < pointsTransformed.Length - 2; i += stride)
                                 {
                                     var pt1 = pointsTransformed[i];
@@ -341,12 +393,20 @@ namespace YOpenGL._3D
                             }
                             break;
                     }
-                    if ((flag1 && !isFullContain) || (flag2 && isFullContain))
+                    if (flag1 && !isFullContain)
+                    {
                         results.Add(new RectHitResult(model));
+                        return true;
+                    }
+                    else if (flag2 && isFullContain)
+                    {
+                        if (model.Parent == null)
+                            results.Add(new RectHitResult(model));
+                        return true;
+                    }
+                    return false;
                 }
             }
-
-            return results;
         }
     }
 }

@@ -51,9 +51,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="3D\Camera.cs" />
+    <Compile Include="3D\Models\GLMeshModel3D.cs" />
+    <Compile Include="3D\Models\GLModel3D.cs" />
+    <Compile Include="3D\Models\GLModel3DGroup.cs" />
     <Compile Include="3D\GLPrimitiveMode.cs" />
-    <Compile Include="3D\GLModel3D.cs" />
     <Compile Include="3D\GLPanel3D.cs" />
+    <Compile Include="3D\GLVisual3D.cs" />
     <Compile Include="3D\Handlers\MouseEventHandler.cs" />
     <Compile Include="3D\HitTest\HitResult.cs" />
     <Compile Include="3D\HitTest\HitTestHelper.cs" />
@@ -76,7 +79,7 @@
     <Compile Include="3D\Materials\Material.cs" />
     <Compile Include="3D\Materials\SpecularMaterial.cs" />
     <Compile Include="3D\Math3DHelper.cs" />
-    <Compile Include="3D\Models\RectSelector.cs" />
+    <Compile Include="3D\Visuals\RectSelector.cs" />
     <Compile Include="3D\Util\LazyArray.cs" />
     <Compile Include="Internel\ContextHandle.cs" />
     <Compile Include="Extension\Extension.cs" />

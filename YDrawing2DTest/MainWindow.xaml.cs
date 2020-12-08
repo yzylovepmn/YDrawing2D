@@ -44,8 +44,8 @@ namespace YDrawing2DTest
 
         private void _InitModel()
         {
-            _model3D = new GLModel3D() { Mode = GLPrimitiveMode.GL_TRIANGLES };
-            _model3D.SetPoints(new List<Point3F>()
+            var model3D = new GLMeshModel3D() { Mode = GLPrimitiveMode.GL_TRIANGLES };
+            model3D.SetPoints(new List<Point3F>()
             {
                 new Point3F(0, 0, 0), new Point3F(100, 0, 0), new Point3F(0, 100, 0), new Point3F(100, 100, 0),
                 new Point3F(0, 0, 0), new Point3F(0, 0, 100), new Point3F(0, 100, 0), new Point3F(0, 100, 100),
@@ -54,7 +54,7 @@ namespace YDrawing2DTest
                 new Point3F(0, 0, 100), new Point3F(100, 0, 100), new Point3F(0, 100, 100), new Point3F(100, 100, 100),
                 new Point3F(0, 100, 0), new Point3F(0, 100, 100), new Point3F(100, 100, 0), new Point3F(100, 100, 100),
             });
-            _model3D.SetNormals(new List<Vector3F>()
+            model3D.SetNormals(new List<Vector3F>()
             {
                 new Vector3F(0, 0, -1), new Vector3F(0, 0, -1), new Vector3F(0, 0, -1), new Vector3F(0, 0, -1),
                 new Vector3F(-1, 0, 0), new Vector3F(-1, 0, 0), new Vector3F(-1, 0, 0), new Vector3F(-1, 0, 0),
@@ -63,7 +63,7 @@ namespace YDrawing2DTest
                 new Vector3F(0, 0, 1), new Vector3F(0, 0, 1), new Vector3F(0, 0, 1), new Vector3F(0, 0, 1),
                 new Vector3F(0, 1, 0), new Vector3F(0, 1, 0), new Vector3F(0, 1, 0), new Vector3F(0, 1, 0),
             });
-            _model3D.SetIndices(new List<uint>()
+            model3D.SetIndices(new List<uint>()
             {
                 0, 2, 1, 1, 2, 3,
                 4, 5, 6, 6, 5, 7,
@@ -74,9 +74,11 @@ namespace YDrawing2DTest
             });
 
             //_model3D.AddMaterial(new EmissiveMaterial() { Color = Colors.Gray }, MaterialOption.Both);
-            _model3D.AddMaterial(new DiffuseMaterial() { Color = Colors.White }, MaterialOption.Both);
-            _model3D.AddMaterial(new SpecularMaterial() { Color = Colors.White }, MaterialOption.Both);
-            _glPanel3D.AddModel(_model3D);
+            model3D.AddMaterial(new DiffuseMaterial() { Color = Colors.White }, MaterialOption.Both);
+            model3D.AddMaterial(new SpecularMaterial() { Color = Colors.White }, MaterialOption.Both);
+            _visual3D = new GLVisual3D();
+            _visual3D.Model = model3D;
+            _glPanel3D.AddVisual(_visual3D);
             _glPanel3D.AddLight(new AmbientLight(Colors.White));
             //_glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(-1, -1, -1)));
             _pointLight = new PointLight(Colors.White, new Point3F(70, -40, 200));
@@ -86,7 +88,8 @@ namespace YDrawing2DTest
 
         private static GLPanel _glPanel;
         private static GLPanel3D _glPanel3D;
-        private static GLModel3D _model3D;
+        private static GLVisual3D _visual3D;
+        //private static GLModel3D_Old _model3D;
         private static PointLight _pointLight;
 
         public static DrawingPen WhitePen = new DrawingPen(1, Colors.White);

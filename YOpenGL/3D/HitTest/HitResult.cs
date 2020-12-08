@@ -8,10 +8,11 @@ namespace YOpenGL._3D
 {
     public class HitResult
     {
-        internal HitResult(IMesh mesh, GLModel3D model, Point3F hitPoint, float zDepth)
+        internal HitResult(IMesh mesh, GLModel3D hitModel, Point3F hitPoint, float zDepth)
         {
             _mesh = mesh;
-            _model = model;
+            _visual = hitModel.Visual;
+            _hitModel = hitModel;
             _hitPoint = hitPoint;
             _zDepth = zDepth;
         }
@@ -19,13 +20,16 @@ namespace YOpenGL._3D
         public IMesh Mesh { get { return _mesh; } }
         private IMesh _mesh;
 
-        public GLModel3D Model { get { return _model; } }
-        private GLModel3D _model;
+        public GLVisual3D Visual { get { return _visual; } }
+        private GLVisual3D _visual;
+
+        public GLModel3D HitModel { get { return _hitModel; } }
+        private GLModel3D _hitModel;
 
         public Point3F HitPoint { get { return _hitPoint; } }
         private Point3F _hitPoint;
 
-        public float ZDpeth { get { return _zDepth; } }
+        public float ZDepth { get { return _zDepth; } }
         private float _zDepth;
     }
 }

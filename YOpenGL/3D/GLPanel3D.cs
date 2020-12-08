@@ -50,7 +50,7 @@ namespace YOpenGL._3D
             _timer = new Timer(_OnRender);
             _watch = new Stopwatch();
             _frameSpan = Math.Max(1, (int)(1000 / frameRate));
-            _models = new List<GLModel3D>();
+            _visuals = new List<GLVisual3D>();
             _lights = new List<Light>();
             _camera = new Camera(this, CameraType.Perspective, 1000, 800, 1, float.PositiveInfinity, new Point3F(0, 0, 1), new Vector3F(0, 0, -1), new Vector3F(0, 1, 0));
             _camera.PropertyChanged += _OnCameraPropertyChanged;
@@ -96,8 +96,8 @@ namespace YOpenGL._3D
         private float _green;
         private float _blue;
 
-        public IEnumerable<GLModel3D> Models { get { return _models; } }
-        private List<GLModel3D> _models;
+        public IEnumerable<GLVisual3D> Visuals { get { return _visuals; } }
+        private List<GLVisual3D> _visuals;
 
         public IEnumerable<Light> Lights { get { return _lights; } }
         private List<Light> _lights;
@@ -307,70 +307,70 @@ namespace YOpenGL._3D
         #endregion
 
         #region Models
-        public void AddModels(IEnumerable<GLModel3D> models)
+        public void AddVisuals(IEnumerable<GLVisual3D> visuals)
         {
             MakeSureCurrentContext();
-            foreach (var model in models)
-                _AddModel(model);
+            foreach (var visual in visuals)
+                _AddVisual(visual);
             _Refresh();
         }
 
-        public void AddModel(GLModel3D model)
+        public void AddVisual(GLVisual3D visual)
         {
             MakeSureCurrentContext();
-            _AddModel(model);
+            _AddVisual(visual);
             _Refresh();
         }
 
-        private void _AddModel(GLModel3D model)
+        private void _AddVisual(GLVisual3D visual)
         {
-            if (_models.Contains(model))
-                throw new InvalidOperationException("model has been added");
+            if (_visuals.Contains(visual))
+                throw new InvalidOperationException("The visual has been added");
 
-            if (model.Viewport != null)
-                throw new InvalidOperationException("model has been a logical parent");
+            if (visual.Viewport != null)
+                throw new InvalidOperationException("The visual has a logical parent");
 
-            _models.Add(model);
-            model.Viewport = this;
+            _visuals.Add(visual);
+            visual.Viewport = this;
             if (_isInit)
-                model.Init();
+                visual.Init();
         }
 
-        public void RemoveAllModels()
+        public void RemoveAllVisuals()
         {
             MakeSureCurrentContext();
-            foreach (var model in _models)
+            foreach (var visual in _visuals)
             {
-                model.Clean();
-                model.Viewport = null;
+                visual.Clean();
+                visual.Viewport = null;
             }
-            _models.Clear();
+            _visuals.Clear();
             _Refresh();
         }
 
-        public void RemoveModels(IEnumerable<GLModel3D> models)
+        public void RemoveVisuals(IEnumerable<GLVisual3D> visuals)
         {
             MakeSureCurrentContext();
-            foreach (var model in models)
-                _RemoveModel(model);
+            foreach (var visual in visuals)
+                _RemoveVisual(visual);
             _Refresh();
         }
 
-        public void RemoveModel(GLModel3D model)
+        public void RemoveVisual(GLVisual3D visual)
         {
             MakeSureCurrentContext();
-            _RemoveModel(model);
+            _RemoveVisual(visual);
             _Refresh();
         }
 
-        private void _RemoveModel(GLModel3D model)
+        private void _RemoveVisual(GLVisual3D visual)
         {
-            if (!_models.Contains(model))
+            if (!_visuals.Contains(visual))
                 throw new InvalidOperationException("model does not exist!");
 
-            model.Clean();
-            _models.Remove(model);
-            model.Viewport = null;
+            visual.Clean();
+            _visuals.Remove(visual);
+            visual.Viewport = null;
         }
 
         public void AddLight(Light light)
@@ -502,7 +502,7 @@ namespace YOpenGL._3D
             EnableAliased();
 
             _CreateResource();
-            _InitModels();
+            _InitVisuals();
             _UpdateLights();
             _OnCameraPropertyChanged(null, EventArgs.Empty);
         }
@@ -546,10 +546,10 @@ namespace YOpenGL._3D
             DeleteTextures(1, _texture_dash);
             DeleteBuffers(2, _uniformBlockObj);
 
-            _models.ForEach(model => model.Dispose());
+            _visuals.ForEach(visual => visual.Dispose());
             _lights.ForEach(light => light.PropertyChanged -= _OnLightPropertyChanged);
 
-            _models = null;
+            _visuals = null;
             _lights = null;
             _defaultShader = null;
             _uniformBlockObj = null;
@@ -568,15 +568,20 @@ namespace YOpenGL._3D
             return 0;
         }
 
-        private void _InitModels()
+        private void _InitVisuals()
         {
-            foreach (var model in _models)
-                model.Init();
+            foreach (var visual in _visuals)
+                visual.Init();
         }
 
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+            _isInit = false;
+            _timer.Stop();
+            _timer.Dispose();
+            _timer = null;
+
             MakeSureCurrentContext();
             _DeleteResource();
             Loaded -= _OnLoaded;
@@ -651,29 +656,20 @@ namespace YOpenGL._3D
             ClearStencil(0);
             Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-            _DrawModels();
+            _DrawVisuals();
 
             SwapBuffers(_context.HDC);
         }
 
-        private void _DrawModels()
+        private void _DrawVisuals()
         {
-            foreach (var model in _models.Where(m => m.IsVisible && m.Points != null))
-            {
-                var shader = model.CustomShader ?? _defaultShader;
-                shader.Use();
-                shader.SetVec3("viewPos", 1, new float[] { _camera.Position.X, _camera.Position.Y, _camera.Position.Z });
-                shader.SetBool("dashed", model.HasDash);
+            var shader = _defaultShader;
+            shader.Use();
+            shader.SetVec3("viewPos", 1, new float[] { _camera.Position.X, _camera.Position.Y, _camera.Position.Z });
+            BindTexture(GL_TEXTURE_1D, _texture_dash[0]);
 
-                if (model.HasDash)
-                {
-                    shader.SetFloat("dashedFactor", model.Dashes.Length * 2);
-                    BindTexture(GL_TEXTURE_1D, _texture_dash[0]);
-                    TexImage1D(GL_TEXTURE_1D, 0, GL_RED, model.Dashes.Length, 0, GL_RED, GL_UNSIGNED_BYTE, model.Dashes);
-                }
-
-                model.OnRender(shader);
-            }
+            foreach (var visual in _visuals)
+                visual.OnRender(shader);
         }
         #endregion
 
@@ -810,12 +806,8 @@ namespace YOpenGL._3D
 
         private void _UpdateDashedModels()
         {
-            foreach (var model in _models.Where(m => m.IsVisible && m.Points != null))
-            {
-                if (model.HasDash)
-                    model.UpdateDistance();
-                else model.InvalidateDistance();
-            }
+            foreach (var visual in _visuals.Where(v => v.IsVisible && v.Model != null))
+                visual.Model.UpdateDistance();
         }
         #endregion
 
@@ -831,8 +823,8 @@ namespace YOpenGL._3D
         public Rect3F GetBounds()
         {
             var bounds = Rect3F.Empty;
-            foreach (var model in _models.Where(model => model.IsVisible && model.IsVolumeObject))
-                bounds.Union(model.Bounds);
+            foreach (var visual in _visuals.Where(visual => visual.IsVisible && visual.Model != null))
+                bounds.Union(visual.Model.Bounds);
             return bounds;
         }
 
@@ -982,14 +974,15 @@ namespace YOpenGL._3D
             FitView(GetBounds(), lookDirection, upDirection);
         }
 
-        public void FitView(GLModel3D model)
+        public void FitView(GLVisual3D visual)
         {
-            FitView(model, _camera.LookDirection, _camera.UpDirection);
+            FitView(visual, _camera.LookDirection, _camera.UpDirection);
         }
 
-        public void FitView(GLModel3D model, Vector3F lookDirection, Vector3F upDirection)
+        public void FitView(GLVisual3D visual, Vector3F lookDirection, Vector3F upDirection)
         {
-            FitView(model.Bounds, lookDirection, upDirection);
+            if (visual.Model != null)
+                FitView(visual.Model.Bounds, lookDirection, upDirection);
         }
 
         public void FitView(Rect3F bounds, Vector3F lookDirection, Vector3F upDirection)

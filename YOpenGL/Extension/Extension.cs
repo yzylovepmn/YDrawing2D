@@ -11,6 +11,19 @@ namespace YOpenGL
 {
     public static class Extension
     {
+        public static IEnumerable<T> TakeOrDefault<T>(this IEnumerable<T> source, int count)
+        {
+            foreach (var item in source)
+            {
+                if (count <= 0) yield break;
+                yield return item;
+                count--;
+            }
+
+            while (count-- > 0)
+                yield return default;
+        }
+
         public static IEnumerable<PointF> CastTo(this IEnumerable<Point> source)
         {
             foreach (var item in source)

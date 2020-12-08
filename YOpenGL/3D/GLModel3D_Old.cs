@@ -10,21 +10,13 @@ using System.ComponentModel;
 
 namespace YOpenGL._3D
 {
-    [Flags]
-    public enum MaterialOption
+    public class GLModel3D_Old : IDisposable
     {
-        Front = 1,
-        Back = 2,
-        Both = Front | Back
-    }
-
-    public class GLModel3D : IDisposable
-    {
-        public GLModel3D() : this(null, null, null, null)
+        public GLModel3D_Old() : this(null, null, null, null)
         {
         }
 
-        public GLModel3D(IEnumerable<Point3F> points, IEnumerable<Vector3F> normals, IEnumerable<PointF> textureCoordinates, IEnumerable<uint> indices)
+        public GLModel3D_Old(IEnumerable<Point3F> points, IEnumerable<Vector3F> normals, IEnumerable<PointF> textureCoordinates, IEnumerable<uint> indices)
         {
             _points = points?.ToList();
             _normals = normals?.ToList();
@@ -37,7 +29,7 @@ namespace YOpenGL._3D
             _lineWidth = 1f;
             _isVisible = true;
             _isHitTestVisible = true;
-            _isVolumeObject = true;
+            //_isVolumeObject = true;
             _mode = GLPrimitiveMode.GL_TRIANGLES;
         }
 
@@ -54,7 +46,10 @@ namespace YOpenGL._3D
             set
             {
                 if (_mode != value)
+                {
                     _mode = value;
+                    _viewport?.Refresh();
+                }
             }
         }
         private GLPrimitiveMode _mode;
@@ -131,15 +126,15 @@ namespace YOpenGL._3D
         }
         private bool _isVisible;
 
-        public bool IsVolumeObject { get { return _isVolumeObject; } set { _isVolumeObject = value; } }
-        private bool _isVolumeObject;
+        //public bool IsVolumeObject { get { return _isVolumeObject; } set { _isVolumeObject = value; } }
+        //private bool _isVolumeObject;
 
-        public Shader CustomShader
-        { 
-            get { return _customShader; }
-            set { _customShader = value; }
-        }
-        private Shader _customShader;
+        //public Shader CustomShader
+        //{
+        //    get { return _customShader; }
+        //    set { _customShader = value; }
+        //}
+        //private Shader _customShader;
 
         public bool IsHitTestVisible { get { return _isHitTestVisible; } set { _isHitTestVisible = value; } }
         private bool _isHitTestVisible;
@@ -484,6 +479,14 @@ namespace YOpenGL._3D
         protected internal virtual void OnRender(Shader shader)
         {
             if (!_isVisible) return;
+
+            shader.SetBool("dashed", HasDash);
+
+            if (HasDash)
+            {
+                shader.SetFloat("dashedFactor", _dashes.Length * 2);
+                TexImage1D(GL_TEXTURE_1D, 0, GL_RED, _dashes.Length, 0, GL_RED, GL_UNSIGNED_BYTE, _dashes);
+            }
 
             GLFunc.PointSize(_pointSize);
             GLFunc.LineWidth(_lineWidth);

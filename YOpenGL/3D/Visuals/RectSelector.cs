@@ -14,22 +14,19 @@ namespace YOpenGL._3D
             _viewport = viewport;
             _fill = new RectFill();
             _wireframe = new RectWireframe();
+            _selectorVisual = new GLVisual3D() { IsHitTestVisible = false };
+            var group = new GLModel3DGroup();
+            group.AddChild(_fill);
+            group.AddChild(_wireframe);
+            _selectorVisual.Model = group;
         }
 
         private GLPanel3D _viewport;
+        private GLVisual3D _selectorVisual;
         private RectFill _fill;
         private RectWireframe _wireframe;
 
         public Color Color { get { return _fill.Material.Color; } set { _fill.Material.Color = value; } }
-
-        internal IEnumerable<GLModel3D> Models
-        {
-            get
-            {
-                yield return _wireframe;
-                yield return _fill;
-            }
-        }
 
         public bool IsVisible
         {
@@ -40,8 +37,8 @@ namespace YOpenGL._3D
                 {
                     _isVisible = value;
                     if (_isVisible)
-                        _viewport.AddModels(Models);
-                    else _viewport.RemoveModels(Models);
+                        _viewport.AddVisual(_selectorVisual);
+                    else _viewport.RemoveVisual(_selectorVisual);
                 }
             }
         }
@@ -82,7 +79,7 @@ namespace YOpenGL._3D
             var ymin = Math.Min(_p1.Y, _p2.Y);
             var ymax = Math.Max(_p1.Y, _p2.Y);
 
-            var zDepth = _viewport.Camera.Type == CameraType.Orthographic ? -0.999f : 0f;
+            var zDepth = _viewport.Camera.Type == CameraType.Orthographic ? -0.999f : -0f;
             var bottomLeft = _viewport.PointInWpfToPoint3D(new PointF(xmin, ymin), zDepth);
             var bottomRight = _viewport.PointInWpfToPoint3D(new PointF(xmax, ymin), zDepth);
             var topLeft = _viewport.PointInWpfToPoint3D(new PointF(xmin, ymax), zDepth);
@@ -108,12 +105,10 @@ namespace YOpenGL._3D
             _viewport = null;
         }
 
-        public class RectFill : GLModel3D
+        public class RectFill : GLMeshModel3D
         {
             public RectFill()
             {
-                IsHitTestVisible = false;
-                IsVolumeObject = false;
                 Mode = GLPrimitiveMode.GL_TRIANGLE_FAN;
                 _emissive = new EmissiveMaterial();
                 AddMaterial(_emissive, MaterialOption.Front);
@@ -123,13 +118,12 @@ namespace YOpenGL._3D
             private EmissiveMaterial _emissive;
         }
 
-        public class RectWireframe : GLModel3D
+        public class RectWireframe : GLMeshModel3D
         {
             public RectWireframe()
             {
-                IsHitTestVisible = false;
-                IsVolumeObject = false;
                 Mode = GLPrimitiveMode.GL_LINE_STRIP;
+                LineWidth = 0.5f;
                 AddMaterial(new EmissiveMaterial(), MaterialOption.Front);
             }
         }
