@@ -83,7 +83,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, Material material
 
 void main()
 {
-    if(dashed && texture(pattern, distance).r < 0.5)
+    if(dashed && texture(pattern, distance).r == 0)
         discard;
 
     Material mat = gl_FrontFacing ? material : materialBack;

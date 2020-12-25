@@ -176,9 +176,9 @@ namespace YOpenGL._3D
         }
         private float _rotationSensitivity;
 
-        public bool RotateAroundMouse 
-        { 
-            get { return _rotateAroundMouse; } 
+        public bool RotateAroundMouse
+        {
+            get { return _rotateAroundMouse; }
             set
             {
                 if (_rotateAroundMouse != value)

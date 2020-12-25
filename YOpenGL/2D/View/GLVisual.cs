@@ -95,13 +95,13 @@ namespace YOpenGL
         {
             var ret = Interlocked.CompareExchange(ref _async, 0, 1) == 1;
             if (!ret)
-                Volatile.Write(ref _async, 0);
+                Interlocked.Exchange(ref _async, 0);
             return ret;
         }
 
         internal void ExitUpdate()
         {
-            Volatile.Write(ref _async, 0);
+            Interlocked.Exchange(ref _async, 0);
         }
         #endregion
 
@@ -478,7 +478,7 @@ namespace YOpenGL
                 do
                 {
                     // 重置标志位
-                    Volatile.Write(ref _async, 1);
+                    Interlocked.Exchange(ref _async, 1);
                     // 重置上下文
                     context.Clear();
                     Draw(context);

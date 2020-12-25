@@ -16,8 +16,8 @@ namespace YOpenGL._3D
             _wireframe = new RectWireframe();
             _selectorVisual = new GLVisual3D() { IsHitTestVisible = false };
             var group = new GLModel3DGroup();
-            group.AddChild(_fill);
             group.AddChild(_wireframe);
+            group.AddChild(_fill);
             _selectorVisual.Model = group;
         }
 
