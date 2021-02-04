@@ -53,22 +53,22 @@ namespace YOpenGL._3D
                 }
                 if (!bounds2D.Contains(pointInWpf)) return false;
 
-                var points = meshModel.GetDrawPoints().ToArray();
+                var points = meshModel.GetHitTestPoints().ToArray();
                 var pointsTransformed = new LazyArray<Point3F, Point3F>(points, p => viewport.Point3DToPointInWpfWithZDpeth(p));
                 switch (meshModel.Mode)
                 {
                     case GLPrimitiveMode.GL_POINTS:
                         {
-                            for (int i = 0; i < points.Length; i++)
+                            if (meshModel.Pairs == null)
                             {
-                                var p = points[i];
-                                var pt = pointsTransformed[i];
-                                var dist = (pointInWpf - (PointF)pt).Length;
-                                if (dist <= sensity)
-                                {
-                                    results.Add(new HitResult(new PointMesh(p), meshModel, pt.Z));
+                                if (_HitTestPointResult(meshModel, new Tuple<int, int>(0, points.Length), points, pointsTransformed, results, pointInWpf, sensity))
                                     return true;
-                                }
+                            }
+                            else
+                            {
+                                foreach (var pair in meshModel.Pairs)
+                                    if (_HitTestPointResult(meshModel, pair, points, pointsTransformed, results, pointInWpf, sensity))
+                                        return true;
                             }
                         }
                         break;
@@ -76,94 +76,102 @@ namespace YOpenGL._3D
                     case GLPrimitiveMode.GL_LINE_STRIP:
                     case GLPrimitiveMode.GL_LINE_LOOP:
                         {
-                            var cond = points.Length - 1;
-                            var stride = meshModel.Mode == GLPrimitiveMode.GL_LINES ? 2 : 1;
-                            var limit = meshModel.Mode == GLPrimitiveMode.GL_LINE_LOOP ? points.Length : points.Length - 1;
-                            for (int i = 0; i < limit; i += stride)
+                            if (meshModel.Pairs == null)
                             {
-                                var index1 = i;
-                                var index2 = i + 1;
-                                if (i == cond)
-                                    index2 = 0;
-
-                                var p1 = points[index1];
-                                var p2 = points[index2];
-                                var pt1 = pointsTransformed[index1];
-                                var pt2 = pointsTransformed[index2];
-
-                                var line = new Line((PointF)pt1, (PointF)pt2);
-                                var cp = _LineHitTest(pointInWpf, line, sensity);
-                                if (cp.HasValue)
-                                {
-                                    var p = cp.Value;
-                                    var t = line.CalcT(p);
-                                    GeometryHelper.Clamp(ref t, 0, 1);
-                                    var z = t * pt1.Z + (1 - t) * pt2.Z;
-                                    results.Add(new HitResult(new LineMesh(p1, p2, index1, index2, t, 1 - t), meshModel, z));
+                                if (_HitTestLinesResult(meshModel, new Tuple<int, int>(0, points.Length), points, pointsTransformed, results, pointInWpf, sensity))
                                     return true;
-                                }
+                            }
+                            else
+                            {
+                                foreach (var pair in meshModel.Pairs)
+                                    if (_HitTestLinesResult(meshModel, pair, points, pointsTransformed, results, pointInWpf, sensity))
+                                        return true;
                             }
                         }
                         break;
                     case GLPrimitiveMode.GL_TRIANGLES:
                     case GLPrimitiveMode.GL_TRIANGLE_STRIP:
                         {
-                            var stride = meshModel.Mode == GLPrimitiveMode.GL_TRIANGLES ? 3 : 1;
-                            for (int i = 0; i < points.Length - 2; i += stride)
+                            if (meshModel.Pairs == null)
                             {
-                                var index1 = i;
-                                var index2 = i + 1;
-                                var index3 = i + 2;
-                                var p1 = points[index1];
-                                var p2 = points[index2];
-                                var p3 = points[index3];
-                                var pt1 = pointsTransformed[index1];
-                                var pt2 = pointsTransformed[index2];
-                                var pt3 = pointsTransformed[index3];
-
-                                var triangle = new Triangle((PointF)pt1, (PointF)pt2, (PointF)pt3);
-                                float a, b;
-                                triangle.CalcBarycentric(pointInWpf, out a, out b);
-                                if (a >= 0 && b >= 0 && a + b <= 1)
-                                {
-                                    var c = 1 - a - b;
-                                    var z = pt1.Z * a + pt2.Z * b + pt3.Z * c;
-                                    results.Add(new HitResult(new TriangleMesh(p1, p2, p3, index1, index2, index3, a, b, c), meshModel, z));
+                                if (_HitTestTrianglesResult(meshModel, new Tuple<int, int>(0, points.Length), points, pointsTransformed, results, pointInWpf))
                                     return true;
-                                }
+                            }
+                            else
+                            {
+                                foreach (var pair in meshModel.Pairs)
+                                    if (_HitTestTrianglesResult(meshModel, pair, points, pointsTransformed, results, pointInWpf))
+                                        return true;
                             }
                         }
                         break;
                     case GLPrimitiveMode.GL_TRIANGLE_FAN:
                         {
-                            var index1 = 0;
-                            var p1 = points[index1];
-                            var pt1 = pointsTransformed[index1];
-                            for (int i = 2; i < points.Length; i++)
+                            if (meshModel.Pairs == null)
                             {
-                                var index2 = i - 1;
-                                var index3 = i;
-                                var p2 = points[index2];
-                                var p3 = points[index3];
-                                var pt2 = pointsTransformed[index2];
-                                var pt3 = pointsTransformed[index3];
-
-                                var triangle = new Triangle((PointF)pt1, (PointF)pt2, (PointF)pt3);
-                                float a, b;
-                                triangle.CalcBarycentric(pointInWpf, out a, out b);
-                                if (a >= 0 && b >= 0 && a + b <= 1)
-                                {
-                                    var c = 1 - a - b;
-                                    var z = pt1.Z * a + pt2.Z * b + pt3.Z * c;
-                                    results.Add(new HitResult(new TriangleMesh(p1, p2, p3, index1, index2, index3, a, b, c), meshModel, z));
+                                if (_HitTestTriangleFansResult(meshModel, new Tuple<int, int>(0, points.Length), points, pointsTransformed, results, pointInWpf))
                                     return true;
-                                }
+                            }
+                            else
+                            {
+                                foreach (var pair in meshModel.Pairs)
+                                    if (_HitTestTriangleFansResult(meshModel, pair, points, pointsTransformed, results, pointInWpf))
+                                        return true;
                             }
                         }
                         break;
                 }
                 return false;
             }
+        }
+
+        private static bool _HitTestPointResult(GLMeshModel3D meshModel, Tuple<int, int> pair, Point3F[] points, LazyArray<Point3F, Point3F> pointsTransformed, List<HitResult> results, PointF pointInWpf, float sensity)
+        {
+            var index = pair.Item1;
+            for (int i = 0; i < pair.Item2; i++, index++)
+            {
+                var p = points[index];
+                var pt = pointsTransformed[index];
+                var dist = (pointInWpf - (PointF)pt).Length;
+                if (dist <= sensity)
+                {
+                    results.Add(new HitResult(new PointMesh(p), meshModel, pt.Z));
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool _HitTestLinesResult(GLMeshModel3D meshModel, Tuple<int, int> pair, Point3F[] points, LazyArray<Point3F, Point3F> pointsTransformed, List<HitResult> results, PointF pointInWpf, float sensity)
+        {
+            var cond = pair.Item2 - 1;
+            var stride = meshModel.Mode == GLPrimitiveMode.GL_LINES ? 2 : 1;
+            var limit = meshModel.Mode == GLPrimitiveMode.GL_LINE_LOOP ? pair.Item2 : pair.Item2 - 1;
+            for (int i = 0; i < limit; i += stride)
+            {
+                var index1 = i + pair.Item1;
+                var index2 = i + 1 + pair.Item1;
+                if (i == cond)
+                    index2 = 0;
+
+                var p1 = points[index1];
+                var p2 = points[index2];
+                var pt1 = pointsTransformed[index1];
+                var pt2 = pointsTransformed[index2];
+
+                var line = new Line((PointF)pt1, (PointF)pt2);
+                var cp = _LineHitTest(pointInWpf, line, sensity);
+                if (cp.HasValue)
+                {
+                    var p = cp.Value;
+                    var t = line.CalcT(p);
+                    GeometryHelper.Clamp(ref t, 0, 1);
+                    var z = t * pt1.Z + (1 - t) * pt2.Z;
+                    results.Add(new HitResult(new LineMesh(p1, p2, meshModel.GetIndex(index1), meshModel.GetIndex(index2), t, 1 - t), meshModel, z));
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static PointF? _LineHitTest(PointF pointInWpf, Line line, float sensitive)
@@ -178,6 +186,63 @@ namespace YOpenGL._3D
                     return cp;
             }
             return null;
+        }
+
+        private static bool _HitTestTrianglesResult(GLMeshModel3D meshModel, Tuple<int, int> pair, Point3F[] points, LazyArray<Point3F, Point3F> pointsTransformed, List<HitResult> results, PointF pointInWpf)
+        {
+            var stride = meshModel.Mode == GLPrimitiveMode.GL_TRIANGLES ? 3 : 1;
+            for (int i = 0; i < pair.Item2 - 2; i += stride)
+            {
+                var index1 = i + pair.Item1;
+                var index2 = i + 1 + pair.Item1;
+                var index3 = i + 2 + pair.Item1;
+                var p1 = points[index1];
+                var p2 = points[index2];
+                var p3 = points[index3];
+                var pt1 = pointsTransformed[index1];
+                var pt2 = pointsTransformed[index2];
+                var pt3 = pointsTransformed[index3];
+
+                var triangle = new Triangle((PointF)pt1, (PointF)pt2, (PointF)pt3);
+                float a, b;
+                triangle.CalcBarycentric(pointInWpf, out a, out b);
+                if (a >= 0 && b >= 0 && a + b <= 1)
+                {
+                    var c = 1 - a - b;
+                    var z = pt1.Z * a + pt2.Z * b + pt3.Z * c;
+                    results.Add(new HitResult(new TriangleMesh(p1, p2, p3, meshModel.GetIndex(index1), meshModel.GetIndex(index2), meshModel.GetIndex(index3), a, b, c), meshModel, z));
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool _HitTestTriangleFansResult(GLMeshModel3D meshModel, Tuple<int, int> pair, Point3F[] points, LazyArray<Point3F, Point3F> pointsTransformed, List<HitResult> results, PointF pointInWpf)
+        {
+            var index1 = pair.Item1;
+            var p1 = points[index1];
+            var pt1 = pointsTransformed[index1];
+            for (int i = 2; i < pair.Item2; i++)
+            {
+                var index2 = i - 1 + pair.Item1;
+                var index3 = i + pair.Item1;
+                var p2 = points[index2];
+                var p3 = points[index3];
+                var pt2 = pointsTransformed[index2];
+                var pt3 = pointsTransformed[index3];
+
+                var triangle = new Triangle((PointF)pt1, (PointF)pt2, (PointF)pt3);
+                float a, b;
+                triangle.CalcBarycentric(pointInWpf, out a, out b);
+                if (a >= 0 && b >= 0 && a + b <= 1)
+                {
+                    var c = 1 - a - b;
+                    var z = pt1.Z * a + pt2.Z * b + pt3.Z * c;
+                    results.Add(new HitResult(new TriangleMesh(p1, p2, p3, meshModel.GetIndex(index1), meshModel.GetIndex(index2), meshModel.GetIndex(index3), a, b, c), meshModel, z));
+                    return true;
+                }
+            }
+            return false;
         }
 
         internal static IEnumerable<RectHitResult> HitTest(GLPanel3D viewport, RectF rectInWpf, RectHitTestMode hitTestMode)
@@ -245,32 +310,18 @@ namespace YOpenGL._3D
                     if (!rectInWpf.IntersectsWith(bounds2D)) return false;
                     var flag1 = false;
                     var flag2 = true;
-                    var pointsTransformed = new LazyArray<Point3F, PointF>(meshModel.GetDrawPoints(), p => viewport.Point3DToPointInWpf(p));
+                    var pointsTransformed = new LazyArray<Point3F, PointF>(meshModel.GetHitTestPoints(), p => viewport.Point3DToPointInWpf(p));
                     switch (meshModel.Mode)
                     {
                         case GLPrimitiveMode.GL_POINTS:
                             {
-                                for (int i = 0; i < pointsTransformed.Length; i++)
+                                if (meshModel.Pairs == null)
+                                    _HitTestPointResult(meshModel, new Tuple<int, int>(0, pointsTransformed.Length), pointsTransformed, rectInWpf, isFullContain, sensity, ref flag1, ref flag2);
+                                else
                                 {
-                                    var pt = pointsTransformed[i];
-                                    if (!isFullContain)
-                                    {
-                                        if (rectInWpf.Contains(pt, sensity))
-                                        {
-                                            flag1 = true;
+                                    foreach (var pair in meshModel.Pairs)
+                                        if (_HitTestPointResult(meshModel, pair, pointsTransformed, rectInWpf, isFullContain, sensity, ref flag1, ref flag2))
                                             break;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        var rect = new RectF(pt, pt);
-                                        rect.Extents(sensity);
-                                        if (!rectInWpf.Contains(rect))
-                                        {
-                                            flag2 = false;
-                                            break;
-                                        }
-                                    }
                                 }
                             }
                             break;
@@ -278,103 +329,38 @@ namespace YOpenGL._3D
                         case GLPrimitiveMode.GL_LINE_LOOP:
                         case GLPrimitiveMode.GL_LINE_STRIP:
                             {
-                                var cond = pointsTransformed.Length - 1;
-                                var stride = meshModel.Mode == GLPrimitiveMode.GL_LINES ? 2 : 1;
-                                var limit = meshModel.Mode == GLPrimitiveMode.GL_LINE_LOOP ? pointsTransformed.Length : pointsTransformed.Length - 1;
-                                for (int i = 0; i < limit; i += stride)
+                                if (meshModel.Pairs == null)
+                                    _HitTestLinesResult(meshModel, new Tuple<int, int>(0, pointsTransformed.Length), pointsTransformed, rectInWpf, isFullContain, sensity, ref flag1, ref flag2);
+                                else
                                 {
-                                    var pt1 = new PointF();
-                                    var pt2 = new PointF();
-                                    if (i != cond)
-                                    {
-                                        pt1 = pointsTransformed[i];
-                                        pt2 = pointsTransformed[i + 1];
-                                    }
-                                    else
-                                    {
-                                        pt1 = pointsTransformed[i];
-                                        pt2 = pointsTransformed[0];
-                                    }
-
-                                    var line = new Line(pt1, pt2);
-                                    var bounds = line.GetBounds();
-                                    bounds.Extents(sensity);
-                                    if (!isFullContain)
-                                    {
-                                        if (bounds.IntersectsWith(rectInWpf) && line.HitTest(rectInWpf, sensity))
-                                        {
-                                            flag1 = true;
+                                    foreach (var pair in meshModel.Pairs)
+                                        if (_HitTestLinesResult(meshModel, pair, pointsTransformed, rectInWpf, isFullContain, sensity, ref flag1, ref flag2))
                                             break;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (!rectInWpf.Contains(bounds))
-                                        {
-                                            flag2 = false;
-                                            break;
-                                        }
-                                    }
                                 }
                             }
                             break;
                         case GLPrimitiveMode.GL_TRIANGLES:
                         case GLPrimitiveMode.GL_TRIANGLE_STRIP:
                             {
-                                var stride = meshModel.Mode == GLPrimitiveMode.GL_TRIANGLES ? 3 : 1;
-                                for (int i = 0; i < pointsTransformed.Length - 2; i += stride)
+                                if (meshModel.Pairs == null)
+                                    _HitTestTrianglesResult(meshModel, new Tuple<int, int>(0, pointsTransformed.Length), pointsTransformed, rectInWpf, isFullContain, ref flag1, ref flag2);
+                                else
                                 {
-                                    var pt1 = pointsTransformed[i];
-                                    var pt2 = pointsTransformed[i + 1];
-                                    var pt3 = pointsTransformed[i + 2];
-
-                                    var triangle = new Triangle(pt1, pt2, pt3);
-                                    if (!isFullContain)
-                                    {
-                                        if (rectInWpf.Contains(triangle.P1) || rectInWpf.Contains(triangle.P2) || rectInWpf.Contains(triangle.P3)
-                                        || triangle.IsPointInside(rectInWpf.TopLeft) || triangle.IsPointInside(rectInWpf.TopRight) || triangle.IsPointInside(rectInWpf.BottomLeft) || triangle.IsPointInside(rectInWpf.BottomRight))
-                                        {
-                                            flag1 = true;
+                                    foreach (var pair in meshModel.Pairs)
+                                        if (_HitTestTrianglesResult(meshModel, pair, pointsTransformed, rectInWpf, isFullContain, ref flag1, ref flag2))
                                             break;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (!triangle.IsCompletelyInside(rectInWpf))
-                                        {
-                                            flag2 = false;
-                                            break;
-                                        }
-                                    }
                                 }
                             }
                             break;
                         case GLPrimitiveMode.GL_TRIANGLE_FAN:
                             {
-                                var pt1 = pointsTransformed[0];
-                                for (int i = 2; i < pointsTransformed.Length; i++)
+                                if (meshModel.Pairs == null)
+                                    _HitTestTriangleFansResult(meshModel, new Tuple<int, int>(0, pointsTransformed.Length), pointsTransformed, rectInWpf, isFullContain, ref flag1, ref flag2);
+                                else
                                 {
-                                    var pt2 = pointsTransformed[i - 1];
-                                    var pt3 = pointsTransformed[i];
-
-                                    var triangle = new Triangle(pt1, pt2, pt3);
-                                    if (!isFullContain)
-                                    {
-                                        if (rectInWpf.Contains(triangle.P1) || rectInWpf.Contains(triangle.P2) || rectInWpf.Contains(triangle.P3)
-                                        || triangle.IsPointInside(rectInWpf.TopLeft) || triangle.IsPointInside(rectInWpf.TopRight) || triangle.IsPointInside(rectInWpf.BottomLeft) || triangle.IsPointInside(rectInWpf.BottomRight))
-                                        {
-                                            flag1 = true;
+                                    foreach (var pair in meshModel.Pairs)
+                                        if (_HitTestTriangleFansResult(meshModel, pair, pointsTransformed, rectInWpf, isFullContain, ref flag1, ref flag2))
                                             break;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (!triangle.IsCompletelyInside(rectInWpf))
-                                        {
-                                            flag2 = false;
-                                            break;
-                                        }
-                                    }
                                 }
                             }
                             break;
@@ -393,6 +379,143 @@ namespace YOpenGL._3D
                     return false;
                 }
             }
+        }
+
+        private static bool _HitTestPointResult(GLMeshModel3D meshModel, Tuple<int, int> pair, LazyArray<Point3F, PointF> pointsTransformed, RectF rectInWpf, bool isFullContain, float sensity, ref bool flag1, ref bool flag2)
+        {
+            var stopCond = false;
+            for (int i = 0; i < pair.Item2; i++)
+            {
+                var pt = pointsTransformed[i + pair.Item1];
+                if (!isFullContain)
+                {
+                    if (rectInWpf.Contains(pt, sensity))
+                    {
+                        flag1 = true;
+                        stopCond = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    var rect = new RectF(pt, pt);
+                    rect.Extents(sensity);
+                    if (!rectInWpf.Contains(rect))
+                    {
+                        flag2 = false;
+                        stopCond = true;
+                        break;
+                    }
+                }
+            }
+            return stopCond;
+        }
+
+        private static bool _HitTestLinesResult(GLMeshModel3D meshModel, Tuple<int, int> pair, LazyArray<Point3F, PointF> pointsTransformed, RectF rectInWpf, bool isFullContain, float sensity, ref bool flag1, ref bool flag2)
+        {
+            var stopCond = false;
+            var cond = pair.Item2 - 1;
+            var stride = meshModel.Mode == GLPrimitiveMode.GL_LINES ? 2 : 1;
+            var limit = meshModel.Mode == GLPrimitiveMode.GL_LINE_LOOP ? pair.Item2 : pair.Item2 - 1;
+            for (int i = 0; i < limit; i += stride)
+            {
+                var index1 = i + pair.Item1;
+                var index2 = i + 1 + pair.Item1;
+                if (i == cond)
+                    index2 = 0;
+                var pt1 = pointsTransformed[index1];
+                var pt2 = pointsTransformed[index2];
+
+                var line = new Line(pt1, pt2);
+                var bounds = line.GetBounds();
+                bounds.Extents(sensity);
+                if (!isFullContain)
+                {
+                    if (bounds.IntersectsWith(rectInWpf) && line.HitTest(rectInWpf, sensity))
+                    {
+                        flag1 = true;
+                        stopCond = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (!rectInWpf.Contains(bounds))
+                    {
+                        flag2 = false;
+                        stopCond = true;
+                        break;
+                    }
+                }
+            }
+            return stopCond;
+        }
+
+        private static bool _HitTestTrianglesResult(GLMeshModel3D meshModel, Tuple<int, int> pair, LazyArray<Point3F, PointF> pointsTransformed, RectF rectInWpf, bool isFullContain, ref bool flag1, ref bool flag2)
+        {
+            var stopCond = false;
+            var stride = meshModel.Mode == GLPrimitiveMode.GL_TRIANGLES ? 3 : 1;
+            for (int i = 0; i < pair.Item2 - 2; i += stride)
+            {
+                var pt1 = pointsTransformed[i + pair.Item1];
+                var pt2 = pointsTransformed[i + 1 + pair.Item1];
+                var pt3 = pointsTransformed[i + 2 + pair.Item1];
+
+                var triangle = new Triangle(pt1, pt2, pt3);
+                if (!isFullContain)
+                {
+                    if (rectInWpf.Contains(triangle.P1) || rectInWpf.Contains(triangle.P2) || rectInWpf.Contains(triangle.P3)
+                    || triangle.IsPointInside(rectInWpf.TopLeft) || triangle.IsPointInside(rectInWpf.TopRight) || triangle.IsPointInside(rectInWpf.BottomLeft) || triangle.IsPointInside(rectInWpf.BottomRight))
+                    {
+                        flag1 = true;
+                        stopCond = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (!triangle.IsCompletelyInside(rectInWpf))
+                    {
+                        flag2 = false;
+                        stopCond = true;
+                        break;
+                    }
+                }
+            }
+            return stopCond;
+        }
+
+        private static bool _HitTestTriangleFansResult(GLMeshModel3D meshModel, Tuple<int, int> pair, LazyArray<Point3F, PointF> pointsTransformed, RectF rectInWpf, bool isFullContain, ref bool flag1, ref bool flag2)
+        {
+            var stopCond = false;
+            var pt1 = pointsTransformed[pair.Item1];
+            for (int i = 2; i < pair.Item2; i++)
+            {
+                var pt2 = pointsTransformed[i - 1 + pair.Item1];
+                var pt3 = pointsTransformed[i + pair.Item1];
+
+                var triangle = new Triangle(pt1, pt2, pt3);
+                if (!isFullContain)
+                {
+                    if (rectInWpf.Contains(triangle.P1) || rectInWpf.Contains(triangle.P2) || rectInWpf.Contains(triangle.P3)
+                    || triangle.IsPointInside(rectInWpf.TopLeft) || triangle.IsPointInside(rectInWpf.TopRight) || triangle.IsPointInside(rectInWpf.BottomLeft) || triangle.IsPointInside(rectInWpf.BottomRight))
+                    {
+                        flag1 = true;
+                        stopCond = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (!triangle.IsCompletelyInside(rectInWpf))
+                    {
+                        flag2 = false;
+                        stopCond = true;
+                        break;
+                    }
+                }
+            }
+            return stopCond;
         }
     }
 }

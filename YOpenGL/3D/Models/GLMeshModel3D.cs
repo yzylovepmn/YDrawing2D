@@ -48,6 +48,9 @@ namespace YOpenGL._3D
         public IEnumerable<uint> Indices { get { return _indices; } }
         private List<uint> _indices;
 
+        public IEnumerable<Tuple<int, int>> Pairs { get { return _pairs; } }
+        private List<Tuple<int, int>> _pairs;
+
         private List<Material> _materials;
         private List<Material> _backMaterials;
 
@@ -241,6 +244,13 @@ namespace YOpenGL._3D
             BufferSubData(GL_ARRAY_BUFFER, offset, size, _distances?.ToArray());
         }
 
+        public void SetPairs(IEnumerable<Tuple<int, int>> pairs = null)
+        {
+            _pairs = pairs?.ToList();
+            UpdateBounds();
+            Visual?.Viewport?.Refresh();
+        }
+
         #region Material
         /// <summary>
         /// 每个种类的材质只能添加一次
@@ -387,10 +397,22 @@ namespace YOpenGL._3D
                 BufferData(GL_ELEMENT_ARRAY_BUFFER, _indices.Count * sizeof(uint), _indices.Select(index => index + (uint)_dataIndex).ToArray(), GL_DYNAMIC_DRAW);
                 DrawElements(mode, hasPoints ? _indices.Count : 0, GL_UNSIGNED_INT, 0);
             }
-            else DrawArrays(mode, _dataIndex, hasPoints ? _points.Count : 0);
+            else
+            {
+                if (_pairs == null)
+                    DrawArrays(mode, _dataIndex, hasPoints ? _points.Count : 0);
+                else MultiDrawArrays(mode, _pairs.Select(pair => pair.Item1 + _dataIndex).ToArray(), _pairs.Select(pair => pair.Item2).ToArray(), _pairs.Count);
+            }
         }
 
-        internal IEnumerable<Point3F> GetDrawPoints()
+        internal int GetIndex(int index)
+        {
+            if (_indices != null)
+                return (int)_indices[index];
+            return index;
+        }
+
+        internal IEnumerable<Point3F> GetHitTestPoints()
         {
             if (_points == null) return null;
             if (_indices == null) return _points;
@@ -402,10 +424,36 @@ namespace YOpenGL._3D
             return points;
         }
 
+        private IEnumerable<Point3F> _GetDrawPoints()
+        {
+            if (_points == null) return null;
+            var points = new List<Point3F>();
+            if (_indices == null)
+            {
+                if (_pairs == null)
+                    return _points;
+                else
+                {
+                    foreach (var pair in _pairs)
+                    {
+                        for (int i = 0; i < pair.Item2; i++)
+                            points.Add(_points[pair.Item1]);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var index in _indices)
+                    if (index < _points.Count)
+                        points.Add(_points[(int)index]);
+            }
+            return points;
+        }
+
         internal override void UpdateBounds()
         {
             _bounds = Rect3F.Empty;
-            var points = GetDrawPoints();
+            var points = _GetDrawPoints();
             if (points != null)
                 foreach (var point in points)
                     _bounds.Union(point);

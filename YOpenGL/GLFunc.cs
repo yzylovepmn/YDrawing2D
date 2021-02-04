@@ -2082,6 +2082,11 @@ namespace YOpenGL
             glDrawArrays?.Invoke(mode, first, count);
         }
 
+        public static void MultiDrawArrays(GLenum mode, GLint[] first, GLsizei[] count, GLsizei primcount)
+        {
+            glMultiDrawArrays?.Invoke(mode, first, count, primcount);
+        }
+
         public static void DrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei primcount)
         {
             glDrawArraysInstanced?.Invoke(mode, first, count, primcount);
@@ -2090,6 +2095,11 @@ namespace YOpenGL
         public static void DrawElements(GLenum mode, GLsizei count, GLenum type, int indices)
         {
             glDrawElements?.Invoke(mode, count, type, (GLvoid)indices);
+        }
+
+        public static void MultiDrawElements(GLenum mode, GLsizei[] count, GLenum type, GLvoid[] indices, GLsizei primcount)
+        {
+            glMultiDrawElements?.Invoke(mode, count, type, indices, primcount);
         }
 
         public static void PolygonMode(GLenum face, GLenum mode)
