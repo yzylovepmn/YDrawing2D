@@ -10,6 +10,22 @@ using System.ComponentModel;
 
 namespace YOpenGL._3D
 {
+    [Serializable]
+    public struct DataPair
+    {
+        public DataPair(int start, int count)
+        {
+            _start = start;
+            _count = count;
+        }
+
+        public int Start { get { return _start; } }
+        private int _start;
+
+        public int Count { get { return _count; } }
+        private int _count;
+    }
+
     public class GLMeshModel3D : GLModel3D
     {
         public GLMeshModel3D() : this(null, null, null, null)
@@ -48,8 +64,8 @@ namespace YOpenGL._3D
         public IEnumerable<uint> Indices { get { return _indices; } }
         private List<uint> _indices;
 
-        public IEnumerable<Tuple<int, int>> Pairs { get { return _pairs; } }
-        private List<Tuple<int, int>> _pairs;
+        public IEnumerable<DataPair> Pairs { get { return _pairs; } }
+        private List<DataPair> _pairs;
 
         private List<Material> _materials;
         private List<Material> _backMaterials;
@@ -244,7 +260,7 @@ namespace YOpenGL._3D
             BufferSubData(GL_ARRAY_BUFFER, offset, size, _distances?.ToArray());
         }
 
-        public void SetPairs(IEnumerable<Tuple<int, int>> pairs = null)
+        public void SetPairs(IEnumerable<DataPair> pairs = null)
         {
             _pairs = pairs?.ToList();
             UpdateBounds();
@@ -401,7 +417,7 @@ namespace YOpenGL._3D
             {
                 if (_pairs == null)
                     DrawArrays(mode, _dataIndex, hasPoints ? _points.Count : 0);
-                else MultiDrawArrays(mode, _pairs.Select(pair => pair.Item1 + _dataIndex).ToArray(), _pairs.Select(pair => pair.Item2).ToArray(), _pairs.Count);
+                else MultiDrawArrays(mode, _pairs.Select(pair => pair.Start + _dataIndex).ToArray(), _pairs.Select(pair => pair.Count).ToArray(), _pairs.Count);
             }
         }
 
@@ -436,8 +452,8 @@ namespace YOpenGL._3D
                 {
                     foreach (var pair in _pairs)
                     {
-                        for (int i = 0; i < pair.Item2; i++)
-                            points.Add(_points[pair.Item1]);
+                        for (int i = 0; i < pair.Count; i++)
+                            points.Add(_points[pair.Start + i]);
                     }
                 }
             }
