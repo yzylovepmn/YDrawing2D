@@ -66,7 +66,7 @@ namespace YOpenGL._3D
                                 var dist = (pointInWpf - (PointF)pt).Length;
                                 if (dist <= sensity)
                                 {
-                                    results.Add(new HitResult(new PointMesh(p), meshModel, p, pt.Z));
+                                    results.Add(new HitResult(new PointMesh(p), meshModel, pt.Z));
                                     return true;
                                 }
                             }
@@ -81,24 +81,15 @@ namespace YOpenGL._3D
                             var limit = meshModel.Mode == GLPrimitiveMode.GL_LINE_LOOP ? points.Length : points.Length - 1;
                             for (int i = 0; i < limit; i += stride)
                             {
-                                var p1 = new Point3F();
-                                var p2 = new Point3F();
-                                var pt1 = new Point3F();
-                                var pt2 = new Point3F();
-                                if (i != cond)
-                                {
-                                    p1 = points[i];
-                                    p2 = points[i + 1];
-                                    pt1 = pointsTransformed[i];
-                                    pt2 = pointsTransformed[i + 1];
-                                }
-                                else
-                                {
-                                    p1 = points[i];
-                                    p2 = points[0];
-                                    pt1 = pointsTransformed[i];
-                                    pt2 = pointsTransformed[0];
-                                }
+                                var index1 = i;
+                                var index2 = i + 1;
+                                if (i == cond)
+                                    index2 = 0;
+
+                                var p1 = points[index1];
+                                var p2 = points[index2];
+                                var pt1 = pointsTransformed[index1];
+                                var pt2 = pointsTransformed[index2];
 
                                 var line = new Line((PointF)pt1, (PointF)pt2);
                                 var cp = _LineHitTest(pointInWpf, line, sensity);
@@ -106,13 +97,10 @@ namespace YOpenGL._3D
                                 {
                                     var p = cp.Value;
                                     var t = line.CalcT(p);
+                                    GeometryHelper.Clamp(ref t, 0, 1);
                                     var z = t * pt1.Z + (1 - t) * pt2.Z;
-                                    var ht = viewport.PointInWpfToPoint3D(new PointF(p.X, p.Y), z);
-                                    if (ht.HasValue)
-                                    {
-                                        results.Add(new HitResult(new LineMesh(p1, p2), meshModel, ht.Value, z));
-                                        return true;
-                                    }
+                                    results.Add(new HitResult(new LineMesh(p1, p2, index1, index2, t, 1 - t), meshModel, z));
+                                    return true;
                                 }
                             }
                         }
@@ -123,12 +111,15 @@ namespace YOpenGL._3D
                             var stride = meshModel.Mode == GLPrimitiveMode.GL_TRIANGLES ? 3 : 1;
                             for (int i = 0; i < points.Length - 2; i += stride)
                             {
-                                var p1 = points[i];
-                                var p2 = points[i + 1];
-                                var p3 = points[i + 2];
-                                var pt1 = pointsTransformed[i];
-                                var pt2 = pointsTransformed[i + 1];
-                                var pt3 = pointsTransformed[i + 2];
+                                var index1 = i;
+                                var index2 = i + 1;
+                                var index3 = i + 2;
+                                var p1 = points[index1];
+                                var p2 = points[index2];
+                                var p3 = points[index3];
+                                var pt1 = pointsTransformed[index1];
+                                var pt2 = pointsTransformed[index2];
+                                var pt3 = pointsTransformed[index3];
 
                                 var triangle = new Triangle((PointF)pt1, (PointF)pt2, (PointF)pt3);
                                 float a, b;
@@ -137,26 +128,25 @@ namespace YOpenGL._3D
                                 {
                                     var c = 1 - a - b;
                                     var z = pt1.Z * a + pt2.Z * b + pt3.Z * c;
-                                    var ht = viewport.PointInWpfToPoint3D(new PointF(pointInWpf.X, pointInWpf.Y), z);
-                                    if (ht.HasValue)
-                                    {
-                                        results.Add(new HitResult(new TriangleMesh(p1, p2, p3), meshModel, ht.Value, z));
-                                        return true;
-                                    }
+                                    results.Add(new HitResult(new TriangleMesh(p1, p2, p3, index1, index2, index3, a, b, c), meshModel, z));
+                                    return true;
                                 }
                             }
                         }
                         break;
                     case GLPrimitiveMode.GL_TRIANGLE_FAN:
                         {
-                            var p1 = points[0];
-                            var pt1 = pointsTransformed[0];
+                            var index1 = 0;
+                            var p1 = points[index1];
+                            var pt1 = pointsTransformed[index1];
                             for (int i = 2; i < points.Length; i++)
                             {
-                                var p2 = points[i - 1];
-                                var p3 = points[i];
-                                var pt2 = pointsTransformed[i - 1];
-                                var pt3 = pointsTransformed[i];
+                                var index2 = i - 1;
+                                var index3 = i;
+                                var p2 = points[index2];
+                                var p3 = points[index3];
+                                var pt2 = pointsTransformed[index2];
+                                var pt3 = pointsTransformed[index3];
 
                                 var triangle = new Triangle((PointF)pt1, (PointF)pt2, (PointF)pt3);
                                 float a, b;
@@ -165,12 +155,8 @@ namespace YOpenGL._3D
                                 {
                                     var c = 1 - a - b;
                                     var z = pt1.Z * a + pt2.Z * b + pt3.Z * c;
-                                    var ht = viewport.PointInWpfToPoint3D(new PointF(pointInWpf.X, pointInWpf.Y), z);
-                                    if (ht.HasValue)
-                                    {
-                                        results.Add(new HitResult(new TriangleMesh(p1, p2, p3), meshModel, ht.Value, z));
-                                        return true;
-                                    }
+                                    results.Add(new HitResult(new TriangleMesh(p1, p2, p3, index1, index2, index3, a, b, c), meshModel, z));
+                                    return true;
                                 }
                             }
                         }

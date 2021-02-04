@@ -95,8 +95,8 @@ namespace YOpenGL._3D
                     _wireframe.Dashes = new byte[] { 1, 1 };
                 else _wireframe.Dashes = null;
 
-                if (_isVisible)
-                    _viewport.Refresh();
+                //if (_isVisible)
+                //    _viewport.Refresh();
             }
         }
 

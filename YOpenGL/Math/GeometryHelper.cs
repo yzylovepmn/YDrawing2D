@@ -18,6 +18,23 @@ namespace YOpenGL
             UnitCicle = _GenCiclePoints().ToArray();
         }
 
+        public static void Clamp(ref float value, float min, float max)
+        {
+            value = Math.Min(max, Math.Max(min, value));
+        }
+
+        public static Point3F Combine(Point3F p1, Point3F p2, float t1, float t2)
+        {
+            var sum = t1 + t2;
+            return new Point3F((p1.X * t1 + p2.X * t2) / sum, (p1.Y * t1 + p2.Y * t2) / sum, (p1.Z * t1 + p2.Z * t2) / sum);
+        }
+
+        public static Point3F Combine(Point3F p1, Point3F p2, Point3F p3, float t1, float t2, float t3)
+        {
+            var sum = t1 + t2 + t3;
+            return new Point3F((p1.X * t1 + p2.X * t2 + p3.X * t3) / sum, (p1.Y * t1 + p2.Y * t2 + p3.Y * t3) / sum, (p1.Z * t1 + p2.Z * t2 + p3.Z * t3) / sum);
+        }
+
         /// <summary>
         /// CounterClockwise
         /// </summary>

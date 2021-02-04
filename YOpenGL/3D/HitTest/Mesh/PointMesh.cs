@@ -16,5 +16,10 @@ namespace YOpenGL._3D
         public Point3F Point;
 
         public MeshType Type { get { return MeshType.Point; } }
+
+        public Point3F GetPoint()
+        {
+            return Point;
+        }
     }
 }
