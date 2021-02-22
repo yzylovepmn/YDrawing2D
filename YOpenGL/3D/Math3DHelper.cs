@@ -10,6 +10,9 @@ namespace YOpenGL._3D
     {
         public static RectF Transform(Rect3F rect, GLPanel3D viewport)
         {
+            if (rect.IsEmpty)
+                return RectF.Empty;
+
             var p1 = rect.Location;
             var p2 = p1 + new Vector3F(rect.SizeX, 0, 0);
             var p3 = p1 + new Vector3F(0, rect.SizeY, 0);

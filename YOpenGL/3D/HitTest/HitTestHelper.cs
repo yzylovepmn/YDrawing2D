@@ -43,8 +43,11 @@ namespace YOpenGL._3D
                     case GLPrimitiveMode.GL_LINES:
                     case GLPrimitiveMode.GL_LINE_LOOP:
                     case GLPrimitiveMode.GL_LINE_STRIP:
-                        sensity += meshModel.Mode == GLPrimitiveMode.GL_POINTS ? meshModel.PointSize / 2 : meshModel.LineWidth / 2;
-                        bounds2D.Extents(sensity);
+                        if (!bounds2D.IsEmpty)
+                        {
+                            sensity += meshModel.Mode == GLPrimitiveMode.GL_POINTS ? meshModel.PointSize / 2 : meshModel.LineWidth / 2;
+                            bounds2D.Extents(sensity);
+                        }
                         break;
                     case GLPrimitiveMode.GL_TRIANGLES:
                     case GLPrimitiveMode.GL_TRIANGLE_STRIP:
@@ -296,10 +299,11 @@ namespace YOpenGL._3D
                     case GLPrimitiveMode.GL_LINES:
                     case GLPrimitiveMode.GL_LINE_LOOP:
                     case GLPrimitiveMode.GL_LINE_STRIP:
-                        bounds2D.Extents(sensity);
+                        if (!bounds2D.IsEmpty)
+                            bounds2D.Extents(sensity);
                         break;
                 }
-                if (rectInWpf.Contains(bounds2D))
+                if ((isFullContain && bounds2D.IsEmpty) || rectInWpf.Contains(bounds2D))
                 {
                     if (!isFullContain || model.Parent == null)
                         results.Add(new RectHitResult(model));

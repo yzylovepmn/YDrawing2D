@@ -906,6 +906,18 @@ namespace YOpenGL._3D
                 yield return new PointF(point.X, point.Y);
         }
 
+        public VectorF Vector3DToVectorInWpf(Vector3F vector)
+        {
+            var vecInWpf = vector * _totalTransform;
+            return new VectorF(vecInWpf.X, vecInWpf.Y);
+        }
+
+        public IEnumerable<VectorF> Vector3DToVectorInWpf(IEnumerable<Vector3F> vectors)
+        {
+            foreach (var vector in vectors)
+                yield return Vector3DToVectorInWpf(vector);
+        }
+
         /// <param name="point">Point in world coordinate</param>
         /// <returns>Point in wpf</returns>
         public Point3F Point3DToPointInWpfWithZDpeth(Point3F point)
