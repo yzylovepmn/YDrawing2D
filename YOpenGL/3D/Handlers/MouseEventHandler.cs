@@ -146,7 +146,6 @@ namespace YOpenGL._3D
                 var upDirection = camera.UpDirection;
                 upDirection.Normalize();
                 camera.SetViewParameters(camera.Position, camera.LookDirection, upDirection);
-                _panel.Refresh();
             }
         }
 

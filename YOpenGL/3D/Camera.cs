@@ -141,6 +141,18 @@ namespace YOpenGL._3D
         internal Matrix3F? TotalTransformReverse { get { return _totalTransformReverse; } }
         private Matrix3F? _totalTransformReverse;
 
+        private bool _isLocked;
+
+        internal void Lock()
+        {
+            _isLocked = true;
+        }
+
+        internal void UnLock()
+        {
+            _isLocked = false;
+        }
+
         public void SetPerspectiveParameters(float fieldOfView)
         {
             SetPerspectiveParameters(fieldOfView, _aspect, _nearPlaneDistance, _farPlaneDistance);
@@ -275,7 +287,8 @@ namespace YOpenGL._3D
                 totalTransformReverse.Invert();
                 _totalTransformReverse = totalTransformReverse;
             }
-            PropertyChanged(this, EventArgs.Empty);
+            if (!_isLocked)
+                PropertyChanged(this, EventArgs.Empty);
         }
 
         public void Dispose()

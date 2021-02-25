@@ -132,7 +132,7 @@ namespace YOpenGL._3D
             VertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(float), _pointCount * 8 * sizeof(float));
             _model?.BindingData();
 
-            _viewport.Refresh();
+            //_viewport.Refresh();
         }
 
         internal void OnRender(Shader shader)

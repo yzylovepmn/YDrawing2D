@@ -782,8 +782,6 @@ namespace YOpenGL
             if (!_isDisposed)
             {
                 _watch.Restart();
-                var before = _watch.ElapsedMilliseconds;
-
                 var old = Volatile.Read(ref _signal);
 
                 //_ExitDispose();
@@ -792,8 +790,8 @@ namespace YOpenGL
 
                 if (!_isDisposed)
                 {
-                    var span = (int)(_watch.ElapsedMilliseconds - before);
                     _watch.Stop();
+                    var span = (int)_watch.ElapsedMilliseconds;
 
                     if (_frameSpan > span)
                         Thread.Sleep(_frameSpan - span);

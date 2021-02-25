@@ -1137,9 +1137,9 @@ namespace YOpenGL
         public static PointF ComputePoint(int k, float[] knots, PointF[] controlPoints, float[] weights, float u)
         {
             if (u > 1) throw new ArgumentOutOfRangeException();
-            int i = k;
-            while (knots[i + 1] < u) i++;
-            int start = i - k;
+            //int i = k;
+            //while (knots[i + 1] < u) i++;
+            //int start = i - k;
             var p = new PointF();
             if (weights != null && weights.Length > 0)
                 p = (PointF)ComputeVector(k, 0, knots, controlPoints, weights, u);
@@ -1150,9 +1150,9 @@ namespace YOpenGL
         public static Point3F ComputePoint(int k, float[] knots, Point3F[] controlPoints, float[] weights, float u)
         {
             if (u > 1) throw new ArgumentOutOfRangeException();
-            int i = k;
-            while (knots[i + 1] < u) i++;
-            int start = i - k;
+            //int i = k;
+            //while (knots[i + 1] < u) i++;
+            //int start = i - k;
             var p = new Point3F();
             if (weights != null && weights.Length > 0)
                 p = (Point3F)ComputeVector(k, 0, knots, controlPoints, weights, u);

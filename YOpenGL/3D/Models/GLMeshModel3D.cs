@@ -163,7 +163,7 @@ namespace YOpenGL._3D
         {
             _normals = normals?.ToList();
             _BindingNormals(true);
-            Visual?.Viewport?.Refresh();
+            //Visual?.Viewport?.Refresh();
         }
 
         private void _BindingNormals(bool bindBuffer = false)
@@ -181,7 +181,7 @@ namespace YOpenGL._3D
         {
             _textureCoordinates = textureCoordinates?.ToList();
             _BindingTextureCoordinates(true);
-            Visual?.Viewport?.Refresh();
+            //Visual?.Viewport?.Refresh();
         }
 
         private void _BindingTextureCoordinates(bool bindBuffer = false)
@@ -199,7 +199,7 @@ namespace YOpenGL._3D
         {
             _indices = indices?.ToList();
             UpdateBounds();
-            Visual?.Viewport?.Refresh();
+            //Visual?.Viewport?.Refresh();
         }
 
         internal override void UpdateDistance()
@@ -264,7 +264,7 @@ namespace YOpenGL._3D
         {
             _pairs = pairs?.ToList();
             UpdateBounds();
-            Visual?.Viewport?.Refresh();
+            //Visual?.Viewport?.Refresh();
         }
 
         #region Material
@@ -279,7 +279,7 @@ namespace YOpenGL._3D
                 _AddBackMaterial(material);
             if (option != 0)
                 material.PropertyChanged += _OnMaterialChanged;
-            Visual?.Viewport?.Refresh();
+            //Visual?.Viewport?.Refresh();
         }
 
         private void _AddMaterial(Material material)
@@ -304,7 +304,7 @@ namespace YOpenGL._3D
                 _RemoveBackMaterial(material);
             if (option != 0)
                 material.PropertyChanged -= _OnMaterialChanged;
-            Visual?.Viewport?.Refresh();
+            //Visual?.Viewport?.Refresh();
         }
 
         private void _RemoveMaterial(Material material)

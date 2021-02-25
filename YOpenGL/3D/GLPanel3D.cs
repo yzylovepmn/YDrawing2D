@@ -621,24 +621,25 @@ namespace YOpenGL._3D
             _Refresh();
         }
 
-        private void _Refresh()
+        private async void _Refresh()
         {
-            if (!_isInit) return;
+            await Task.Factory.StartNew(() => 
+            {
+                if (!_isInit) return;
 
-            if (Interlocked.Increment(ref _signal) == 1)
-                _timer.Change(0, Timeout.Infinite);
+                if (Interlocked.Increment(ref _signal) == 1)
+                    _timer.Change(0, Timeout.Infinite);
+            });
         }
 
         private void _OnRender()
         {
-            var before = _watch.ElapsedMilliseconds;
-
             _watch.Restart();
             var old = Volatile.Read(ref _signal);
             Dispatcher.Invoke(() => { _DispatchFrame(); }, DispatcherPriority.Render);
             _watch.Stop();
 
-            var span = Math.Max(0, (int)(_watch.ElapsedMilliseconds - before));
+            var span = (int)_watch.ElapsedMilliseconds;
 
             if (_frameSpan > span)
                 Thread.Sleep(_frameSpan - span);
@@ -798,10 +799,11 @@ namespace YOpenGL._3D
         {
             _totalTransform = _camera.TotalTransform * GetNDCToWPF();
 
-            OnViewportChanged(this, EventArgs.Empty);
-
             if (!isInvokeByCamera || !_isRenderSizeChanging)
+            {
+                OnViewportChanged(this, EventArgs.Empty);
                 _UpdateDashedModels();
+            }
         }
 
         private void _UpdateDashedModels()
@@ -956,11 +958,33 @@ namespace YOpenGL._3D
         }
 
         /// <param name="pointInWpf">Point in wpf</param>
-        /// <param name="ZDepth">Range In [-1, 1]</param>
+        /// <param name="zDepth">Range In [-1, 1]</param>
         /// <returns>Point in world coordinate</returns>
         public Point3F? PointInWpfToPoint3D(PointF pointInWpf, float? zDepth = null)
         {
             var ret = new Point3F(pointInWpf.X, pointInWpf.Y, 0);
+            var transform = GetWPFToNDC();
+            ret *= transform;
+            var cameraTransformReverse = _camera.TotalTransformReverse;
+
+            if (!zDepth.HasValue)
+            {
+                var p = _camera.Target * _camera.TotalTransform;
+                ret.Z = p.Z;
+            }
+            else ret.Z = zDepth.Value;
+
+            if (cameraTransformReverse.HasValue)
+            {
+                ret *= cameraTransformReverse.Value;
+                return ret;
+            }
+            else return null;
+        }
+
+        public Vector3F? VectorInWpfToVector3D(VectorF vectorInWpf, float? zDepth = null)
+        {
+            var ret = new Vector3F(vectorInWpf.X, vectorInWpf.Y, 0);
             var transform = GetWPFToNDC();
             ret *= transform;
             var cameraTransformReverse = _camera.TotalTransformReverse;
@@ -1109,7 +1133,9 @@ namespace YOpenGL._3D
 
                     if (radio != 1)
                     {
+                        _camera.Lock();
                         _ChangeCameraPosition(delta, zoomAround);
+                        _camera.UnLock();
                         _camera.SetOrthographicParameters(newWidth, _camera.Height * radio);
                     }
                     break;
@@ -1118,6 +1144,7 @@ namespace YOpenGL._3D
 
         private void _ZoomByChangingFieldOfView(float delta)
         {
+            _camera.Lock();
             float fov = _camera.FieldOfView;
             float d = _camera.LookDirection.Length;
             float r = d * (float)Math.Tan(MathUtil.DegreesToRadians(0.5 * fov));
@@ -1135,6 +1162,7 @@ namespace YOpenGL._3D
             newLookDirection.Normalize();
             newLookDirection *= d2;
             Point3F target = _camera.Target;
+            _camera.UnLock();
             _camera.SetViewParameters(target - newLookDirection, newLookDirection);
         }
 
