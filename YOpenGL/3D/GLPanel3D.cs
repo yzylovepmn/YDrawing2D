@@ -307,19 +307,21 @@ namespace YOpenGL._3D
         #endregion
 
         #region Models
-        public void AddVisuals(IEnumerable<GLVisual3D> visuals)
+        public void AddVisuals(IEnumerable<GLVisual3D> visuals, bool isRefresh = true)
         {
             MakeSureCurrentContext();
             foreach (var visual in visuals)
                 _AddVisual(visual);
-            _Refresh();
+            if (isRefresh)
+                _Refresh();
         }
 
-        public void AddVisual(GLVisual3D visual)
+        public void AddVisual(GLVisual3D visual, bool isRefresh = true)
         {
             MakeSureCurrentContext();
             _AddVisual(visual);
-            _Refresh();
+            if (isRefresh)
+                _Refresh();
         }
 
         private void _AddVisual(GLVisual3D visual)
@@ -348,19 +350,21 @@ namespace YOpenGL._3D
             _Refresh();
         }
 
-        public void RemoveVisuals(IEnumerable<GLVisual3D> visuals)
+        public void RemoveVisuals(IEnumerable<GLVisual3D> visuals, bool isRefresh = true)
         {
             MakeSureCurrentContext();
             foreach (var visual in visuals)
                 _RemoveVisual(visual);
-            _Refresh();
+            if (isRefresh)
+                _Refresh();
         }
 
-        public void RemoveVisual(GLVisual3D visual)
+        public void RemoveVisual(GLVisual3D visual, bool isRefresh = true)
         {
             MakeSureCurrentContext();
             _RemoveVisual(visual);
-            _Refresh();
+            if (isRefresh)
+                _Refresh();
         }
 
         private void _RemoveVisual(GLVisual3D visual)

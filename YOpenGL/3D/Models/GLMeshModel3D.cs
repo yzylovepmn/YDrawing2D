@@ -64,13 +64,13 @@ namespace YOpenGL._3D
         public IEnumerable<uint> Indices { get { return _indices; } }
         private List<uint> _indices;
 
-        public IEnumerable<DataPair> Pairs { get { return _pairs; } }
+        public override IEnumerable<DataPair> Pairs { get { return _pairs; } }
         private List<DataPair> _pairs;
 
         private List<Material> _materials;
         private List<Material> _backMaterials;
 
-        public GLPrimitiveMode Mode
+        public override GLPrimitiveMode Mode
         {
             get { return _mode; }
             set
@@ -84,7 +84,7 @@ namespace YOpenGL._3D
         }
         private GLPrimitiveMode _mode;
 
-        public float PointSize
+        public override float PointSize
         {
             get { return _pointSize; }
             set
@@ -102,7 +102,7 @@ namespace YOpenGL._3D
         }
         private float _pointSize;
 
-        public float LineWidth
+        public override float LineWidth
         {
             get { return _lineWidth; }
             set
@@ -421,14 +421,14 @@ namespace YOpenGL._3D
             }
         }
 
-        internal int GetIndex(int index)
+        public override int GetIndex(int index)
         {
             if (_indices != null)
                 return (int)_indices[index];
             return index;
         }
 
-        internal IEnumerable<Point3F> GetHitTestPoints()
+        public override IEnumerable<Point3F> GetHitTestPoints()
         {
             if (_points == null) return null;
             if (_indices == null) return _points;

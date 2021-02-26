@@ -51,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="3D\Camera.cs" />
+    <Compile Include="3D\HitTest\IHitTestSource.cs" />
     <Compile Include="3D\Models\GLMeshModel3D.cs" />
     <Compile Include="3D\Models\GLModel3D.cs" />
     <Compile Include="3D\Models\GLModel3DGroup.cs" />

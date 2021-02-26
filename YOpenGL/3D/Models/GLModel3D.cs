@@ -14,7 +14,7 @@ namespace YOpenGL._3D
         Both = Front | Back
     }
 
-    public abstract class GLModel3D : IDisposable
+    public abstract class GLModel3D : IHitTestSource, IDisposable
     {
         internal GLModel3D()
         {
@@ -46,6 +46,22 @@ namespace YOpenGL._3D
         internal abstract void UpdateDistance();
 
         internal abstract void OnRender(Shader shader);
+
+        #region HitTest
+        IHitTestSource IHitTestSource.Parent { get { return _parent; } }
+
+        public abstract GLPrimitiveMode Mode { get; set; }
+
+        public abstract float PointSize { get; set; }
+
+        public abstract float LineWidth { get; set; }
+
+        public abstract IEnumerable<DataPair> Pairs { get; }
+
+        public abstract IEnumerable<Point3F> GetHitTestPoints();
+
+        public abstract int GetIndex(int index);
+        #endregion
 
         protected bool _isDisposed;
         public virtual void Dispose()

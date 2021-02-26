@@ -8,16 +8,11 @@ namespace YOpenGL._3D
 {
     public class RectHitResult
     {
-        internal RectHitResult(GLModel3D hitModel)
+        internal RectHitResult(IHitTestSource hitModel)
         {
-            _visual = hitModel.Visual;
             _hitModel = hitModel;
         }
-
-        public GLVisual3D Visual { get { return _visual; } }
-        private GLVisual3D _visual;
-
-        public GLModel3D HitModel { get { return _hitModel; } }
-        private GLModel3D _hitModel;
+        public IHitTestSource HitModel { get { return _hitModel; } }
+        private IHitTestSource _hitModel;
     }
 }

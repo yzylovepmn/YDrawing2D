@@ -103,6 +103,26 @@ namespace YOpenGL._3D
             _children.ForEach(child => child.OnRender(shader));
         }
 
+        #region HitTest
+        public override GLPrimitiveMode Mode { get { throw new NotImplementedException(); } set { throw new NotImplementedException(); } }
+
+        public override float PointSize { get { throw new NotImplementedException(); } set { throw new NotImplementedException(); } }
+
+        public override float LineWidth { get { throw new NotImplementedException(); } set { throw new NotImplementedException(); } }
+
+        public override IEnumerable<DataPair> Pairs => throw new NotImplementedException();
+
+        public override IEnumerable<Point3F> GetHitTestPoints()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override int GetIndex(int index)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+
         public override void Dispose()
         {
             if (_isDisposed) return;
