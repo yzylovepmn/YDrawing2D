@@ -125,8 +125,8 @@ namespace YOpenGL._3D
         private int _frameSpan;
         private Timer _timer;
         private Stopwatch _watch;
-        internal float ViewWidth;
-        internal float ViewHeight;
+        public float ViewWidth;
+        public float ViewHeight;
 
         #region Matrix
         private MatrixF _transformToDevice;
@@ -1056,6 +1056,7 @@ namespace YOpenGL._3D
 
                 float disth = radius / (float)Math.Tan(MathUtil.DegreesToRadians(0.5 * hfov));
                 dist = Math.Max(disth, distv);
+                dist = Math.Max(_minPerspectiveCameraDistance, Math.Min(_maxPerspectiveCameraDistance, dist));
             }
             else
             {
@@ -1063,6 +1064,7 @@ namespace YOpenGL._3D
 
                 if (ViewWidth > ViewHeight)
                     newWidth = radius * 2 * ViewWidth / ViewHeight;
+                newWidth = Math.Max(_minOrthographicCameraWidth, Math.Min(_maxOrthographicCameraWidth, newWidth));
                 dist = newWidth;
 
                 var radio = newWidth / _camera.Width;
