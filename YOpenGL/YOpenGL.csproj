@@ -159,7 +159,10 @@
   <ItemGroup>
     <EmbeddedResource Include="2D\Resources\arrow.geom" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="3D\Shaders\PostProcess.frag" />
+    <EmbeddedResource Include="3D\Shaders\PostProcess.vert" />
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="3D\Shaders\default.frag" />
     <EmbeddedResource Include="3D\Shaders\default.vert" />

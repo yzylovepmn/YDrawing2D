@@ -38,7 +38,7 @@ namespace YOpenGL._3D
                 if (_diffuse != value)
                 {
                     _diffuse = value;
-                    MathUtil.Clamp(ref _diffuse, 0, 1);
+                    MathUtil.Clamp(ref _diffuse, 0, float.MaxValue);
                     InvokePropertyChanged("Diffuse");
                 }
             }
@@ -53,7 +53,7 @@ namespace YOpenGL._3D
                 if (_specular != value)
                 {
                     _specular = value;
-                    MathUtil.Clamp(ref _specular, 0, 1);
+                    MathUtil.Clamp(ref _specular, 0, float.MaxValue);
                     InvokePropertyChanged("Specular");
                 }
             }

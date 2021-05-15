@@ -33,6 +33,7 @@ namespace YOpenGL._3D
         public const string LightsUniformBlockName = "Lights";
         private const string ShaderSourcePrefix = "YOpenGL._3D.Shaders.";
         private static readonly string[] _defaultShadeSource = new string[] { "default.vert", "default.frag" };
+        private static readonly string[] _postProcessShadeSource = new string[] { "PostProcess.vert", "PostProcess.frag" };
 
         private const int LightsCount = 10;
         private const int AmbientLightSize = 4 * LightsCount * sizeof(float);
@@ -108,8 +109,8 @@ namespace YOpenGL._3D
         public Camera Camera { get { return _camera; } }
         private Camera _camera;
 
-        public Shader DefaultShader { get { return _defaultShader; } }
         private Shader _defaultShader;
+        private Shader _postProcessShader;
 
         public RectSelector Selector { get { return _selector; } }
         private RectSelector _selector;
@@ -143,6 +144,17 @@ namespace YOpenGL._3D
 
         #region Texture
         private uint[] _texture_dash;
+        #endregion
+
+        #region MSAA
+        private uint[] _fbo;
+        private uint[] _texture_msaa;
+        private uint[] _rbo;
+        #endregion
+
+        #region Post Process
+        private uint[] _post_vao;
+        private uint[] _post_vbo;
         #endregion
 
         public Vector3F ModelUpDirection
@@ -516,6 +528,9 @@ namespace YOpenGL._3D
             // create default shader
             _defaultShader = _GenerateShader(_defaultShadeSource);
 
+            // create PostProcessResource
+            _CreatePostProcessResource();
+
             // for dash line texture
             _texture_dash = new uint[1];
             GenTextures(1, _texture_dash);
@@ -547,6 +562,10 @@ namespace YOpenGL._3D
         private void _DeleteResource()
         {
             _defaultShader.Dispose();
+
+            // DestroyPostProcessResource
+            _DestroyPostProcessResource();
+
             DeleteTextures(1, _texture_dash);
             DeleteBuffers(2, _uniformBlockObj);
 
@@ -558,6 +577,73 @@ namespace YOpenGL._3D
             _defaultShader = null;
             _uniformBlockObj = null;
             _texture_dash = null;
+        }
+
+        private void _CreatePostProcessResource()
+        {
+            _postProcessShader = _GenerateShader(_postProcessShadeSource);
+            _post_vao = new uint[1];
+            _post_vbo = new uint[1];
+            GenVertexArrays(1, _post_vao);
+            GenBuffers(1, _post_vbo);
+
+            BindVertexArray(_post_vao[0]);
+            BindBuffer(GL_ARRAY_BUFFER, _post_vbo[0]);
+            float[] quadVertices = {
+                -1.0f,  1.0f,  0.0f, 1.0f,
+                -1.0f, -1.0f,  0.0f, 0.0f,
+                 1.0f, -1.0f,  1.0f, 0.0f,
+
+                -1.0f,  1.0f,  0.0f, 1.0f,
+                 1.0f, -1.0f,  1.0f, 0.0f,
+                 1.0f,  1.0f,  1.0f, 1.0f
+            };
+            BufferData(GL_ARRAY_BUFFER, quadVertices.Length * sizeof(float), quadVertices, GL_STATIC_DRAW);
+            EnableVertexAttribArray(0);
+            VertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+            EnableVertexAttribArray(1);
+            VertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 2 * sizeof(float));
+            BindVertexArray(0);
+        }
+
+        private void _DestroyPostProcessResource()
+        {
+            _postProcessShader.Dispose();
+            DeleteVertexArrays(1, _post_vao);
+            DeleteBuffers(1, _post_vbo);
+        }
+
+        private void _CreateFrameBuffer()
+        {
+            if (_fbo != null) return;
+
+            // for anti-aliasing
+            _fbo = new uint[1];
+            _texture_msaa = new uint[1];
+            _rbo = new uint[1];
+            GenFramebuffers(1, _fbo);
+            BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
+            GenTextures(1, _texture_msaa);
+            BindTexture(GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0]);
+            FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0], 0);
+            TexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11), GL_TRUE);
+            GenRenderbuffers(1, _rbo);
+            BindRenderbuffer(GL_RENDERBUFFER, _rbo[0]);
+            RenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, (int)(SystemParameters.PrimaryScreenWidth * _transformToDevice.M11), (int)(SystemParameters.PrimaryScreenHeight * _transformToDevice.M11));
+            FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _rbo[0]);
+        }
+
+        private void _DeleteFrameBuffer()
+        {
+            if (_fbo == null) return;
+
+            DeleteFramebuffers(1, _fbo);
+            DeleteTextures(1, _texture_msaa);
+            DeleteRenderbuffers(1, _rbo);
+
+            _fbo = null;
+            _texture_msaa = null;
+            _rbo = null;
         }
 
         private int _GetUniformBlockSize(string uniformBlockName)
@@ -601,20 +687,16 @@ namespace YOpenGL._3D
         public void EnableAliased()
         {
             MakeSureCurrentContext();
-            Disable(GL_LINE_SMOOTH);
-            Disable(GL_POLYGON_SMOOTH);
-            Hint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
-            Hint(GL_POLYGON_SMOOTH_HINT, GL_FASTEST);
+            //Disable(GL_LINE_SMOOTH);
+            _DeleteFrameBuffer();
             _Refresh();
         }
 
         public void DisableAliased()
         {
             MakeSureCurrentContext();
-            Enable(GL_LINE_SMOOTH);
-            Enable(GL_POLYGON_SMOOTH);
-            Hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-            Hint(GL_POLYGON_SMOOTH, GL_NICEST);
+            //Enable(GL_LINE_SMOOTH);
+            _CreateFrameBuffer();
             _Refresh();
         }
         #endregion
@@ -657,11 +739,22 @@ namespace YOpenGL._3D
             if (!IsLoaded) return;
             MakeSureCurrentContext();
 
+            if (_fbo != null)
+                BindFramebuffer(GL_FRAMEBUFFER, _fbo[0]);
+
             ClearColor(_red, _green, _blue, 1.0f);
             ClearStencil(0);
             Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
             _DrawVisuals();
+
+            if (_fbo != null)
+            {
+                //BindFramebuffer(GL_READ_FRAMEBUFFER, _fbo[0]);
+                //BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+                //BlitFramebuffer(0, 0, (int)ViewWidth, (int)ViewHeight, 0, 0, (int)ViewWidth, (int)ViewHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+                _DrawPostQuad();
+            }
 
             SwapBuffers(_context.HDC);
         }
@@ -675,6 +768,22 @@ namespace YOpenGL._3D
 
             foreach (var visual in _visuals)
                 visual.OnRender(shader);
+        }
+
+        private void _DrawPostQuad()
+        {
+            BindFramebuffer(GL_FRAMEBUFFER, 0);
+            ClearColor(_red, _green, _blue, 1.0f);
+            Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+            _postProcessShader.Use();
+            BindVertexArray(_post_vao[0]);
+            ActiveTexture(GL_TEXTURE1);
+            BindTexture(GL_TEXTURE_2D_MULTISAMPLE, _texture_msaa[0]);
+            _postProcessShader.SetVec2("screenSize", 1, new float[] { ViewWidth, ViewHeight });
+            _postProcessShader.SetInt("textureMS", 1);
+            DrawArrays(GL_TRIANGLES, 0, 6);
+            BindVertexArray(0);
         }
         #endregion
 

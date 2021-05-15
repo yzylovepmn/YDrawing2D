@@ -35,7 +35,7 @@ namespace YOpenGL._3D
                 if (_ambient != value)
                 {
                     _ambient = value;
-                    MathUtil.Clamp(ref _ambient, 0, 1);
+                    MathUtil.Clamp(ref _ambient, 0, float.MaxValue);
                     InvokePropertyChanged("Ambient");
                 }
             }

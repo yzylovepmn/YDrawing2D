@@ -9,7 +9,7 @@ namespace YOpenGL._3D
 {
     public class SpecularMaterial : Material
     {
-        public SpecularMaterial() : this(Colors.White, 32)
+        public SpecularMaterial() : this(Colors.White, 64)
         {
         }
 
