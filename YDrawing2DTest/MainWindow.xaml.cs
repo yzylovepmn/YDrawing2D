@@ -75,12 +75,12 @@ namespace YDrawing2DTest
 
             //_model3D.AddMaterial(new EmissiveMaterial() { Color = Colors.Gray }, MaterialOption.Both);
             model3D.AddMaterial(new DiffuseMaterial() { Color = Colors.White }, MaterialOption.Both);
-            model3D.AddMaterial(new SpecularMaterial() { Color = Colors.White }, MaterialOption.Both);
+            model3D.AddMaterial(new SpecularMaterial() { Color = Colors.White, SpecularPower = 128 }, MaterialOption.Both);
             _visual3D = new GLVisual3D();
             _visual3D.Model = model3D;
             _glPanel3D.AddVisual(_visual3D);
             _glPanel3D.AddLight(new AmbientLight(Colors.White));
-            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(-1, -1, -1)));
+            //_glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(-1, -1, -1)));
             _pointLight = new PointLight(Colors.White, new Point3F(70, -40, 200));
             _glPanel3D.AddLight(_pointLight);
             //_glPanel3D.AddLight(new SpotLight(Colors.White, new Point3F(50, 50, 150), new Vector3F(0, 0, -1)) { InnerConeAngle = 20, OuterConeAngle = 80 });
