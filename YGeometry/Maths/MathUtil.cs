@@ -49,5 +49,16 @@ namespace YGeometry.Maths
             double delta = value1 - value2;
             return (-eps < delta) && (eps > delta);
         }
+
+        // Assume v is perpendicular to normal and normal is unit vector(right hand)
+        public static Vector3D Rotate(Vector3D v, Vector3D normal, double radian)
+        {
+            var z = normal;
+            var x = v;
+            var y = Vector3D.CrossProduct(z, x);
+            var s = Math.Sin(radian);
+            var c = Math.Cos(radian);
+            return c * x + s * y;
+        }
     }
 }

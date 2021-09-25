@@ -1,20 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using YGeometry.Maths;
 
 namespace YGeometry.DataStructure.HalfEdge
 {
-    public class HEMesh : IMesh
+    public class HEMesh : IMesh, IDisposable
     {
         const int DefaultSize = 1024;
-        const int InvaildID = -1;
+        internal const int InvaildID = -1;
 
         private List<HEVertex> _vertices;
+        private List<HEdge> _edges;
+        private List<HEEdge> _hedges;
+        private List<HEFace> _faces;
         private List<Vector3D> _verticeNormals;
-        private List<HEEdge> _edges;
-        private List<HEFace> _triangles;
-        private List<Vector3D> _trianglesNormals;
+        private List<Vector3D> _facesNormals;
+
+        public int FaceCount { get { return _faces.Count; } }
+
+        public int VertexCount { get { return _vertices.Count; } }
+
+        public int EdgeCount { get { return _edges.Count; } }
+
+        public int HEdgeCount { get { return _hedges.Count; } }
+
+        public bool HasNormals { get { return _verticeNormals != null; } }
 
         public HEMesh()
         {
@@ -24,33 +36,46 @@ namespace YGeometry.DataStructure.HalfEdge
         private void _InitData(int vcount)
         {
             _vertices = new List<HEVertex>(vcount);
-            _edges = new List<HEEdge>(vcount * 6);
-            _triangles = new List<HEFace>(vcount * 2);
-            _trianglesNormals = new List<Vector3D>(vcount * 2);
+            _edges = new List<HEdge>(vcount * 3);
+            _hedges = new List<HEEdge>(vcount * 6);
+            _faces = new List<HEFace>(vcount * 2);
+            _facesNormals = new List<Vector3D>(vcount * 2);
         }
 
-        public IndexN<int> GetTriangle(int tid)
+        public IndexN<int> GetVerticeOfFace(int fid)
         {
-            var vertice = new Queue<int>();
-
-            var face = _triangles[tid];
-            var edge = _edges[face.RelativeEdge];
-            int first = edge.GoingTo;
-            vertice.Enqueue(first);
-            while (true)
-            {
-                edge = _edges[edge.NextEdge];
-                if (edge.GoingTo != first)
-                    vertice.Enqueue(edge.GoingTo);
-                else break;
-            }
-
-            return new IndexN<int>(vertice);
+            Debugs.CheckRange(fid, 0, FaceCount);
+            return new IndexN<int>(_faces[fid].GetVertice().Select(v => v.ID));
         }
 
-        public Vector3D GetVertex(int vid)
+        public Vector3D GetPosition(int vid)
         {
+            Debugs.CheckRange(vid, 0, VertexCount);
             return _vertices[vid].Position;
+        }
+
+        public HEVertex GetVertex(int vid)
+        {
+            Debugs.CheckRange(vid, 0, VertexCount);
+            return _vertices[vid];
+        }
+
+        public HEdge GetEdge(int eid)
+        {
+            Debugs.CheckRange(eid, 0, EdgeCount);
+            return _edges[eid];
+        }
+
+        internal HEEdge GetHEdge(int eid)
+        {
+            Debugs.CheckRange(eid, 0, HEdgeCount);
+            return _hedges[eid];
+        }
+
+        public HEFace GetFace(int fid)
+        {
+            Debugs.CheckRange(fid, 0, FaceCount);
+            return _faces[fid];
         }
 
         public Vector3D GetNormal(int vid)
@@ -60,57 +85,66 @@ namespace YGeometry.DataStructure.HalfEdge
             throw new InvalidOperationException("Please call ComputeNormals() method before invoke GetNormal() method!");
         }
 
-        public Vector3D GetTriangleNormal(int tid)
+        public Vector3D GetNormal(HEVertex vertex)
         {
-            var normal = _trianglesNormals[tid];
+            if (HasNormals)
+                return _verticeNormals[vertex.ID];
+            throw new InvalidOperationException("Please call ComputeNormals() method before invoke GetNormal() method!");
+        }
+
+        public Vector3D GetFaceNormal(int fid)
+        {
+            Debugs.CheckRange(fid, 0, FaceCount);
+            var normal = _facesNormals[fid];
             if (normal.IsZero)
-                normal = _ComputeTriangleNormal(GetTriangle(tid));
+                normal = _ComputeFaceNormal(GetFace(fid).GetVertice());
             return normal;
         }
 
-        public IndexN<int> GetNeighborVertice(int vid)
+        public Vector3D GetFaceNormal(HEFace face)
         {
-            var vertice = new Queue<int>();
-
-            var vertex = _vertices[vid];
-            var edge = _edges[vertex.OuterGoing];
-            int first = edge.GoingTo;
-            vertice.Enqueue(first);
-            while (true)
-            {
-                edge = _GetOppEdge(_GetPreEdge(edge));
-                if (edge.GoingTo != first)
-                    vertice.Enqueue(edge.GoingTo);
-                else break;
-            }
-
-            return new IndexN<int>(vertice);
+            return GetFaceNormal(face.ID);
         }
 
-        private HEEdge _GetPreEdge(HEEdge edge)
+        public IndexN<int> GetNeighborVerticeOfVertex(int vid)
         {
-            return _edges[_edges[edge.NextEdge].NextEdge];
+            Debugs.CheckRange(vid, 0, VertexCount);
+            return new IndexN<int>(_vertices[vid].GetAdjacentVertice().Select(v => v.ID));
         }
 
-        private HEEdge _GetOppEdge(HEEdge edge)
+        public IndexN<int> GetEdgesOfFace(int fid)
         {
-            return _edges[edge.OppEdge];
+            Debugs.CheckRange(fid, 0, FaceCount);
+            return new IndexN<int>(_faces[fid].GetEdges().Select(edge => edge.ID));
         }
 
-        public void ComputeNormals()
+        public IndexN<int> GetNeighborOfFace(int fid)
+        {
+            Debugs.CheckRange(fid, 0, FaceCount);
+            throw new NotImplementedException();
+        }
+
+        public HEdge GetEdgeBetween(HEVertex v1, HEVertex v2)
+        {
+            if (IsConnected(v1, v2))
+                return v1.OuterGoing.RelativeEdge;
+            return null;
+        }
+
+        public void ComputeVerticeNormals()
         {
             _verticeNormals = new List<Vector3D>(VertexCount);
             for (int i = 0; i < VertexCount; i++)
             {
                 var normal = new Vector3D();
                 var vertex = GetVertex(i);
-                var neighbor = GetNeighborVertice(i);
-                for (int j = 0; j < neighbor.Length; j++)
+                var neighbor = vertex.GetAdjacentVertice();
+                for (int j = 0; j < neighbor.Count; j++)
                 {
                     int i1 = j;
-                    int i2 = (j + 1) % neighbor.Length;
-                    var v1 = GetVertex(i1) - vertex;
-                    var v2 = GetVertex(i2) - vertex;
+                    int i2 = (j + 1) % neighbor.Count;
+                    var v1 = neighbor[i1].Position - vertex.Position;
+                    var v2 = neighbor[i2].Position - vertex.Position;
                     normal += Vector3D.CrossProduct(v1, v2) * Vector3D.AngleBetween(v1, v2);
                 }
                 normal.Normalize();
@@ -120,27 +154,51 @@ namespace YGeometry.DataStructure.HalfEdge
 
         public void ComputeFaceNormals()
         {
-            for (int i = 0; i < TriangleCount; i++)
+            for (int i = 0; i < FaceCount; i++)
             {
-                if (_trianglesNormals[i].IsZero)
-                    _trianglesNormals[i] = _ComputeTriangleNormal(GetTriangle(i));
+                if (_facesNormals[i].IsZero)
+                    _facesNormals[i] = _ComputeFaceNormal(GetFace(i).GetVertice());
             }
         }
 
-        private Vector3D _ComputeTriangleNormal(IndexN<int> vertice)
+        private Vector3D _ComputeFaceNormal(List<HEVertex> vertice)
         {
-            var p0 = GetVertex(vertice[0]);
-            var p1 = GetVertex(vertice[1]);
-            var p2 = GetVertex(vertice[2]);
+            var p0 = vertice[0].Position;
+            var p1 = vertice[1].Position;
+            var p2 = vertice[2].Position;
             var normal = Vector3D.CrossProduct(p1 - p0, p2 - p0);
             normal.Normalize();
             return normal;
         }
 
-        public int TriangleCount { get { return _triangles.Count; } }
+        public bool IsConnected(HEVertex v1, HEVertex v2)
+        {
+            return v1.OuterGoing.GoingTo == v2;
+        }
 
-        public bool HasNormals { get { return _verticeNormals != null; } }
+        public bool IsConnected(int v1, int v2)
+        {
+            Debugs.CheckRange(v1, 0, VertexCount);
+            Debugs.CheckRange(v2, 0, VertexCount);
+            return IsConnected(_vertices[v1], _vertices[v2]);
+        }
 
-        public int VertexCount { get { return _vertices.Count; } }
+        public bool IsTriangleMesh()
+        {
+            foreach (var face in _faces)
+            {
+                if (!face.IsTriangle)
+                    return false;
+            }
+            return true;
+        }
+
+        #region Edit Method
+
+        #endregion
+
+        public void Dispose()
+        {
+        }
     }
 }

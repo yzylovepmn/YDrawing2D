@@ -11,7 +11,7 @@ namespace YGeometry.DataStructure
 
         int VertexCount { get; }
 
-        Vector3D GetVertex(int vid);
+        Vector3D GetPosition(int vid);
 
         Vector3D GetNormal(int vid);
     }

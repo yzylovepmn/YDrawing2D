@@ -7,10 +7,16 @@ namespace YGeometry.DataStructure
 {
     public interface IMesh : IPointSet
     {
-        int TriangleCount { get; }
+        int FaceCount { get; }
 
-        IndexN<int> GetTriangle(int fid);
+        IndexN<int> GetVerticeOfFace(int fid);
 
-        Vector3D GetTriangleNormal(int fid);
+        IndexN<int> GetEdgesOfFace(int fid);
+
+        IndexN<int> GetNeighborOfFace(int fid);
+
+        Vector3D GetFaceNormal(int fid);
+
+        IndexN<int> GetNeighborVerticeOfVertex(int vid);
     }
 }
