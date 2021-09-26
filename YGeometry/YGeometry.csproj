@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="IO\" />
+    <Folder Include="IO\Stl\" />
   </ItemGroup>
 
 </Project>
