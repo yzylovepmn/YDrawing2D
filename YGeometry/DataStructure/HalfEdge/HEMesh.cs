@@ -199,6 +199,17 @@ namespace YGeometry.DataStructure.HalfEdge
 
         public void Dispose()
         {
+            _vertices.Dispose();
+            _edges.Dispose();
+            _hedges.Dispose();
+            _faces.Dispose();
+
+            _vertices = null;
+            _edges = null;
+            _hedges = null;
+            _faces = null;
+            _verticeNormals = null;
+            _facesNormals = null;
         }
     }
 }
