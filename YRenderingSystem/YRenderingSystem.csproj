@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="App.xaml.cs" />
+    <Compile Remove="AssemblyInfo.cs" />
+    <Compile Remove="MainWindow.xaml.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="2D\Resources\arc.frag" />
+    <None Remove="2D\Resources\arc.geom" />
+    <None Remove="2D\Resources\arc.vert" />
+    <None Remove="2D\Resources\arrow.geom" />
+    <None Remove="2D\Resources\arrow.vert" />
+    <None Remove="2D\Resources\fill.frag" />
+    <None Remove="2D\Resources\fill.vert" />
+    <None Remove="2D\Resources\line.frag" />
+    <None Remove="2D\Resources\line.geom" />
+    <None Remove="2D\Resources\line.vert" />
+    <None Remove="3D\Shaders\default.frag" />
+    <None Remove="3D\Shaders\default.vert" />
+    <None Remove="3D\Shaders\PostProcess.frag" />
+    <None Remove="3D\Shaders\PostProcess.vert" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Remove="MainWindow.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="2D\Resources\arc.frag" />
+    <EmbeddedResource Include="2D\Resources\arc.geom" />
+    <EmbeddedResource Include="2D\Resources\arc.vert" />
+    <EmbeddedResource Include="2D\Resources\arrow.geom" />
+    <EmbeddedResource Include="2D\Resources\arrow.vert" />
+    <EmbeddedResource Include="2D\Resources\fill.frag" />
+    <EmbeddedResource Include="2D\Resources\fill.vert" />
+    <EmbeddedResource Include="2D\Resources\line.frag" />
+    <EmbeddedResource Include="2D\Resources\line.geom" />
+    <EmbeddedResource Include="2D\Resources\line.vert" />
+    <EmbeddedResource Include="3D\Shaders\default.frag" />
+    <EmbeddedResource Include="3D\Shaders\default.vert" />
+    <EmbeddedResource Include="3D\Shaders\PostProcess.frag" />
+    <EmbeddedResource Include="3D\Shaders\PostProcess.vert" />
+  </ItemGroup>
+
+</Project>

@@ -14,5 +14,19 @@ namespace YGeometry
             Debug.Assert(value >= low && value < high);
 #endif
         }
+
+        public static void Assert(bool value)
+        {
+#if DEBUG
+            Debug.Assert(value);
+#endif
+        }
+
+        public static void Log(string msg)
+        {
+#if DEBUG
+            Debug.WriteLine(msg);
+#endif
+        }
     }
 }

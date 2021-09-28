@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -282,6 +284,21 @@ namespace YDrawing2DTest
             }
             _mouseMovePoint = mouseP;
         }
+
+        private void _OnImported(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog() { Filter = "3d file|*.obj;*.stl" };
+            dialog.ShowDialog();
+            var fileName = dialog.FileName;
+            if (System.IO.Path.GetExtension(fileName).Contains("obj"))
+            {
+
+            }
+            else
+            {
+
+            }
+        }
     }
 
     public class Hint : GLVisual
@@ -322,190 +339,6 @@ namespace YDrawing2DTest
             else if (this == MainWindow.GLSelectedVisual)
                 context.DrawText(PenF.NULL, Colors.Blue, new FormattedText(_text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
             else context.DrawText(PenF.NULL, Colors.BurlyWood, new FormattedText(_text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeFace, 80, Brushes.Black), new PointF());
-        }
-    }
-
-    public class CustomShape : GLVisual
-    {
-        public CustomShape(PointF origin)
-        {
-            _origin = origin;
-        }
-
-        private PointF _origin;
-
-        protected override void Draw(GLDrawContext context)
-        {
-            context.PushTranslate(_origin.X, _origin.Y);
-            //context.PushRotateAt(30, 0, 0);
-
-            if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
-                context.BeginFigure(MainWindow.GLActivePen, Colors.Blue, new PointF(100, 100), true);
-            else if (this == MainWindow.GLSelectedVisual)
-                context.BeginFigure(MainWindow.GLSelectedPen, Colors.Red, new PointF(100, 100), true);
-            else context.BeginFigure(MainWindow.GLWhitePen, Colors.Green, new PointF(100, 100), true);
-            context.LineTo(new PointF(600, 100), true);
-            context.LineTo(new PointF(600, 600), true);
-            context.LineTo(new PointF(100, 600), true);
-            //context.ArcTo(new PointF(200, 500), 100, false, true);
-            context.BezierTo(2, new List<PointF>() { new PointF(300, 400), new PointF(300, 200) }, true);
-
-            // Start new figure
-            if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
-                context.BeginFigure(MainWindow.GLActivePen, Colors.Blue, new PointF(200, 200), true);
-            else if (this == MainWindow.GLSelectedVisual)
-                context.BeginFigure(MainWindow.GLSelectedPen, Colors.Red, new PointF(200, 200), true);
-            else context.BeginFigure(MainWindow.GLWhitePen, Colors.Green, new PointF(200, 200), true);
-            context.LineTo(new PointF(400, 300), true);
-            context.LineTo(new PointF(600, 200), true);
-            context.LineTo(new PointF(500, 400), true);
-            context.LineTo(new PointF(700, 600), true);
-            context.LineTo(new PointF(400, 600), true);
-            context.LineTo(new PointF(200, 400), true);
-            // End two figures
-            context.EndFigures();
-        }
-    }
-
-    public class Rectangle : GLVisual
-    {
-        public Rectangle(RectF rect)
-        {
-            _rect = rect;
-        }
-
-        public RectF Rect { get { return _rect; } }
-        private RectF _rect;
-
-        protected override void Draw(GLDrawContext context)
-        {
-            Color color = Colors.Green;
-            PenF pen = MainWindow.GLWhitePen;
-            if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
-            {
-                color = Colors.Blue;
-                pen = MainWindow.GLActivePen;
-            }
-            else if (this == MainWindow.GLSelectedVisual)
-            {
-                color = new Color() { R = 255, A = 64 };
-                pen = MainWindow.GLSelectedPen;
-            }
-
-            context.DrawRectangle(pen, color, _rect);
-            context.DrawPoint(color, _rect.BottomLeft, 20);
-            context.DrawPoint(color, _rect.BottomRight, 160);
-            context.DrawPoint(color, _rect.TopLeft, 160);
-            context.DrawPoint(color, _rect.TopRight, 160);
-        }
-    }
-
-    public class Line : GLVisual
-    {
-        public Line(PointF start, PointF end)
-        {
-            _start = start;
-            _end = end;
-        }
-
-        private PointF _start;
-        private PointF _end;
-
-
-        protected override void Draw(GLDrawContext context)
-        {
-            if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
-                context.DrawLine(MainWindow.GLActivePen, _start, _end);
-            else if (this == MainWindow.GLSelectedVisual)
-                context.DrawLine(MainWindow.GLSelectedPen, _start, _end);
-            else context.DrawLine(MainWindow.GLWhitePen, _start, _end);
-        }
-    }
-
-    public class Cicle : GLVisual
-    {
-        public Cicle(PointF center, float radius)
-        {
-            _center = center;
-            _radius = radius;
-        }
-
-        private PointF _center;
-        private float _radius;
-
-        protected override void Draw(GLDrawContext context)
-        {
-            if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
-                context.DrawCicle(MainWindow.GLActivePen, Colors.Blue, _center, _radius);
-            else if (this == MainWindow.GLSelectedVisual)
-                context.DrawCicle(MainWindow.GLSelectedPen, Colors.Red, _center, _radius);
-            else context.DrawCicle(MainWindow.GLWhitePen, null, _center, _radius);
-        }
-    }
-
-    public class Ellipse : PresentationVisual
-    {
-        public Ellipse(Point center, double radiusX, double radiusY)
-        {
-            _center = center;
-            _radiusX = radiusX;
-            _radiusY = radiusY;
-        }
-
-        private Point _center;
-        private double _radiusX;
-        private double _radiusY;
-
-        protected override void Draw(IContext context)
-        {
-            //context.PushOpacity(0.5);
-            if (this == MainWindow.ActiveVisual && this != MainWindow.SelectedVisual)
-                context.DrawEllipse(null, MainWindow.ActivePen, _center, _radiusX, _radiusY);
-            else if (this == MainWindow.SelectedVisual)
-                context.DrawEllipse(null, MainWindow.SelectedPen, _center, _radiusX, _radiusY);
-            else context.DrawEllipse(null, MainWindow.WhitePen, _center, _radiusX, _radiusY);
-        }
-    }
-
-    public class Arc : GLVisual
-    {
-        public Arc(PointF center, float startAngle, float endAngle, float radius, bool isClockwise = true)
-        {
-            _center = center;
-            _radius = radius;
-            _startAngle = startAngle;
-            _endAngle = endAngle;
-            _isClockwise = isClockwise;
-        }
-
-        public Arc(PointF start, PointF end, float radius, bool isClockwise, bool isLargeAngle)
-        {
-            _start = start;
-            _end = end;
-            _radius = radius;
-            _isClockwise = isClockwise;
-            _isLargeAngle = isLargeAngle;
-        }
-
-        private PointF? _start;
-        private PointF? _end;
-        private PointF _center;
-        private float _radius;
-        private float _startAngle;
-        private float _endAngle;
-        private bool _isClockwise;
-        private bool _isLargeAngle;
-
-        protected override void Draw(GLDrawContext context)
-        {
-            if (!_start.HasValue)
-            {
-                if (this == MainWindow.GLActiveVisual && this != MainWindow.GLSelectedVisual)
-                    context.DrawArc(MainWindow.GLActivePen, _center, _radius, _startAngle, _endAngle, _isClockwise);
-                else if (this == MainWindow.GLSelectedVisual)
-                    context.DrawArc(MainWindow.GLSelectedPen, _center, _radius, _startAngle, _endAngle, _isClockwise);
-                else context.DrawArc(MainWindow.GLWhitePen, _center, _radius, _startAngle, _endAngle, _isClockwise);
-            }
         }
     }
 }

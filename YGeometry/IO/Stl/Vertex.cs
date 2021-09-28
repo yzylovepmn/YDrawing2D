@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -10,7 +11,7 @@ using QuantumConcepts.Formats.StereoLithography;
 namespace QuantumConcepts.Formats.StereoLithography
 {
     /// <summary>A simple XYZ representation of a vertex.</summary>
-    public class Vertex : IEquatable<Vertex>
+    public class Vertex : IEquatable<Vertex>, IEqualityComparer<Vertex>
     {
         /// <summary>The X coordinate of this <see cref="Vertex"/>.</summary>
         public float X { get; set; }
@@ -148,6 +149,17 @@ namespace QuantumConcepts.Formats.StereoLithography
                 Y = BitConverter.ToSingle(data, floatSize),
                 Z = BitConverter.ToSingle(data, (floatSize * 2))
             };
+        }
+
+        public bool Equals([AllowNull] Vertex x, [AllowNull] Vertex y)
+        {
+            if (x == null || y == null) return false;
+            return x.Equals(y);
+        }
+
+        public int GetHashCode([DisallowNull] Vertex obj)
+        {
+            return obj.X.GetHashCode() ^ obj.Y.GetHashCode() ^ obj.Z.GetHashCode();
         }
     }
 }

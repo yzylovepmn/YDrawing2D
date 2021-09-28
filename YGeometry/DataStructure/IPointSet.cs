@@ -7,12 +7,12 @@ namespace YGeometry.DataStructure
 {
     public interface IPointSet
     {
-        bool HasNormals { get; }
+        bool HasVerticeNormals { get; }
 
         int VertexCount { get; }
 
         Vector3D GetPosition(int vid);
 
-        Vector3D GetNormal(int vid);
+        Vector3D GetVertexNormal(int vid);
     }
 }

@@ -63,6 +63,13 @@ namespace ObjParser
             updateSize();
         }
 
+		public static ObjDocument Open(string path)
+        {
+			var obj = new ObjDocument();
+			obj.LoadObj(path);
+			return obj;
+		}
+
 		public void WriteObjFile(string path, string[] headerStrings)
 		{
 			using (var outStream = File.OpenWrite(path))
@@ -181,7 +188,7 @@ namespace ObjParser
         {
 			var meshData = new MeshData();
 			meshData.Vertices = VertexList.Select(v => new VertexData() { Position = new YGeometry.Maths.Vector3D(v.X, v.Y, v.Z) }).ToList();
-			meshData.Faces = FaceList.Select(f => new FaceData() { Vertices = new YGeometry.Maths.IndexN<int>(f.VertexIndexList) }).ToList();
+			meshData.Faces = FaceList.Select(f => new FaceData() { Vertices = new YGeometry.Maths.IndexN<int>(f.VertexIndexList.Select(i => i > 0 ? i - 1 : i + VertexList.Count)) }).ToList();
 			return meshData;
         }
     }

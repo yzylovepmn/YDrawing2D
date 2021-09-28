@@ -149,7 +149,7 @@ namespace QuantumConcepts.Formats.StereoLithography
         /// <param name="stream">The stream which contains the STL data.</param>
         /// <param name="tryBinaryIfTextFailed">Set to true to try read as binary if reading as text results in zero facets</param>
         /// <returns>An <see cref="STLDocument"/> representing the data contained in the stream or null if the stream is empty.</returns>
-        public static STLDocument Read(Stream stream,bool tryBinaryIfTextFailed=false)
+        public static STLDocument Read(Stream stream,bool tryBinaryIfTextFailed=true)
         {
             //Determine if the stream contains a text-based or binary-based <see cref="STLDocument"/>, and then read it.
             var isText = IsText(stream);
@@ -313,7 +313,17 @@ namespace QuantumConcepts.Formats.StereoLithography
         public MeshData ConvertToMesh()
         {
             var meshData = new MeshData();
-
+            Dictionary<Vertex, int> dic = new Dictionary<Vertex, int>(new Vertex());
+            foreach (var face in Facets)
+            {
+                foreach (var vertex in face.Vertices)
+                {
+                    if (!dic.ContainsKey(vertex))
+                        dic[vertex] = dic.Count;
+                }
+            }
+            meshData.Vertices = dic.Keys.Select(v => new VertexData() { Position = new YGeometry.Maths.Vector3D(v.X, v.Y, v.Z) }).ToList();
+            meshData.Faces = Facets.Select(f => new FaceData() { Vertices = new YGeometry.Maths.IndexN<int>(f.Vertices.Select(v => dic[v])) }).ToList();
             return meshData;
         }
     }

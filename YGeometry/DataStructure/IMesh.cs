@@ -9,11 +9,13 @@ namespace YGeometry.DataStructure
     {
         int FaceCount { get; }
 
+        bool HasFaceNormals { get; }
+
         IndexN<int> GetVerticeOfFace(int fid);
 
         IndexN<int> GetEdgesOfFace(int fid);
 
-        IndexN<int> GetNeighborOfFace(int fid);
+        IndexN<int> GetNeighborFaceOfFace(int fid);
 
         Vector3D GetFaceNormal(int fid);
 

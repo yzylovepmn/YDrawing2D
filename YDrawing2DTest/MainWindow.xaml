@@ -8,10 +8,14 @@
         Title="MainWindow" WindowState="Maximized" Height="450" Width="800">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        <Grid x:Name="GD_2D"/>
-        <Grid x:Name="GD_3D" Grid.Row="1"/>
+        <Menu IsMainMenu="True">
+            <MenuItem Header="Import" Click="_OnImported"/>
+        </Menu>
+        <Grid x:Name="GD_2D" Grid.Row="1"/>
+        <Grid x:Name="GD_3D" Grid.Row="2"/>
     </Grid>
 </Window>

@@ -7,9 +7,9 @@ namespace YGeometry.DataStructure.HalfEdge
 {
     public class HEVertex : IHEMeshNode
     {
-        public HEVertex() { }
+        internal HEVertex() { }
 
-        public HEVertex(int id, Vector3D position, HEEdge outerGoing)
+        internal HEVertex(int id, Vector3D position, HEEdge outerGoing)
         {
             _id = id;
             _position = position;
@@ -27,77 +27,113 @@ namespace YGeometry.DataStructure.HalfEdge
 
         public bool IsIsolated { get { return _outerGoing == null; } }
 
-        public bool IsBoundary { get { return _outerGoing == null; } }
+        public bool IsBoundary
+        {
+            get
+            {
+                if (IsIsolated) return true;
+                var edge = _outerGoing;
+                while (true)
+                {
+                    if (edge.IsBoundary) return true;
+                    edge = edge.RotateNext;
+                    if (edge == _outerGoing)
+                        break;
+                }
+                return false;
+            }
+        }
 
+        internal void AdjustOutGoingToBoundary()
+        {
+            if (IsIsolated) return;
+            var edge = _outerGoing;
+            while (true)
+            {
+                if (edge.IsBoundary)
+                {
+                    _outerGoing = edge;
+                    break;
+                }
+                else edge = edge.RotateNext;
+                if (edge == _outerGoing)
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// ccw
+        /// </summary>
         public List<HEVertex> GetAdjacentVertice()
         {
             var neighbors = new List<HEVertex>();
             if (!IsIsolated)
             {
                 var edge = _outerGoing;
-                var first = edge.GoingTo;
-                neighbors.Add(first);
-                while (true)
+                do
                 {
-                    edge = edge.PreEdge?.OppEdge;
-                    if (edge != null && edge != _outerGoing)
-                        neighbors.Add(edge.GoingTo);
-                    else break;
+                    neighbors.Add(edge.GoingTo);
+                    edge = edge.RotateNext;
                 }
+                while (edge != _outerGoing);
             }
             return neighbors;
         }
 
+        /// <summary>
+        /// ccw
+        /// </summary>
         public List<HEdge> GetAdjacentEdges()
         {
             var neighbors = new List<HEdge>();
             if (!IsIsolated)
             {
                 var edge = _outerGoing;
-                neighbors.Add(edge.RelativeEdge);
-                while (true)
+                do
                 {
-                    edge = edge.PreEdge?.OppEdge;
-                    if (edge != null && edge != _outerGoing)
-                        neighbors.Add(edge.RelativeEdge);
-                    else break;
+                    neighbors.Add(edge.RelativeEdge);
+                    edge = edge.RotateNext;
                 }
+                while (edge != _outerGoing);
             }
             return neighbors;
         }
 
+        /// <summary>
+        /// ccw
+        /// </summary>
         internal List<HEEdge> GetAdjacentHalfEdges()
         {
             var neighbors = new List<HEEdge>();
             if (!IsIsolated)
             {
                 var edge = _outerGoing;
-                neighbors.Add(edge);
-                while (true)
+                do
                 {
-                    edge = edge.PreEdge?.OppEdge;
-                    if (edge != null && edge != _outerGoing)
-                        neighbors.Add(edge);
-                    else break;
+                    neighbors.Add(edge);
+                    edge = edge.RotateNext;
                 }
+                while (edge != _outerGoing);
             }
             return neighbors;
         }
 
+        /// <summary>
+        /// ccw
+        /// </summary>
         public List<HEFace> GetAdjacentFaces()
         {
             var neighbors = new List<HEFace>();
             if (!IsIsolated)
             {
                 var edge = _outerGoing;
-                neighbors.Add(edge.RelativeFace);
-                while (true)
+                do
                 {
-                    edge = edge.PreEdge?.OppEdge;
-                    if (edge != null && edge != _outerGoing)
+                    if (edge.RelativeFace != null)
                         neighbors.Add(edge.RelativeFace);
-                    else break;
+                    edge = edge.RotateNext;
                 }
+                while (edge != _outerGoing);
             }
             return neighbors;
         }

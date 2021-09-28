@@ -18,6 +18,10 @@ namespace YGeometry.DataStructure.HalfEdge
         private List<Vector3D> _verticeNormals;
         private List<Vector3D> _facesNormals;
 
+        public IEnumerable<HEVertex> Vertices { get { return _vertices; } }
+
+        public IEnumerable<HEFace> Faces { get { return _faces; } }
+
         public int FaceCount { get { return _faces.Count; } }
 
         public int VertexCount { get { return _vertices.Count; } }
@@ -26,9 +30,11 @@ namespace YGeometry.DataStructure.HalfEdge
 
         public int HEdgeCount { get { return _hedges.Count; } }
 
-        public bool HasNormals { get { return _verticeNormals != null; } }
+        public bool HasVerticeNormals { get { return _verticeNormals != null; } }
 
-        public HEMesh()
+        public bool HasFaceNormals { get { return _facesNormals != null; } }
+
+        public HEMesh(int verticeSize = DefaultSize)
         {
             _InitData(DefaultSize);
         }
@@ -39,7 +45,6 @@ namespace YGeometry.DataStructure.HalfEdge
             _edges = new List<HEdge>(vcount * 3);
             _hedges = new List<HEEdge>(vcount * 6);
             _faces = new List<HEFace>(vcount * 2);
-            _facesNormals = new List<Vector3D>(vcount * 2);
         }
 
         public IndexN<int> GetVerticeOfFace(int fid)
@@ -78,27 +83,25 @@ namespace YGeometry.DataStructure.HalfEdge
             return _faces[fid];
         }
 
-        public Vector3D GetNormal(int vid)
+        public Vector3D GetVertexNormal(int vid)
         {
-            if (HasNormals)
+            Debugs.CheckRange(vid, 0, VertexCount);
+            if (HasVerticeNormals)
                 return _verticeNormals[vid];
-            throw new InvalidOperationException("Please call ComputeNormals() method before invoke GetNormal() method!");
+            throw new InvalidOperationException("Please call UpdateVerticeNormals() method before invoke GetNormal() method!");
         }
 
-        public Vector3D GetNormal(HEVertex vertex)
+        public Vector3D GetVertexNormal(HEVertex vertex)
         {
-            if (HasNormals)
-                return _verticeNormals[vertex.ID];
-            throw new InvalidOperationException("Please call ComputeNormals() method before invoke GetNormal() method!");
+            return GetVertexNormal(vertex.ID);
         }
 
         public Vector3D GetFaceNormal(int fid)
         {
             Debugs.CheckRange(fid, 0, FaceCount);
-            var normal = _facesNormals[fid];
-            if (normal.IsZero)
-                normal = _ComputeFaceNormal(GetFace(fid).GetVertice());
-            return normal;
+            if (HasFaceNormals)
+                return _facesNormals[fid];
+            throw new InvalidOperationException("Please call UpdateFaceNormals() method before invoke GetNormal() method!");
         }
 
         public Vector3D GetFaceNormal(HEFace face)
@@ -118,10 +121,10 @@ namespace YGeometry.DataStructure.HalfEdge
             return new IndexN<int>(_faces[fid].GetEdges().Select(edge => edge.ID));
         }
 
-        public IndexN<int> GetNeighborOfFace(int fid)
+        public IndexN<int> GetNeighborFaceOfFace(int fid)
         {
             Debugs.CheckRange(fid, 0, FaceCount);
-            throw new NotImplementedException();
+            return new IndexN<int>(_faces[fid].GetAdjacentFaces().Select(f => f.ID));
         }
 
         public HEdge GetEdgeBetween(HEVertex v1, HEVertex v2)
@@ -131,7 +134,7 @@ namespace YGeometry.DataStructure.HalfEdge
             return null;
         }
 
-        public void ComputeVerticeNormals()
+        public void UpdateVerticeNormals()
         {
             _verticeNormals = new List<Vector3D>(VertexCount);
             for (int i = 0; i < VertexCount; i++)
@@ -148,17 +151,15 @@ namespace YGeometry.DataStructure.HalfEdge
                     normal += Vector3D.CrossProduct(v1, v2) * Vector3D.AngleBetween(v1, v2);
                 }
                 normal.Normalize();
-                _verticeNormals[i] = normal;
+                _verticeNormals.Add(normal);
             }
         }
 
-        public void ComputeFaceNormals()
+        public void UpdateFaceNormals()
         {
+            _facesNormals = new List<Vector3D>(FaceCount);
             for (int i = 0; i < FaceCount; i++)
-            {
-                if (_facesNormals[i].IsZero)
-                    _facesNormals[i] = _ComputeFaceNormal(GetFace(i).GetVertice());
-            }
+                _facesNormals.Add(_ComputeFaceNormal(GetFace(i).GetVertice()));
         }
 
         private Vector3D _ComputeFaceNormal(List<HEVertex> vertice)
@@ -171,16 +172,49 @@ namespace YGeometry.DataStructure.HalfEdge
             return normal;
         }
 
-        public bool IsConnected(HEVertex v1, HEVertex v2)
+        public HEdge EdgeBetween(HEVertex v1, HEVertex v2)
         {
-            return v1.OuterGoing.GoingTo == v2;
+            if (v1 == null || v2 == null) return null;
+            if (!v1.IsIsolated)
+            {
+                var edge = v1.OuterGoing;
+                do
+                {
+                    if (edge.GoingTo == v2) return edge.RelativeEdge;
+                    edge = edge.RotateNext;
+                }
+                while (edge != v1.OuterGoing);
+            }
+            return null;
         }
 
-        public bool IsConnected(int v1, int v2)
+        /// <summary>
+        /// ret is point to v2
+        internal HEEdge HEdgeBetween(HEVertex v1, HEVertex v2)
         {
-            Debugs.CheckRange(v1, 0, VertexCount);
-            Debugs.CheckRange(v2, 0, VertexCount);
-            return IsConnected(_vertices[v1], _vertices[v2]);
+            var edge = EdgeBetween(v1, v2);
+            if (edge != null)
+                return edge.Relative.GoingTo == v2 ? edge.Relative : edge.Relative.OppEdge;
+            return null;
+        }
+
+        public HEdge EdgeBetween(int vid1, int vid2)
+        {
+            Debugs.CheckRange(vid1, 0, VertexCount);
+            Debugs.CheckRange(vid2, 0, VertexCount);
+            return EdgeBetween(_vertices[vid1], _vertices[vid2]);
+        }
+
+        public bool IsConnected(HEVertex v1, HEVertex v2)
+        {
+            return EdgeBetween(v1, v2) != null;
+        }
+
+        public bool IsConnected(int vid1, int vid2)
+        {
+            Debugs.CheckRange(vid1, 0, VertexCount);
+            Debugs.CheckRange(vid2, 0, VertexCount);
+            return IsConnected(_vertices[vid1], _vertices[vid2]);
         }
 
         public bool IsTriangleMesh()
@@ -194,7 +228,277 @@ namespace YGeometry.DataStructure.HalfEdge
         }
 
         #region Edit Method
+        public void Reset(int verticeSize = DefaultSize)
+        {
+            Dispose();
+            _InitData(verticeSize);
+        }
 
+        public HEVertex AddVertex(double x, double y, double z)
+        {
+            return AddVertex(new Vector3D(x, y, z));
+        }
+
+        public HEVertex AddVertex(Vector3D vertex)
+        {
+            var ret = _NewVertex();
+            ret.Position = vertex;
+            return ret;
+        }
+
+        /// <summary>
+        /// keep sure input is ccw
+        /// </summary>
+        public HEFace AddFace(IndexN<int> vindice)
+        {
+            Debugs.Assert(vindice.All(id => id >= 0 && id < VertexCount));
+            var vertice = new List<HEVertex>(vindice.Length);
+            for (int i = 0; i < vindice.Length; i++)
+                vertice.Add(_vertices[vindice[i]]);
+            return AddFace(vertice);
+        }
+
+        /// <summary>
+        /// keep sure input is ccw
+        /// </summary>
+        public HEFace AddFace(List<HEVertex> vertice)
+        {
+            if (vertice == null || vertice.Count < 3) return null;
+
+            for (int i = 0; i < vertice.Count; i++)
+            {
+                var v1 = vertice[i];
+                if (!v1.IsBoundary)
+                {
+                    Debugs.Log("will create none-manifold surface");
+                    return null;
+                }
+                var v2 = vertice[(i + 1) % vertice.Count];
+                var edge = HEdgeBetween(v1, v2);
+                if (edge != null && !edge.IsBoundary)
+                {
+                    Debugs.Log("will create none-manifold surface");
+                    return null;
+                }
+            }
+
+            var face = _NewFace();
+            var hedges = new List<HEEdge>(vertice.Count);
+            var flags_edge_new = new bool[vertice.Count];
+            for (int i = 0; i < vertice.Count; i++)
+            {
+                var vid1 = i;
+                var vid2 = (i + 1) % vertice.Count;
+                var v1 = vertice[vid1];
+                var v2 = vertice[vid2];
+                var edge = EdgeBetween(v1, v2);
+                // keep sure edges exist
+                if (edge == null)
+                {
+                    flags_edge_new[i] = true;
+                    edge = AddEdge(v1, v2);
+                }
+                HEEdge toV1, toV2;
+                if (edge.Relative.GoingTo == v1)
+                {
+                    toV1 = edge.Relative;
+                    toV2 = edge.Relative.OppEdge;
+                }
+                else
+                {
+                    toV2 = edge.Relative;
+                    toV1 = edge.Relative.OppEdge;
+                }
+                toV2.RelativeFace = face;
+                if (face.Relative == null)
+                    face.Relative = toV2;
+                hedges.Add(toV2);
+            }
+
+            for (int i = 0; i < vertice.Count; i++)
+            {
+                var id1 = i;
+                var id2 = (i + 1) % vertice.Count;
+                if (!flags_edge_new[id1] && !flags_edge_new[id2])
+                {
+                    var edge1 = hedges[id1];
+                    var edge2 = hedges[id2];
+                    if (edge1.NextEdge != edge2)
+                    {
+                        var edgeopp2 = edge2.OppEdge;
+                        var edgeopp1 = edge1.OppEdge;
+                        var edge3 = edgeopp2;
+                        do
+                        {
+                            edge3 = edge3.NextEdge.OppEdge;
+                        }
+                        while (!edge3.IsBoundary);
+                        var edge4 = edge3.NextEdge;
+
+                        var edge5 = edge1.NextEdge;
+                        var edge6 = edge2.PreEdge;
+
+                        edge3.NextEdge = edge5;
+                        edge5.PreEdge = edge3;
+                        edge6.NextEdge = edge4;
+                        edge4.PreEdge = edge6;
+                        edge1.NextEdge = edge2;
+                        edge2.PreEdge = edge1;
+                    }
+                }
+            }
+
+            var vertice_need_update = new List<HEVertex>();
+            for (int i = 0; i < vertice.Count; i++)
+            {
+                var id1 = i;
+                var id2 = (i + 1) % vertice.Count;
+                var edge1 = hedges[id1];
+                var edge2 = hedges[id2];
+                var edgeop1 = edge1.OppEdge;
+                var edgeop2 = edge2.OppEdge;
+                var vertex = vertice[id2];
+
+                if (flags_edge_new[id1])
+                {
+                    if (flags_edge_new[id2])
+                    {
+                        if (vertex.IsIsolated)
+                        {
+                            vertex.OuterGoing = edgeop1;
+                            edgeop2.NextEdge = edgeop1;
+                            edgeop1.PreEdge = edgeop2;
+                        }
+                        else
+                        {
+                            var e1 = vertex.OuterGoing;
+                            var e2 = vertex.OuterGoing.PreEdge;
+                            edgeop2.NextEdge = e1;
+                            e1.PreEdge = edgeop2;
+                            edgeop1.PreEdge = e2;
+                            e2.NextEdge = edgeop1;
+                        }
+                    }
+                    else
+                    {
+                        var e1 = edge2.PreEdge;
+                        e1.NextEdge = edgeop1;
+                        edgeop1.PreEdge = e1;
+                        vertex.OuterGoing = edgeop1;
+                    }
+                }
+                else
+                {
+                    if (flags_edge_new[id2])
+                    {
+                        var e1 = edge1.NextEdge;
+                        edgeop2.NextEdge = e1;
+                        e1.PreEdge = edgeop2;
+                        vertex.OuterGoing = e1;
+                    }
+                    else vertice_need_update.Add(vertex);
+                }
+
+                edge1.NextEdge = edge2;
+                edge2.PreEdge = edge1;
+            }
+
+            foreach (var v in vertice_need_update)
+                v.AdjustOutGoingToBoundary();
+
+            face.UpdateDegree();
+            return face;
+        }
+
+        internal HEdge AddEdge(int vid1, int vid2)
+        {
+            Debugs.CheckRange(vid1, 0, VertexCount);
+            Debugs.CheckRange(vid2, 0, VertexCount);
+            return AddEdge(_vertices[vid1], _vertices[vid2]);
+        }
+
+        internal HEdge AddEdge(HEVertex v1, HEVertex v2)
+        {
+            if (v1 == null || v2 == null)
+                return null;
+
+            var edge = EdgeBetween(v1, v2);
+            if (edge != null) return edge;
+
+            edge = _NewEdge();
+            var hedge1 = _NewHEdge();
+            var hedge2 = _NewHEdge();
+
+            edge.V1 = v1;
+            edge.V2 = v2;
+            edge.Relative = hedge1;
+
+            hedge1.GoingTo = v2;
+            hedge1.OppEdge = hedge2;
+            hedge1.RelativeEdge = edge;
+            hedge1.PreEdge = hedge2;
+            hedge1.NextEdge = hedge2;
+
+            hedge2.GoingTo = v1;
+            hedge2.OppEdge = hedge1;
+            hedge2.RelativeEdge = edge;
+            hedge2.PreEdge = hedge1;
+            hedge2.NextEdge = hedge1;
+
+            return edge;
+        }
+
+        private HEVertex _NewVertex()
+        {
+            var ret = new HEVertex();
+            ret.ID = VertexCount;
+            _vertices.Add(ret);
+            return ret;
+        }
+
+        private HEdge _NewEdge()
+        {
+            var ret = new HEdge();
+            ret.ID = _edges.Count;
+            _edges.Add(ret);
+            return ret;
+        }
+
+        private HEEdge _NewHEdge()
+        {
+            var ret = new HEEdge();
+            ret.ID = _hedges.Count;
+            _hedges.Add(ret);
+            return ret;
+        }
+
+        private HEFace _NewFace()
+        {
+            var ret = new HEFace();
+            ret.ID = FaceCount;
+            _faces.Add(ret);
+            return ret;
+        }
+        #endregion
+
+        #region Debug
+#if DEBUG
+        public bool IsManifold()
+        {
+            foreach (var ver in _vertices)
+            {
+                var num = 0;
+                foreach (var edge in ver.GetAdjacentHalfEdges())
+                {
+                    if (edge.IsBoundary)
+                        num++;
+                }
+                if (num > 1)
+                    return false;
+            }
+            return true;
+        }
+#endif
         #endregion
 
         public void Dispose()

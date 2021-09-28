@@ -6,12 +6,12 @@ namespace YGeometry.DataStructure.HalfEdge
 {
     public class HEEdge : IHEMeshNode
     {
-        public HEEdge()
+        internal HEEdge()
         {
 
         }
 
-        public HEEdge(int id, HEVertex goingTo, HEFace relativeFace, HEdge relativeEdge, HEEdge nextEdge, HEEdge preEdge, HEEdge oppEdge)
+        internal HEEdge(int id, HEVertex goingTo, HEFace relativeFace, HEdge relativeEdge, HEEdge nextEdge, HEEdge preEdge, HEEdge oppEdge)
         {
             _id = id;
             _goingTo = goingTo;
@@ -27,7 +27,7 @@ namespace YGeometry.DataStructure.HalfEdge
 
         public bool IsIsolated { get { return _nextEdge == null && _preEdge == null; } }
 
-        public bool IsBoundary { get { return _relativeFace == null ^ _oppEdge._relativeFace == null; } }
+        public bool IsBoundary { get { return _relativeFace == null; } }
 
         public HEVertex GoingTo { get { return _goingTo; } internal set { _goingTo = value; } }
         private HEVertex _goingTo;
@@ -46,6 +46,16 @@ namespace YGeometry.DataStructure.HalfEdge
 
         public HEEdge OppEdge { get { return _oppEdge; } internal set { _oppEdge = value; } }
         private HEEdge _oppEdge;
+
+        /// <summary>
+        /// cw
+        /// </summary>
+        public HEEdge RotateNext { get { return _oppEdge?._nextEdge; } }
+
+        /// <summary>
+        /// ccw
+        /// </summary>
+        public HEEdge RotatePrev { get { return _preEdge?._oppEdge; } }
 
         public void Dispose()
         {

@@ -1,11 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>
     <Folder Include="IO\Stl\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\YRenderingSystem\YRenderingSystem.csproj" />
   </ItemGroup>
 
 </Project>

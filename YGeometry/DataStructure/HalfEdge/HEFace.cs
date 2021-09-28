@@ -7,12 +7,12 @@ namespace YGeometry.DataStructure.HalfEdge
 {
     public class HEFace : IHEMeshNode
     {
-        public HEFace()
+        internal HEFace()
         {
 
         }
 
-        public HEFace(HEEdge relative)
+        internal HEFace(HEEdge relative)
         {
             _relative = relative;
         }
@@ -20,9 +20,9 @@ namespace YGeometry.DataStructure.HalfEdge
         public int ID { get { return _id; } internal set { _id = value; } }
         private int _id = HEMesh.InvaildID;
 
-        public bool IsIsolated { get { return GetHalfEdges().All(edge => edge.IsBoundary); } }
+        public bool IsIsolated { get { return GetHalfEdges().All(edge => edge.OppEdge.IsBoundary); } }
 
-        public bool IsBoundary { get { return GetHalfEdges().Any(edge => edge.IsBoundary); } }
+        public bool IsBoundary { get { return GetHalfEdges().Any(edge => edge.OppEdge.IsBoundary); } }
 
         internal HEdge RelativeEdge { get { return _relative.RelativeEdge; } }
 
@@ -100,13 +100,7 @@ namespace YGeometry.DataStructure.HalfEdge
             return edges;
         }
 
-        public int UpdateDegree()
-        {
-            _UpdateDegree();
-            return _degree;
-        }
-
-        private void _UpdateDegree()
+        internal void UpdateDegree()
         {
             if (_relative == null)
                 _degree = HEMesh.InvaildID;

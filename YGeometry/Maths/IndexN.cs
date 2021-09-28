@@ -14,6 +14,11 @@ namespace YGeometry.Maths
             _indice = indice.ToArray();
         }
 
+        public IndexN(params T[] indice)
+        {
+            _indice = indice.ToArray();
+        }
+
         public T this[int index] 
         {
             get { return _indice[index]; }
