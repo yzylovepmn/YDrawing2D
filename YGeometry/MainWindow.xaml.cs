@@ -75,20 +75,20 @@ namespace YGeometry
             _visual3D = new GLVisual3D();
             _visual3D.Model = _meshModel;
             _glPanel3D.AddVisual(_visual3D);
-            _glPanel3D.AddLight(new AmbientLight(Colors.White));
-            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(1, 0, 0), 0.1f, 0.1f));
-            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(-1, 0, 0), 0.1f, 0.1f));
-            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(0, 1, 0), 0.1f, 0.1f));
-            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(0, -1, 0), 0.1f, 0.1f));
-            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(0, 0, 1), 0.1f, 0.1f));
-            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(0, 0, -1), 0.1f, 0.1f));
+            _glPanel3D.AddLight(new AmbientLight(Colors.White, 0.2f));
+            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(1, 0, 0), 0.15f, 0.1f));
+            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(-1, 0, 0), 0.15f, 0.1f));
+            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(0, 1, 0), 0.15f, 0.1f));
+            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(0, -1, 0), 0.15f, 0.1f));
+            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(0, 0, 1), 0.15f, 0.1f));
+            _glPanel3D.AddLight(new DirectionLight(Colors.White, new Vector3F(0, 0, -1), 0.15f, 0.1f));
         }
 
         private void _OnImported(object sender, RoutedEventArgs e)
         {
             var meshData = Tests.TestImport();
             var mesh = MeshUtil.ConvertTo(meshData);
-            var isManifold = mesh.IsManifold();
+            var isClosed = mesh.IsClosed();
             //var mesh = Tests.TestCreate();
             MeshData = MeshUtil.ConvertTo(mesh);
         }

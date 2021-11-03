@@ -481,7 +481,7 @@ namespace YGeometry.DataStructure.HalfEdge
         }
         #endregion
 
-        #region Debug
+        #region Properties check
 #if DEBUG
         public bool IsManifold()
         {
@@ -499,6 +499,11 @@ namespace YGeometry.DataStructure.HalfEdge
             return true;
         }
 #endif
+
+        public bool IsClosed()
+        {
+            return _hedges.All(h => !h.IsBoundary);
+        }
         #endregion
 
         public void Dispose()

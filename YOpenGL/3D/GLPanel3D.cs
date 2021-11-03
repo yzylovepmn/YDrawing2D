@@ -53,7 +53,7 @@ namespace YOpenGL._3D
             _frameSpan = Math.Max(1, (int)(1000 / frameRate));
             _visuals = new List<GLVisual3D>();
             _lights = new List<Light>();
-            _camera = new Camera(this, CameraType.Perspective, 1000, 800, 1, float.PositiveInfinity, new Point3F(0, 0, 1), new Vector3F(0, 0, -1), new Vector3F(0, 1, 0));
+            _camera = new Camera(this, CameraType.Perspective, 1000, 800, 10, float.PositiveInfinity, new Point3F(0, 0, 1), new Vector3F(0, 0, -1), new Vector3F(0, 1, 0));
             _camera.PropertyChanged += _OnCameraPropertyChanged;
             _mouseEventHandler = new MouseEventHandler(this);
             _mouseEventHandler.AttachEvents(this);
@@ -1155,22 +1155,17 @@ namespace YOpenGL._3D
             Vector3F upDirection)
         {
             var dist = 0f;
+            var newWidth = radius * 2;
+            _camera.Lock();
             if (_camera.Type == CameraType.Perspective)
             {
-                radius *= _camera.NearPlaneDistance;
-                var pcam = _camera;
-                var vfov = pcam.FieldOfView;
-                float distv = radius / (float)Math.Tan(MathUtil.DegreesToRadians(0.5 * vfov));
-                float hfov = vfov * ViewWidth / ViewHeight;
-
-                float disth = radius / (float)Math.Tan(MathUtil.DegreesToRadians(0.5 * hfov));
-                dist = Math.Max(disth, distv);
-                dist = Math.Max(_minPerspectiveCameraDistance, Math.Min(_maxPerspectiveCameraDistance, dist));
+                var fov = radius / (_camera.NearPlaneDistance * 2);
+                fov = (float)MathUtil.RadiansToDegrees(Math.Atan(fov)) * 2;
+                _camera.SetPerspectiveParameters((float)fov);
+                dist = _camera.NearPlaneDistance * 2;
             }
             else
             {
-                var newWidth = radius * 2;
-
                 if (ViewWidth > ViewHeight)
                     newWidth = radius * 2 * ViewWidth / ViewHeight;
                 newWidth = Math.Max(_minOrthographicCameraWidth, Math.Min(_maxOrthographicCameraWidth, newWidth));
@@ -1179,7 +1174,7 @@ namespace YOpenGL._3D
                 var radio = newWidth / _camera.Width;
                 _camera.SetOrthographicParameters(newWidth, _camera.Height * radio);
             }
-
+            _camera.UnLock();
             var dir = lookDirection;
             dir.Normalize();
             LookAt(center, dir * dist, upDirection);
@@ -1259,10 +1254,7 @@ namespace YOpenGL._3D
 
         private void _ZoomByChangingFieldOfView(float delta)
         {
-            _camera.Lock();
             float fov = _camera.FieldOfView;
-            float d = _camera.LookDirection.Length;
-            float r = d * (float)Math.Tan(MathUtil.DegreesToRadians(0.5 * fov));
 
             fov *= 1 + (delta * 0.5f);
             if (fov < 5)
@@ -1272,13 +1264,6 @@ namespace YOpenGL._3D
                 fov = 120;
 
             _camera.SetPerspectiveParameters(fov);
-            float d2 = r / (float)Math.Tan(MathUtil.DegreesToRadians(0.5 * fov));
-            Vector3F newLookDirection = _camera.LookDirection;
-            newLookDirection.Normalize();
-            newLookDirection *= d2;
-            Point3F target = _camera.Target;
-            _camera.UnLock();
-            _camera.SetViewParameters(target - newLookDirection, newLookDirection);
         }
 
         private void _ZoomByChangingCameraPosition(float delta, Point3F zoomAround)

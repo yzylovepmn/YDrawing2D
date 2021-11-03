@@ -58,7 +58,7 @@ namespace YOpenGL._3D
             _type = type;
 
             SetOrthographicParameters(width, height, nearPlaneDistance, farPlaneDistance);
-            SetPerspectiveParameters((float)MathUtil.RadiansToDegrees(2 * Math.Atan(Math.Tan(MathUtil.DegreesToRadians(30 / 2.0)) * nearPlaneDistance)), width / height, nearPlaneDistance, farPlaneDistance);
+            SetPerspectiveParameters(45, width / height, nearPlaneDistance, farPlaneDistance);
 
             SetViewParameters(position, lookDirection, upDirection);
         }
@@ -231,8 +231,8 @@ namespace YOpenGL._3D
             var tanHalfFovy = (float)Math.Tan(MathUtil.DegreesToRadians(_fieldOfView / 2));
             var deep = _farPlaneDistance - _nearPlaneDistance;
 
-            mat.M11 = _nearPlaneDistance / (_aspect * tanHalfFovy);
-            mat.M22 = _nearPlaneDistance / tanHalfFovy;
+            mat.M11 = 1 / (_aspect * tanHalfFovy);
+            mat.M22 = 1 / tanHalfFovy;
             mat.M33 = float.IsInfinity(_farPlaneDistance) ? -1 : -(_farPlaneDistance + _nearPlaneDistance) / deep;
             mat.M44 = 0;
             mat.M34 = -1;
