@@ -458,7 +458,7 @@ namespace YGeometry.DataStructure.HalfEdge
 
         public void DeleteVertex(HEVertex vertex)
         {
-            if (vertex == null) return;
+            if (vertex == null || vertex.IsDeleted) return;
 
             if (!vertex.IsIsolated)
             {
@@ -472,7 +472,7 @@ namespace YGeometry.DataStructure.HalfEdge
 
         internal void DeleteEdge(HEdge edge)
         {
-            if (edge == null) return;
+            if (edge == null || edge.IsDeleted) return;
 
             var h1 = edge.Relative;
             var h2 = h1.OppEdge;
@@ -508,7 +508,7 @@ namespace YGeometry.DataStructure.HalfEdge
 
         public void DeleteFace(HEFace face)
         {
-            if (face == null) return;
+            if (face == null || face.IsDeleted) return;
 
             var hedges = face.GetHalfEdges();
             var vertice = face.GetVertice();

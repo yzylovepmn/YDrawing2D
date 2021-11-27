@@ -70,9 +70,9 @@ namespace YGeometry
                 var first = rets.First();
                 if (first.Mesh.Type == MeshType.Triangle)
                 {
-                    //var t = (TriangleMesh)first.Mesh;
-                    //_mesh.DeleteVertex(t.Index1);
-                    //MeshData = MeshUtil.ConvertTo(_mesh);
+                    var t = (TriangleMesh)first.Mesh;
+                    _mesh.DeleteVertex(t.Index1);
+                    MeshData = MeshUtil.ConvertTo(_mesh);
                 }
             }
         }

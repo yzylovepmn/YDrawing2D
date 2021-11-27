@@ -141,6 +141,7 @@ namespace YOpenGL._3D
 
         private static bool _HitTestPointResult(IHitTestSource model, DataPair pair, Point3F[] points, LazyArray<Point3F, Point3F> pointsTransformed, List<HitResult> results, PointF pointInWpf, float sensity)
         {
+            var flag = false;
             var index = pair.Start;
             for (int i = 0; i < pair.Count; i++, index++)
             {
@@ -150,14 +151,15 @@ namespace YOpenGL._3D
                 if (dist <= sensity)
                 {
                     results.Add(new HitResult(new PointMesh(p), model, pt.Z));
-                    return true;
+                    flag = true;
                 }
             }
-            return false;
+            return flag;
         }
 
         private static bool _HitTestLinesResult(IHitTestSource model, DataPair pair, Point3F[] points, LazyArray<Point3F, Point3F> pointsTransformed, List<HitResult> results, PointF pointInWpf, float sensity)
         {
+            var flag = false;
             var cond = pair.Count - 1;
             var stride = model.Mode == GLPrimitiveMode.GL_LINES ? 2 : 1;
             var limit = model.Mode == GLPrimitiveMode.GL_LINE_LOOP ? pair.Count : pair.Count - 1;
@@ -182,10 +184,10 @@ namespace YOpenGL._3D
                     GeometryHelper.Clamp(ref t, 0, 1);
                     var z = t * pt1.Z + (1 - t) * pt2.Z;
                     results.Add(new HitResult(new LineMesh(p1, p2, model.GetIndex(index1), model.GetIndex(index2), t, 1 - t), model, z));
-                    return true;
+                    flag = true;
                 }
             }
-            return false;
+            return flag;
         }
 
         private static PointF? _LineHitTest(PointF pointInWpf, Line line, float sensitive)
@@ -204,6 +206,7 @@ namespace YOpenGL._3D
 
         private static bool _HitTestTrianglesResult(IHitTestSource model, DataPair pair, Point3F[] points, LazyArray<Point3F, Point3F> pointsTransformed, List<HitResult> results, PointF pointInWpf)
         {
+            var flag = false;
             var stride = model.Mode == GLPrimitiveMode.GL_TRIANGLES ? 3 : 1;
             for (int i = 0; i < pair.Count - 2; i += stride)
             {
@@ -225,14 +228,15 @@ namespace YOpenGL._3D
                     var c = 1 - a - b;
                     var z = pt1.Z * a + pt2.Z * b + pt3.Z * c;
                     results.Add(new HitResult(new TriangleMesh(p1, p2, p3, model.GetIndex(index1), model.GetIndex(index2), model.GetIndex(index3), a, b, c), model, z));
-                    return true;
+                    flag = true;
                 }
             }
-            return false;
+            return flag;
         }
 
         private static bool _HitTestTriangleFansResult(IHitTestSource model, DataPair pair, Point3F[] points, LazyArray<Point3F, Point3F> pointsTransformed, List<HitResult> results, PointF pointInWpf)
         {
+            var flag = false;
             var index1 = pair.Start;
             var p1 = points[index1];
             var pt1 = pointsTransformed[index1];
@@ -253,10 +257,10 @@ namespace YOpenGL._3D
                     var c = 1 - a - b;
                     var z = pt1.Z * a + pt2.Z * b + pt3.Z * c;
                     results.Add(new HitResult(new TriangleMesh(p1, p2, p3, model.GetIndex(index1), model.GetIndex(index2), model.GetIndex(index3), a, b, c), model, z));
-                    return true;
+                    flag = true;
                 }
             }
-            return false;
+            return flag;
         }
 
         public static IEnumerable<RectHitResult> HitTest(GLPanel3D viewport, IEnumerable<IHitTestSource> models, RectF rectInWpf, RectHitTestMode hitTestMode)
