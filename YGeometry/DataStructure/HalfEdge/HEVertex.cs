@@ -19,13 +19,34 @@ namespace YGeometry.DataStructure.HalfEdge
         public int ID { get { return _id; } internal set { _id = value; } }
         private int _id = HEMesh.InvaildID;
 
+        int IHEMeshNode.ID { get { return _id; } set { _id = value; } }
+
+        public bool IsDeleted { get { return _id == HEMesh.InvaildID; } }
+
         public Vector3D Position { get { return _position; } internal set { _position = value; } }
         private Vector3D _position;
 
-        internal HEEdge OuterGoing { get { return _outerGoing; } set { _outerGoing = value; } }
+        public HEEdge OuterGoing { get { return _outerGoing; } internal set { _outerGoing = value; } }
         private HEEdge _outerGoing;
 
         public bool IsIsolated { get { return _outerGoing == null; } }
+
+        public bool IsNoAdjacentFace
+        {
+            get
+            {
+                if (IsIsolated) return true;
+                var edge = _outerGoing;
+                do
+                {
+                    if (edge.RelativeFace != null)
+                        return false;
+                    edge = edge.RotateNext;
+                }
+                while (edge != _outerGoing);
+                return true;
+            }
+        }
 
         public bool IsBoundary
         {
@@ -41,6 +62,25 @@ namespace YGeometry.DataStructure.HalfEdge
                         break;
                 }
                 return false;
+            }
+        }
+
+        public int Degree
+        {
+            get
+            {
+                var degree = 0;
+                if (!IsIsolated)
+                {
+                    var edge = _outerGoing;
+                    do
+                    {
+                        degree++;
+                        edge = edge.RotateNext;
+                    }
+                    while (edge != _outerGoing);
+                }
+                return degree;
             }
         }
 
@@ -62,7 +102,7 @@ namespace YGeometry.DataStructure.HalfEdge
         }
 
         /// <summary>
-        /// ccw
+        /// cw
         /// </summary>
         public List<HEVertex> GetAdjacentVertice()
         {
@@ -72,7 +112,7 @@ namespace YGeometry.DataStructure.HalfEdge
                 var edge = _outerGoing;
                 do
                 {
-                    neighbors.Add(edge.GoingTo);
+                    neighbors.Add(edge.VertexTo);
                     edge = edge.RotateNext;
                 }
                 while (edge != _outerGoing);
@@ -81,7 +121,7 @@ namespace YGeometry.DataStructure.HalfEdge
         }
 
         /// <summary>
-        /// ccw
+        /// cw
         /// </summary>
         public List<HEdge> GetAdjacentEdges()
         {
@@ -100,7 +140,7 @@ namespace YGeometry.DataStructure.HalfEdge
         }
 
         /// <summary>
-        /// ccw
+        /// cw
         /// </summary>
         internal List<HEEdge> GetAdjacentHalfEdges()
         {
@@ -119,7 +159,7 @@ namespace YGeometry.DataStructure.HalfEdge
         }
 
         /// <summary>
-        /// ccw
+        /// cw
         /// </summary>
         public List<HEFace> GetAdjacentFaces()
         {

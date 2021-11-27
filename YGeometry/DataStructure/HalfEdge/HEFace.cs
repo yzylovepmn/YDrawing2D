@@ -20,6 +20,10 @@ namespace YGeometry.DataStructure.HalfEdge
         public int ID { get { return _id; } internal set { _id = value; } }
         private int _id = HEMesh.InvaildID;
 
+        int IHEMeshNode.ID { get { return _id; } set { _id = value; } }
+
+        public bool IsDeleted { get { return _id == HEMesh.InvaildID; } }
+
         public bool IsIsolated { get { return GetHalfEdges().All(edge => edge.OppEdge.IsBoundary); } }
 
         public bool IsBoundary { get { return GetHalfEdges().Any(edge => edge.OppEdge.IsBoundary); } }
@@ -42,7 +46,7 @@ namespace YGeometry.DataStructure.HalfEdge
             var edge = _relative;
             while (true)
             {
-                vertice.Add(edge.GoingTo);
+                vertice.Add(edge.VertexTo);
                 edge = edge.NextEdge;
                 if (edge == _relative)
                     break;
@@ -75,7 +79,9 @@ namespace YGeometry.DataStructure.HalfEdge
             var edge = _relative;
             while (true)
             {
-                faces.Add(edge.RelativeFace);
+                var face = edge.OppEdge.RelativeFace;
+                if (face != null)
+                    faces.Add(face);
                 edge = edge.NextEdge;
                 if (edge == _relative)
                     break;
@@ -98,6 +104,34 @@ namespace YGeometry.DataStructure.HalfEdge
             }
 
             return edges;
+        }
+
+        public bool Contains(HEVertex vertex)
+        {
+            var edge = _relative;
+            while (true)
+            {
+                if (edge.VertexTo == vertex)
+                    return true;
+                edge = edge.NextEdge;
+                if (edge == _relative)
+                    break;
+            }
+            return false;
+        }
+
+        public HEEdge HalfEdgeFromVertex(HEVertex vertex)
+        {
+            var edge = _relative;
+            while (true)
+            {
+                if (edge.VertexFrom == vertex)
+                    return edge;
+                edge = edge.NextEdge;
+                if (edge == _relative)
+                    break;
+            }
+            return null;
         }
 
         internal void UpdateDegree()

@@ -14,7 +14,7 @@ namespace YGeometry.DataStructure.HalfEdge
         internal HEEdge(int id, HEVertex goingTo, HEFace relativeFace, HEdge relativeEdge, HEEdge nextEdge, HEEdge preEdge, HEEdge oppEdge)
         {
             _id = id;
-            _goingTo = goingTo;
+            _vertexTo = goingTo;
             _relativeFace = relativeFace;
             _relativeEdge = relativeEdge;
             _nextEdge = nextEdge;
@@ -25,12 +25,18 @@ namespace YGeometry.DataStructure.HalfEdge
         public int ID { get { return _id; } internal set { _id = value; } }
         private int _id = HEMesh.InvaildID;
 
-        public bool IsIsolated { get { return _nextEdge == null && _preEdge == null; } }
+        int IHEMeshNode.ID { get { return _id; } set { _id = value; } }
+
+        public bool IsDeleted { get { return _id == HEMesh.InvaildID; } }
+
+        public bool IsIsolated { get { return _relativeFace == null; } }
 
         public bool IsBoundary { get { return _relativeFace == null; } }
 
-        public HEVertex GoingTo { get { return _goingTo; } internal set { _goingTo = value; } }
-        private HEVertex _goingTo;
+        public HEVertex VertexTo { get { return _vertexTo; } internal set { _vertexTo = value; } }
+        private HEVertex _vertexTo;
+
+        public HEVertex VertexFrom { get { return _preEdge._vertexTo; } }
 
         public HEFace RelativeFace { get { return _relativeFace; } internal set { _relativeFace = value; } }
         private HEFace _relativeFace;
@@ -60,7 +66,7 @@ namespace YGeometry.DataStructure.HalfEdge
         public void Dispose()
         {
             _id = HEMesh.InvaildID;
-            _goingTo = null;
+            _vertexTo = null;
             _relativeFace = null;
             _relativeEdge = null;
             _nextEdge = null;

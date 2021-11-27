@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -180,7 +181,7 @@ namespace YGeometry.DataStructure.HalfEdge
                 var edge = v1.OuterGoing;
                 do
                 {
-                    if (edge.GoingTo == v2) return edge.RelativeEdge;
+                    if (edge.VertexTo == v2) return edge.RelativeEdge;
                     edge = edge.RotateNext;
                 }
                 while (edge != v1.OuterGoing);
@@ -190,11 +191,12 @@ namespace YGeometry.DataStructure.HalfEdge
 
         /// <summary>
         /// ret is point to v2
+        /// </summary>
         internal HEEdge HEdgeBetween(HEVertex v1, HEVertex v2)
         {
             var edge = EdgeBetween(v1, v2);
             if (edge != null)
-                return edge.Relative.GoingTo == v2 ? edge.Relative : edge.Relative.OppEdge;
+                return edge.Relative.VertexTo == v2 ? edge.Relative : edge.Relative.OppEdge;
             return null;
         }
 
@@ -299,7 +301,7 @@ namespace YGeometry.DataStructure.HalfEdge
                     edge = AddEdge(v1, v2);
                 }
                 HEEdge toV1, toV2;
-                if (edge.Relative.GoingTo == v1)
+                if (edge.Relative.VertexTo == v1)
                 {
                     toV1 = edge.Relative;
                     toV2 = edge.Relative.OppEdge;
@@ -433,19 +435,132 @@ namespace YGeometry.DataStructure.HalfEdge
             edge.V2 = v2;
             edge.Relative = hedge1;
 
-            hedge1.GoingTo = v2;
+            hedge1.VertexTo = v2;
             hedge1.OppEdge = hedge2;
             hedge1.RelativeEdge = edge;
             hedge1.PreEdge = hedge2;
             hedge1.NextEdge = hedge2;
 
-            hedge2.GoingTo = v1;
+            hedge2.VertexTo = v1;
             hedge2.OppEdge = hedge1;
             hedge2.RelativeEdge = edge;
             hedge2.PreEdge = hedge1;
             hedge2.NextEdge = hedge1;
 
             return edge;
+        }
+
+        public void DeleteVertex(int vid)
+        {
+            Debugs.CheckRange(vid, 0, VertexCount);
+            DeleteVertex(_vertices[vid]);
+        }
+
+        public void DeleteVertex(HEVertex vertex)
+        {
+            if (vertex == null) return;
+
+            if (!vertex.IsIsolated)
+            {
+                var edges = vertex.GetAdjacentEdges();
+                foreach (var edge in edges)
+                    DeleteEdge(edge);
+            }
+
+            _DeleteVertex(vertex);
+        }
+
+        internal void DeleteEdge(HEdge edge)
+        {
+            if (edge == null) return;
+
+            var h1 = edge.Relative;
+            var h2 = h1.OppEdge;
+            if (edge.IsIsolated)
+            {
+                var v_from_h1 = h1.VertexFrom;
+                var v_from_h2 = h2.VertexFrom;
+                var h1_next = h1.RotateNext;
+                var h2_next = h2.RotateNext;
+                if (v_from_h1.OuterGoing == h1)
+                    v_from_h1.OuterGoing = h1_next == h1 ? null : h1_next;
+                if (v_from_h2.OuterGoing == h2)
+                    v_from_h2.OuterGoing = h2_next == h2 ? null : h2_next;
+
+                var h1_to = h1.PreEdge;
+                var h2_to = h2.PreEdge;
+
+                h1_to.NextEdge = h1_next;
+                h1_next.PreEdge = h1_to;
+                h2_to.NextEdge = h2_next;
+                h2_next.PreEdge = h2_to;
+
+                _DeleteHEdge(h1);
+                _DeleteHEdge(h2);
+                _DeleteEdge(edge);
+            }
+            else
+            {
+                DeleteFace(h1.RelativeFace);
+                DeleteFace(h2.RelativeFace);
+            }
+        }
+
+        public void DeleteFace(HEFace face)
+        {
+            if (face == null) return;
+
+            var hedges = face.GetHalfEdges();
+            var vertice = face.GetVertice();
+            foreach (var hedge in hedges)
+            {
+                hedge.RelativeFace = null;
+                if (hedge.RelativeEdge.IsIsolated)
+                    DeleteEdge(hedge.RelativeEdge);
+            }
+
+            foreach (var vertex in vertice)
+                vertex.AdjustOutGoingToBoundary();
+
+            _DeleteFace(face);
+        }
+
+        private void _DeleteVertex(HEVertex vertex)
+        {
+            _DeleteElement(vertex, _vertices);
+        }
+
+        private void _DeleteEdge(HEdge edge)
+        {
+            _DeleteElement(edge, _edges);
+        }
+
+        private void _DeleteHEdge(HEEdge hedge)
+        {
+            _DeleteElement(hedge, _hedges);
+        }
+
+        private void _DeleteFace(HEFace face)
+        {
+            _DeleteElement(face, _faces);
+        }
+
+        private void _DeleteElement(IHEMeshNode element, IList list)
+        {
+            if (element.IsDeleted) return;
+            var id = element.ID;
+            Debugs.CheckRange(id, 0, list.Count);
+            var v = list[id];
+            if (v != element) throw new InvalidOperationException("The element is not belong to this mesh!");
+            var lastID = list.Count - 1;
+            if (id != lastID)
+            {
+                var last = list[lastID] as IHEMeshNode;
+                last.ID = id;
+                list[id] = last;
+            }
+            list.RemoveAt(lastID);
+            element.Dispose();
         }
 
         private HEVertex _NewVertex()

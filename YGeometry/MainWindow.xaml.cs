@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using YGeometry.DataStructure;
+using YGeometry.DataStructure.HalfEdge;
 using YGeometry.IO;
 using YRenderingSystem;
 using YRenderingSystem._3D;
@@ -49,6 +50,7 @@ namespace YGeometry
             }
         }
         MeshData _meshData;
+        HEMesh _mesh;
 
         private void _OnLoaded(object sender, RoutedEventArgs e)
         {
@@ -56,6 +58,23 @@ namespace YGeometry
 
             _glPanel3D.DisableAliased();
             _glPanel3D.Camera.PropertyChanged += Camera_PropertyChanged;
+            _glPanel3D.MouseLeftButtonDown += _glPanel3D_MouseLeftButtonDown;
+        }
+
+        private void _glPanel3D_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var downP = _glPanel3D.GetPosition();
+            var rets = _glPanel3D.HitTest(downP);
+            if (rets.Count() > 0)
+            {
+                var first = rets.First();
+                if (first.Mesh.Type == MeshType.Triangle)
+                {
+                    //var t = (TriangleMesh)first.Mesh;
+                    //_mesh.DeleteVertex(t.Index1);
+                    //MeshData = MeshUtil.ConvertTo(_mesh);
+                }
+            }
         }
 
         private void Camera_PropertyChanged(object sender, EventArgs e)
@@ -87,10 +106,8 @@ namespace YGeometry
         private void _OnImported(object sender, RoutedEventArgs e)
         {
             var meshData = Tests.TestImport();
-            var mesh = MeshUtil.ConvertTo(meshData);
-            var isClosed = mesh.IsClosed();
-            //var mesh = Tests.TestCreate();
-            MeshData = MeshUtil.ConvertTo(mesh);
+            _mesh = MeshUtil.ConvertTo(meshData);
+            MeshData = MeshUtil.ConvertTo(_mesh);
         }
 
         private void _UpdateMeshData()
